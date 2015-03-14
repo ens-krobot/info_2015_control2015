@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 2e21afdbcc68a528b0abcd2843492e96) *)
+(* DO NOT EDIT (digest: 999f97e3cc68433423b3bac67bb91eb5) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -613,6 +613,7 @@ let package_default =
      flags = [];
      includes =
        [
+          ("src/tools/viewer", ["src/lib"]);
           ("src/tools/driver", ["src/can"; "src/lib"]);
           ("src/can", ["src/lib"])
        ]
@@ -623,6 +624,25 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 627 "myocamlbuild.ml"
+# 628 "myocamlbuild.ml"
 (* OASIS_STOP *)
+let () = mark_tag_used "tests";;
+
 Ocamlbuild_plugin.dispatch dispatch_default;;
+
+let () =
+  dispatch
+    (fun hook ->
+       dispatch_default hook;
+       match hook with
+         | Before_options ->
+             Options.make_links := false
+
+         | After_rules ->
+
+             rule ".glade -> .ml" ~dep:"%.glade" ~prod:"%.ml"
+               (fun env _ ->
+                  Cmd(S[A"lablgladecc2"; A"-embed"; A(env "%.glade"); Sh">"; A(env "%.ml")]))
+
+         | _ ->
+             ())

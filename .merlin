@@ -4,13 +4,19 @@ S src/can
 S src/lib
 S src/tools/driver/
 S src/tools/hub/
+S src/tools/viewer/
 B _build/src
 B _build/src/can
 B _build/src/lib
 B _build/src/tools/driver/
 B _build/src/tools/hub/
+B _build/src/tools/viewer/
 PKG lwt
 PKG lwt.unix
 PKG lwt.react
 PKG bitstring
+PKG cairo.lablgtk2
+PKG lwt.glib
+PKG lablgtk2.glade
+EXT lwt
 FLG -w -3
