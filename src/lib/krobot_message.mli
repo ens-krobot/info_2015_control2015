@@ -58,6 +58,8 @@ type t =
       (** The position and direction of encoders 1 and 2. *)
   | Encoder_position_direction_3_4 of int * direction * int * direction
       (** The position and direction of encoders 3 and 4. *)
+  | Encoder_position_speed_2 of float * float
+      (** The position and speed of encoder 2. *)
   | Encoder_position_speed_3 of float * float
       (** The position and speed of encoder 3. *)
   | Encoder_position_speed_4 of float * float

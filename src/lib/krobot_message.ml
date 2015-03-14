@@ -38,6 +38,7 @@ type t =
   | Ax12_Set_Torque_Enable of int * bool
   | Encoder_position_direction_1_2 of int * direction * int * direction
   | Encoder_position_direction_3_4 of int * direction * int * direction
+  | Encoder_position_speed_2 of float * float
   | Encoder_position_speed_3 of float * float
   | Encoder_position_speed_4 of float * float
   | Controller_activation of int * bool
@@ -168,6 +169,10 @@ let to_string = function
         "Encoder_position_direction_3_4(%d, %s, %d, %s)"
         pos3 (string_of_direction dir3)
         pos4 (string_of_direction dir4)
+  | Encoder_position_speed_2(pos, speed) ->
+      sprintf
+        "Encoder_position_speed_2(%f, %f)"
+        pos speed
   | Encoder_position_speed_3(pos, speed) ->
       sprintf
         "Encoder_position_speed_3(%f, %f)"
@@ -327,6 +332,16 @@ let encode = function
       put_uint8 data 5 (match dir4 with Forward -> 0 | Backward -> 1);
       frame
         ~identifier:100
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+  | Encoder_position_speed_2(pos, speed) ->
+      let data = Bytes.create 8 in
+      put_float32 data 0 pos;
+      put_float32 data 4 speed;
+      frame
+        ~identifier:108
         ~kind:Data
         ~remote:false
         ~format:F29bits
@@ -933,6 +948,10 @@ let decode frame =
               (float (get_sint16 frame.data 0) /. 1000.,
                float (get_sint16 frame.data 2) /. 1000.,
                float (get_sint16 frame.data 4) /. 10000.)
+        | 108 ->
+            Encoder_position_speed_2
+              (get_float32 frame.data 0,
+               get_float32 frame.data 4)
         | 131 ->
             Elevator_encoders
               (get_uint16 frame.data 0,
