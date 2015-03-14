@@ -1,7 +1,7 @@
 <**/*.ml{,i}>: syntax_camlp4o
 
 # OASIS_START
-# DO NOT EDIT (digest: 4ca2e61ec66a18558db6509216db3744)
+# DO NOT EDIT (digest: fa37e6b4c19349759b6663ccc338f9bb)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -59,11 +59,15 @@ true: annot, bin_annot
 <src/tools/driver/*.ml{,i,y}>: pkg_sexplib.syntax
 <src/tools/driver/*.ml{,i,y}>: use_krobot
 <src/tools/driver/*.ml{,i,y}>: use_krobot-can
-# Executable krobot-hub
-<src/tools/hub/krobot_hub.{native,byte}>: pkg_lwt.syntax
-<src/tools/hub/krobot_hub.{native,byte}>: pkg_lwt.unix
-<src/tools/hub/*.ml{,i,y}>: pkg_lwt.syntax
-<src/tools/hub/*.ml{,i,y}>: pkg_lwt.unix
+# Executable krobot-dump
+<src/tools/dump/krobot_dump.{native,byte}>: pkg_lwt.react
+<src/tools/dump/krobot_dump.{native,byte}>: pkg_lwt.syntax
+<src/tools/dump/krobot_dump.{native,byte}>: pkg_lwt.unix
+<src/tools/dump/krobot_dump.{native,byte}>: use_krobot
+<src/tools/dump/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/dump/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/dump/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/dump/*.ml{,i,y}>: use_krobot
 # Executable krobot-viewer
 <src/tools/viewer/krobot_viewer.{native,byte}>: pkg_cairo.lablgtk2
 <src/tools/viewer/krobot_viewer.{native,byte}>: pkg_lablgtk2.glade
