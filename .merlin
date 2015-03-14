@@ -1,0 +1,16 @@
+PRJ krobot
+S src
+S src/can
+S src/lib
+S src/tools/driver/
+S src/tools/hub/
+B _build/src
+B _build/src/can
+B _build/src/lib
+B _build/src/tools/driver/
+B _build/src/tools/hub/
+PKG lwt
+PKG lwt.unix
+PKG lwt.react
+PKG bitstring
+FLG -w -3

@@ -1,0 +1,130 @@
+# +-------------------------------------------------------------------+
+# | Package parameters                                                |
+# +-------------------------------------------------------------------+
+
+OASISFormat: 0.1
+Name: krobot
+Version: 1.0
+LicenseFile: LICENSE
+License: BSD3
+Authors: Jérémie Dimino
+Homepage: https://bitbucket.org/krobot_cachan/krobot
+BuildTools: ocamlbuild
+Plugins: DevFiles (0.2), META (0.2)
+Synopsis: [Kro]bot
+Description: Control program for the Eurobot robotic cup.
+
+# +-------------------------------------------------------------------+
+# | Flags                                                             |
+# +-------------------------------------------------------------------+
+
+# Flag gtk
+#   Description: Enable GTK programs
+#   Default: true
+
+Flag urg
+  Description: enable lib urg
+  Default: true
+
+# +-------------------------------------------------------------------+
+# | Libraries                                                         |
+# +-------------------------------------------------------------------+
+
+Library krobot
+  FindlibName: krobot
+  BuildDepends: lwt.unix, lwt.syntax, lwt.react
+  XMETADescription: The [Kro]bot library
+  XMETARequires: lwt.unix, lwt.react
+  Path: src/lib
+  Install: true
+  Modules:
+    Krobot_can,
+    Krobot_bus,
+    Krobot_daemon,
+    Krobot_message,
+    Krobot_geom,
+    Krobot_solve,
+    Krobot_pathfinding,
+    Krobot_config,
+    Krobot_path,
+    Krobot_ax12_format
+  CSources:
+    krobot_message_stubs.c
+
+Library "krobot-can"
+  FindlibName: can
+  FindlibParent: krobot
+  BuildDepends: krobot, lwt.syntax, sexplib, sexplib.syntax, bitstring
+  XMETADescription: CAN interface using SocketCAN
+  XMETARequires: krobot, sexplib, bitstring
+  Path: src/can
+  Install: true
+  Modules:
+   Krobot_can_bus,
+   Krobot_can_decoder,
+   Krobot_can_desc_lexer,
+   Krobot_can_desc_parser
+  CSources: can_stubs.c
+
+# +-------------------------------------------------------------------+
+# | The driver                                                        |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-driver"
+  Path: src/tools/driver
+  Install: true
+  CompiledObject: best
+  MainIs: krobot_driver.ml
+  BuildDepends: krobot, krobot.can, lwt.syntax
+
+# +-------------------------------------------------------------------+
+# | Tools                                                             |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-hub"
+  Path: src/tools/hub
+  Install: true
+  CompiledObject: best
+  MainIs: krobot_hub.ml
+  BuildDepends: lwt.unix, lwt.syntax
+
+# +-------------------------------------------------------------------+
+# | Examples                                                          |
+# +-------------------------------------------------------------------+
+
+# Executable "dump-can"
+#   Path: examples
+#   Install: false
+#   CompiledObject: best
+#   MainIs: dump_can.ml
+#   BuildDepends: krobot.can, lwt.syntax
+
+# Executable "send-can"
+#   Path: examples
+#   Install: false
+#   CompiledObject: best
+#   MainIs: send_can.ml
+#   BuildDepends: krobot.can, lwt.syntax
+
+# +-------------------------------------------------------------------+
+# | Doc                                                               |
+# +-------------------------------------------------------------------+
+
+# Document "krobot-api"
+#   Title: API reference for [Kro]bot
+#   Type: ocamlbuild (0.2)
+#   Install: true
+#   InstallDir: $htmldir/api
+#   DataFiles: style.css
+#   BuildTools: ocamldoc
+#   XOCamlbuildPath: ./
+#   XOCamlbuildLibraries: krobot, krobot.can
+
+# +-------------------------------------------------------------------+
+# | Misc                                                              |
+# +-------------------------------------------------------------------+
+
+SourceRepository head
+  Type: git
+  Location: git://git@bitbucket.org:krobot_cachan/krobot.git
+  Browser: https://bitbucket.org/krobot_cachan/krobot
