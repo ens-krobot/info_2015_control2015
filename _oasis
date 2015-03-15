@@ -81,24 +81,23 @@ Executable "krobot-driver"
 # | The hub                                                           |
 # +-------------------------------------------------------------------+
 
-Executable "krobot-dump"
-  Path: src/tools/dump
+Executable "krobot-hub"
+  Path: src/tools/hub
   Install: true
   CompiledObject: best
-  MainIs: krobot_dump.ml
-  BuildDepends: krobot, lwt.syntax
+  MainIs: krobot_hub.ml
+  BuildDepends: lwt.unix, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | The dumper                                                        |
 # +-------------------------------------------------------------------+
 
 Executable "krobot-dump"
-  Path: src/tools/viewer
-  Build$: flag(gtk)
-  Install$: flag(gtk)
+  Path: src/tools/dump/
+  Install: true
   CompiledObject: best
-  MainIs: krobot_viewer.ml
-  BuildDepends: krobot, lwt.syntax, cairo.lablgtk2, lwt.glib, lablgtk2.glade
+  MainIs: krobot_dump.ml
+  BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | The viewer                                                        |
@@ -111,6 +110,17 @@ Executable "krobot-viewer"
   CompiledObject: best
   MainIs: krobot_viewer.ml
   BuildDepends: krobot, lwt.syntax, cairo.lablgtk2, lwt.glib, lablgtk2.glade
+
+# +-------------------------------------------------------------------+
+# | State machine demo                                                |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-demo"
+  Path: src/tools/demo/
+  Install: true
+  CompiledObject: best
+  MainIs: demo.ml
+  BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | Doc                                                               |

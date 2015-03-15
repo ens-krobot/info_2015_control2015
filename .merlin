@@ -10,3 +10,4 @@ PKG lwt.glib
 PKG lablgtk2.glade
 EXT lwt
 FLG -w -3
+FLG -w -40

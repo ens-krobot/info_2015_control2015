@@ -1,0 +1,4 @@
+# -*- conf -*-
+normal
+max_indent = 2
+syntax = mll lwt
