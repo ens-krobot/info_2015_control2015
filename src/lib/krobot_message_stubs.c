@@ -20,6 +20,13 @@ struct bezier_message {
   unsigned int v : 11 __attribute__((__packed__));
 };
 
+struct omni_goto_message {
+  unsigned int x_end : 12 __attribute__((__packed__));
+  unsigned int y_end : 12 __attribute__((__packed__));
+  int theta_end : 12 __attribute__((__packed__));
+  unsigned int padding : 28 __attribute__((__packed__));
+};
+
 CAMLprim value krobot_message_encode_bezier(value params)
 {
   CAMLparam1(params);
@@ -47,5 +54,30 @@ CAMLprim value krobot_message_decode_bezier(value str)
   Field(res, 3) = Val_int(msg->d2);
   Field(res, 4) = Val_int(msg->theta);
   Field(res, 5) = Val_int(msg->v);
+  CAMLreturn(res);
+}
+
+CAMLprim value krobot_message_encode_omni_goto(value params)
+{
+  CAMLparam1(params);
+  CAMLlocal1(str);
+  str = caml_alloc_string(8);
+  struct omni_goto_message *msg = (struct omni_goto_message*)String_val(str);
+  msg->x_end = Int_val(Field(params, 0));
+  msg->y_end = Int_val(Field(params, 1));
+  msg->theta_end = Int_val(Field(params, 2));
+  msg->padding = 0;
+  CAMLreturn(str);
+}
+
+CAMLprim value krobot_message_decode_omni_goto(value str)
+{
+  CAMLparam1(str);
+  CAMLlocal1(res);
+  struct omni_goto_message *msg = (struct omni_goto_message*)String_val(str);
+  res = caml_alloc_tuple(3);
+  Field(res, 0) = Val_int(msg->x_end);
+  Field(res, 1) = Val_int(msg->y_end);
+  Field(res, 2) = Val_int(msg->theta_end);
   CAMLreturn(res);
 }

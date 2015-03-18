@@ -35,10 +35,10 @@ let () = Lwt_react.E.keep (Lwt_react.E.map handle_message (Krobot_bus.recv bus))
 
 
 let set_dynamics v_max omega_max acc_lin_max acc_rot_max =
-  send (Motor_bezier_limits(v_max,omega_max,acc_lin_max,acc_rot_max))
+  send (Motor_omni_limits(v_max,omega_max,acc_lin_max,acc_rot_max))
 
 let goto x y theta =
-  send (Motor_bezier(x,y,0.,0.,theta,0.))
+  send (Motor_omni_goto(x,y,0.,0.,theta,0.))
 
 
 let move_x distance speed acceleration =

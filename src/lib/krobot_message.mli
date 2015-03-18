@@ -165,6 +165,17 @@ type t =
   | Req_motor_status
       (** Request the status of the motors. *)
 
+  | Motor_omni_limits of float * float * float * float
+      (** [Motor_omni_limits(vlin_max, vrot_max, alin_max, arot_max)]
+          - [v_max] in m/s
+          - [vrot_max] in rad/s
+          - [alin_max] in m/s^2
+          - [arot_max] in m/s^2 *)
+
+  | Motor_omni_goto of float * float * float
+      (** [Motor_omni(x_end, y_end, theta_end)] *)
+
+
   | Unknown of Krobot_can.frame
       (** An unknown can frame. *)
 

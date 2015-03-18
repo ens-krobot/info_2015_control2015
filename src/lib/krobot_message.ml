@@ -71,7 +71,9 @@ type t =
   | Homing_status of bool * bool
   | Homing_command of float * float
   | Req_motor_status
-  | Unknown of frame
+  | Motor_omni_limits of float * float * float * float
+  | Motor_omni_goto of float * float * float
+  | Unknown of Krobot_can.frame
 
 (* +-----------------------------------------------------------------+
    | Message --> string                                              |
@@ -300,6 +302,12 @@ let to_string = function
         l1 l2
   | Req_motor_status ->
       "Req_motor_status"
+  | Motor_omni_limits (v_lin_max, v_rot_max, a_lin_max, a_rot_max) ->
+    Printf.sprintf "Motor_omni_limits(v_lin_max=%f,v_rot_max=%f,a_lin_max=%f,a_rot_max=%f)"
+      v_lin_max v_rot_max a_lin_max a_rot_max
+  | Motor_omni_goto (x_end, y_end, theta_end) ->
+    Printf.sprintf "Motor_omni_goto(x_end=%f, y_end=%f, theta_end=%f)"
+      x_end y_end theta_end
   | Unknown frame ->
       sprintf "Unknown%s" (Krobot_can.string_of_frame frame)
 
@@ -310,6 +318,7 @@ let to_string = function
 let pi = 4. *. atan 1.
 
 external encode_bezier : int * int * int * int * int * int -> string = "krobot_message_encode_bezier"
+external encode_omni_goto : int * int * int -> string = "krobot_message_encode_omni_goto"
 
 let encode = function
   | Encoder_position_direction_1_2(pos1, dir1, pos2, dir2) ->
@@ -872,6 +881,35 @@ let encode = function
         ~remote:true
         ~format:F29bits
         ~data:""
+
+  | Motor_omni_limits(v_max, v_rot_max, a_lin_max, a_rot_max) ->
+      let v_max = v_max *. 1000. in
+      let v_rot_max = v_rot_max *. 1000. in
+      let a_lin_max = a_lin_max *. 1000. in
+      let a_rot_max = a_rot_max *. 1000. in
+      let data = Bytes.create 8 in
+      put_uint16 data 0 (int_of_float v_max);
+      put_uint16 data 2 (int_of_float v_rot_max);
+      put_uint16 data 4 (int_of_float a_lin_max);
+      put_uint16 data 6 (int_of_float a_rot_max);
+      frame
+        ~identifier:217
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+
+  | Motor_omni_goto(x_end, y_end, theta_end) ->
+      let x_end = int_of_float (x_end *. 1000.)
+      and y_end = int_of_float (y_end *. 1000.)
+      and theta_end = int_of_float (theta_end *. 100.) in
+      frame
+        ~identifier:218
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data:(encode_omni_goto (x_end, y_end, theta_end))
+
   | Unknown frame ->
       frame
 
@@ -890,6 +928,7 @@ let () =
            None)
 
 external decode_bezier : string -> int * int * int * int * int * int = "krobot_message_decode_bezier"
+external decode_omni_goto : string -> int * int * int = "krobot_message_decode_omni_goto"
 
 let decode frame =
   try
@@ -1050,6 +1089,17 @@ let decode frame =
               (float (get_sint32 frame.data 0) /. 1000.,
                float (get_uint16 frame.data 4) /. 1000.,
                float (get_uint16 frame.data 6) /. 1000.)
+        | 217 ->
+            Motor_omni_limits
+              (float (get_uint16 frame.data 0) /. 1000.,
+               float (get_uint16 frame.data 2) /. 1000.,
+               float (get_uint16 frame.data 4) /. 1000.,
+               float (get_uint16 frame.data 6) /. 1000.)
+        | 218 ->
+            let x_end, y_end, theta_end = decode_omni_goto frame.data in
+            Motor_omni_goto(float x_end /. 1000.,
+                            float y_end /. 1000.,
+                            float theta_end /. 100.)
         | 231 ->
             Elevator_command
               (get_float32 frame.data 0,
