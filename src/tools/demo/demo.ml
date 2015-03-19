@@ -5,6 +5,7 @@ type world_update =
   | Position_updated
   | Motor_started
   | Motor_stopped
+  | New_vertice
 
 type input =
   | Message of Krobot_bus.message
@@ -22,13 +23,12 @@ type robot = {
 
 type world = {
   robot : robot;
-
-  something_else : unit;
+  prepared_vertices : Krobot_geom.vertice list;
 }
 
 type state =
-  | Transition_to_Moving_to of Krobot_geom.vertice
-  | Moving_to of Krobot_geom.vertice
+  | Transition_to_Moving_to of Krobot_geom.vertice * (Krobot_geom.vertice list)
+  | Moving_to of Krobot_geom.vertice * (Krobot_geom.vertice list)
   | Idle
   | Transition_to_Idle
 
@@ -39,7 +39,8 @@ type message =
 type output = {
   timeout : float; (* in seconds *)
   messages : message list;
-  state : state
+  state : state;
+  world : world;
 }
 
 let init_world = {
@@ -49,10 +50,10 @@ let init_world = {
     motors_moving = false;
   };
 
-  something_else = ();
+  prepared_vertices = [];
 }
 
-let init_state = Transition_to_Moving_to Krobot_geom.{x = 0.1; y = 0.05}
+let init_state = Transition_to_Idle
 
 let name = "demo"
 
@@ -73,7 +74,8 @@ end = struct
 end
 
 let update_world : world -> Krobot_bus.message -> (world * input) option =
-  fun world -> function
+  fun world message ->
+    match message with
     | Kill killed when killed = name ->
       exit 0
 
@@ -113,23 +115,52 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
         | _ ->
           Some (world, Message message)
       end
+    | Trajectory_set_vertices l ->
+      let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) l in
+      let s = String.concat ", " s in
+      Lwt_log.ign_info_f "Set vertice [%s]" s;
+      Some ({ world with prepared_vertices = l },
+            World_updated New_vertice)
+    | Trajectory_add_vertice v ->
+      Lwt_log.ign_info_f "Add vertice (%f, %f)" v.Krobot_geom.x v.Krobot_geom.y;
+      Some ({ world with prepared_vertices = v :: world.prepared_vertices },
+            World_updated New_vertice)
+    | Log _ ->
+      None
     | message ->
+      Lwt_log.ign_info_f "msg: %s" (string_of_message message);
       Some (world, Message message)
+
+let idle world =
+  { timeout = 1.;
+    messages = [];
+    world;
+    state = Idle }
 
 let step (input:input) (world:world) (state:state) : output =
   match state with
   | Transition_to_Idle ->
     Lwt_log.ign_info_f "Idle";
-    { timeout = 1.;
-      messages = [];
-      state = Idle }
-  | Idle ->
-    { timeout = 1.;
-      messages = [];
-      state = Idle }
-  | Transition_to_Moving_to dest -> begin
-      Lwt_log.ign_info_f "Moving_to";
+    idle world
+  | Idle -> begin match input with
+    | Message Trajectory_go -> begin
+        match world.prepared_vertices with
+        | [] ->
+          Lwt_log.ign_warning_f "nowhere to go";
+          idle world
+        | dest :: rest ->
+          Lwt_log.ign_warning_f "Run Go";
+          { timeout = 1.;
+            messages = [];
+            world = { world with prepared_vertices = [] };
+            state = Transition_to_Moving_to (dest, rest) }
+      end
+    | _ ->
+      idle world
+  end
+  | Transition_to_Moving_to (dest, rest) -> begin
       let open Krobot_geom in
+      Lwt_log.ign_info_f "Moving_to (%f, %f)" dest.x dest.y;
       let move = vector world.robot.position dest in
       let ratio = normalize move in
       let max_speed = 0.5 in
@@ -138,24 +169,32 @@ let step (input:input) (world:world) (state:state) : output =
       let move_y = Motor_move_y(move.vy, max_speed *. ratio.vy, max_accel *. ratio.vy ) in
       { timeout = 1.;
         messages = [CAN (move_x); CAN (move_y)];
-        state = Moving_to dest }
+        world;
+        state = Moving_to (dest, rest) }
     end
-  | Moving_to dest -> begin
+  | Moving_to (dest, rest) -> begin
       let state =
         match input with
-        | World_updated Motor_stopped -> Idle
-        | _ -> Moving_to dest
+        | World_updated Motor_stopped -> begin
+          match rest with
+          | [] -> Idle
+          | dest :: rest -> Transition_to_Moving_to (dest, rest)
+          end
+        | _ -> Moving_to (dest, rest)
       in
       { timeout = 1.;
         messages = [];
+        world;
         state }
     end
 
 type receiver = (float * Krobot_bus.message) option Lwt.t
 
+(* quite wrong: can loose messages *)
 let mk_recv ev = Lwt.(Lwt_react.E.next ev >|= fun v -> Some v)
 
 let next_event ev (recv:receiver) timeout =
+  lwt () = Lwt_unix.yield () in
   let time = Lwt.(Lwt_unix.sleep timeout >>= fun _ -> return_none) in
   match_lwt Lwt.(time <?> recv) with
   | None -> Lwt.return (recv, None)
@@ -172,7 +211,9 @@ let main_loop bus ev =
     lwt (recv,msg) = next_event ev recv Date.(time_to_wait timeout) in
     let update =
       match msg with
-      | None -> Some (world, Timeout)
+      | None ->
+        Lwt_log.ign_info_f "timeout";
+        Some (world, Timeout)
       | Some m -> update_world world m in
     match update with
     | None ->

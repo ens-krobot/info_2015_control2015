@@ -166,7 +166,7 @@ type t =
       (** Request the status of the motors. *)
 
   | Motor_omni_limits of float * float * float * float
-      (** [Motor_omni_limits(vlin_max, vrot_max, alin_max, arot_max)]
+      (** [Motor_omni_limits(v_lin_max, v_rot_max, a_lin_max, a_rot_max)]
           - [v_max] in m/s
           - [vrot_max] in rad/s
           - [alin_max] in m/s^2
