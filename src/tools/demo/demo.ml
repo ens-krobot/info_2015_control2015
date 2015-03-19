@@ -32,7 +32,7 @@ type state =
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
-  | Stop
+  | Stop of float
 
 type message =
   | Bus of Krobot_bus.message
@@ -125,6 +125,9 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
             World_updated New_vertice)
     | Trajectory_add_vertice v ->
       Lwt_log.ign_info_f "Add vertice (%f, %f)" v.Krobot_geom.x v.Krobot_geom.y;
+      let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) (v :: world.prepared_vertices) in
+      let s = String.concat ", " s in
+      Lwt_log.ign_info_f "vertice [%s]" s;
       Some ({ world with prepared_vertices = v :: world.prepared_vertices },
             World_updated New_vertice)
     | Log _ ->
@@ -138,6 +141,9 @@ let idle world =
     messages = [];
     world;
     state = Idle }
+
+let motor_stop = Motor_stop(0.4, 0.4)
+let safe_stop_time = 0.1 (* second *)
 
 let general_step (input:input) (world:world) (state:state) : output =
   match state with
@@ -157,6 +163,9 @@ let general_step (input:input) (world:world) (state:state) : output =
             world = { world with prepared_vertices = [] };
             state = Transition_to_Moving_to (dest, rest) }
       end
+    | Timeout ->
+      Lwt_log.ign_info_f "still idle...";
+      idle world
     | _ ->
       idle world
   end
@@ -171,37 +180,46 @@ let general_step (input:input) (world:world) (state:state) : output =
         state = Moving_to (dest, rest) }
     end
   | Moving_to (dest, rest) -> begin
+      let next_step = function
+        | [] -> Idle
+        | dest :: rest -> Transition_to_Moving_to (dest, rest) in
       let state =
         match input with
-        | World_updated Motor_stopped -> begin
-          match rest with
-          | [] -> Idle
-          | dest :: rest -> Transition_to_Moving_to (dest, rest)
-          end
+        | World_updated Motor_stopped ->
+          next_step rest
+        | Timeout when world.robot.motors_moving ->
+          Lwt_log.ign_info_f "still moving...";
+          Moving_to (dest, rest)
+        | Timeout ->
+          next_step rest
         | _ -> Moving_to (dest, rest)
       in
-      { timeout = 1.;
+      { timeout = safe_stop_time;
         messages = [];
         world;
         state }
     end
   | Transition_to_Stop ->
     Lwt_log.ign_info_f "Stop";
-    let stop = Motor_stop(0.4, 0.4) in
+    let t = Unix.gettimeofday () in
     { timeout = 0.01;
-      messages = [CAN stop];
+      messages = [CAN motor_stop];
       world;
-      state = Stop }
-  | Stop ->
-    let state =
+      state = Stop t }
+  | Stop stopped ->
+    let state, msg =
       match input with
-      | Timeout ->
+      | Timeout when world.robot.motors_moving ->
         (* If we waited too long: restop *)
-        Transition_to_Stop
-      | World_updated Motor_stopped -> Idle
-      | _ -> Stop
+        Stop stopped, [CAN motor_stop]
+      | Timeout ->
+        Idle, []
+      | World_updated Motor_stopped ->
+        Idle, []
+      | _ ->
+        Stop stopped, []
     in
-    { timeout = 0.1;
+    { timeout = safe_stop_time;
       messages = [];
       world;
       state }
@@ -238,7 +256,7 @@ let main_loop bus ev =
     let update =
       match msg with
       | None ->
-        Lwt_log.ign_info_f "timeout";
+        (* Lwt_log.ign_info_f "timeout"; *)
         Some (world, Timeout)
       | Some m -> update_world world m in
     match update with
@@ -249,7 +267,7 @@ let main_loop bus ev =
       let time = Unix.gettimeofday () in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) output.messages in
       let timeout_date = Date.(add (now ()) output.timeout) in
-      aux recv world output.state timeout_date in
+      aux recv output.world output.state timeout_date in
   aux (mk_recv ev) init_world init_state (Date.now ())
 
 (* +-----------------------------------------------------------------+
