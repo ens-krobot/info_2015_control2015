@@ -168,15 +168,15 @@ let velocities sim dt =
 let move_x sim distance velocity acceleration =
   if distance <> 0. && velocity > 0. && acceleration > 0. then begin
     let t_acc = velocity /. acceleration in
-    let t_end = (velocity *. velocity +. distance *. acceleration) /. (velocity *. acceleration) in
+    let t_end = (velocity *. velocity +. (abs_float distance) *. acceleration) /. (velocity *. acceleration) in
+    let sign = if distance >= 0. then 1. else -1. in
     if t_end > 2. *. t_acc then begin
       if t_acc <> 0. then
-        sim.command_x <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
+        sim.command_x <- Trapezoid(sim.time, sim.time +. t_end, t_acc, sign *. velocity)
     end else begin
       if t_acc <> 0. then begin
         let t_acc = sqrt (abs_float (distance) /. acceleration) in
         let t_end = 2. *. t_acc in
-        let sign = if distance >= 0. then 1. else -1. in
         let velocity = sign *. acceleration *. t_acc in
         sim.command_x <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
       end
@@ -186,15 +186,15 @@ let move_x sim distance velocity acceleration =
 let move_y sim distance velocity acceleration =
   if distance <> 0. && velocity > 0. && acceleration > 0. then begin
     let t_acc = velocity /. acceleration in
-    let t_end = (velocity *. velocity +. distance *. acceleration) /. (velocity *. acceleration) in
+    let t_end = (velocity *. velocity +. (abs_float distance) *. acceleration) /. (velocity *. acceleration) in
+    let sign = if distance >= 0. then 1. else -1. in
     if t_end > 2. *. t_acc then begin
       if t_acc <> 0. then
-        sim.command_y <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
+        sim.command_y <- Trapezoid(sim.time, sim.time +. t_end, t_acc, sign *. velocity)
     end else begin
       if t_acc <> 0. then begin
         let t_acc = sqrt (abs_float (distance) /. acceleration) in
         let t_end = 2. *. t_acc in
-        let sign = if distance >= 0. then 1. else -1. in
         let velocity = sign *. acceleration *. t_acc in
         sim.command_y <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
       end
@@ -204,15 +204,15 @@ let move_y sim distance velocity acceleration =
 let turn sim angle velocity acceleration =
   if angle <> 0. && velocity > 0. && acceleration > 0. then begin
     let t_acc = velocity /. acceleration in
-    let t_end = (velocity *. velocity +. angle *. acceleration) /. (velocity *. acceleration) in
+    let t_end = (velocity *. velocity +. (abs_float angle) *. acceleration) /. (velocity *. acceleration) in
+    let sign = if angle >= 0. then 1. else -1. in
     if t_end > 2. *. t_acc then begin
       if t_acc <> 0. then begin
-        sim.command_theta <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
+        sim.command_theta <- Trapezoid(sim.time, sim.time +. t_end, t_acc, sign *. velocity)
       end
     end else begin
       let t_acc = sqrt (abs_float (angle) /. acceleration) in
       let t_end = 2. *. t_acc in
-      let sign = if angle >= 0. then 1. else -1. in
       let velocity = sign *. acceleration *. t_acc in
       if t_acc <> 0. then begin
         sim.command_theta <- Trapezoid(sim.time, sim.time +. t_end, t_acc, velocity)
