@@ -51,6 +51,7 @@ type message =
   | Run_ax12_framed_sequence of (string * Krobot_ax12_format.keyframe_dict * (int * int) list)
       (** log * keyframe dictionary * actions *)
   | Finished_ax12_sequence of string
+  | Stop
 
 type t = {
   oc : Lwt_io.output_channel;
@@ -165,6 +166,8 @@ let string_of_message = function
       sprintf "Run_ax12_framed_sequence %s" log
   | Finished_ax12_sequence log ->
       sprintf "Finished_ax12_sequence %s" log
+  | Stop ->
+      "Stop"
 
 (* +-----------------------------------------------------------------+
    | Sending/receiving messages                                      |

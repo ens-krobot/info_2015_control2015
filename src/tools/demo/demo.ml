@@ -31,6 +31,8 @@ type state =
   | Moving_to of Krobot_geom.vertice * (Krobot_geom.vertice list)
   | Idle
   | Transition_to_Idle
+  | Transition_to_Stop
+  | Stop
 
 type message =
   | Bus of Krobot_bus.message
@@ -137,7 +139,7 @@ let idle world =
     world;
     state = Idle }
 
-let step (input:input) (world:world) (state:state) : output =
+let general_step (input:input) (world:world) (state:state) : output =
   match state with
   | Transition_to_Idle ->
     Lwt_log.ign_info_f "Idle";
@@ -183,6 +185,34 @@ let step (input:input) (world:world) (state:state) : output =
         world;
         state }
     end
+  | Transition_to_Stop ->
+    Lwt_log.ign_info_f "Stop";
+    let stop = Motor_stop(0.4, 0.4) in
+    { timeout = 0.01;
+      messages = [CAN stop];
+      world;
+      state = Stop }
+  | Stop ->
+    let state =
+      match input with
+      | Timeout ->
+        (* If we waited too long: restop *)
+        Transition_to_Stop
+      | World_updated Motor_stopped -> Idle
+      | _ -> Stop
+    in
+    { timeout = 0.1;
+      messages = [];
+      world;
+      state }
+
+let step (input:input) (world:world) (state:state) : output =
+  let state =
+    match input with
+    | Message Stop ->
+      Transition_to_Stop
+    | _ -> state in
+  general_step input world state
 
 type receiver = (float * Krobot_bus.message) option Lwt.t
 

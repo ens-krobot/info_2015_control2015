@@ -91,6 +91,7 @@ type message =
   | Run_ax12_framed_sequence of (string * Krobot_ax12_format.keyframe_dict * (int * int) list)
       (** log * keyframe dictionary * actions *)
   | Finished_ax12_sequence of string
+  | Stop
 
 val string_of_message : message -> string
   (** Returns a string representation of the given message. *)

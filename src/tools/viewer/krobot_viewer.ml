@@ -548,6 +548,7 @@ let translate_coords viewer x y =
 let add_point viewer x y =
   let x, y = translate_coords viewer x y in
   if x >= 0. && x < world_width && y >= 0. && y < world_height then
+    (* let () = Lwt_log.ign_info_f "add point (%f, %f)" x y in *)
     ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (), Trajectory_add_vertice { x; y }))
 
 let clear viewer =
@@ -897,8 +898,7 @@ lwt () =
     (ui#button_stop#event#connect#button_release
        (fun ev ->
           if GdkEvent.Button.button ev = 1 then
-            Lwt_log.ign_warning ~section "not implemented";
-            (* ignore (Krobot_bus.send bus (Unix.gettimeofday (), Strategy_stop)); *)
+            ignore (Krobot_bus.send bus (Unix.gettimeofday (), Stop));
           false));
 
   ignore
