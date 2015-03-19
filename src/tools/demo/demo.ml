@@ -152,7 +152,7 @@ let general_step (input:input) (world:world) (state:state) : output =
     idle world
   | Idle -> begin match input with
     | Message Trajectory_go -> begin
-        match world.prepared_vertices with
+        match List.rev world.prepared_vertices with
         | [] ->
           Lwt_log.ign_warning_f "nowhere to go";
           idle world
