@@ -161,14 +161,10 @@ let step (input:input) (world:world) (state:state) : output =
   | Transition_to_Moving_to (dest, rest) -> begin
       let open Krobot_geom in
       Lwt_log.ign_info_f "Moving_to (%f, %f)" dest.x dest.y;
-      let move = vector world.robot.position dest in
-      let ratio = normalize move in
-      let max_speed = 0.5 in
-      let max_accel = 0.8 in
-      let move_x = Motor_move_x(move.vx, max_speed *. ratio.vx, max_accel *. ratio.vx ) in
-      let move_y = Motor_move_y(move.vy, max_speed *. ratio.vy, max_accel *. ratio.vy ) in
+      (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
+      let goto = Motor_omni_goto(dest.x, dest.y, world.robot.orientation) in
       { timeout = 1.;
-        messages = [CAN (move_x); CAN (move_y)];
+        messages = [CAN goto];
         world;
         state = Moving_to (dest, rest) }
     end
