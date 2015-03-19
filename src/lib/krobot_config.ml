@@ -43,19 +43,18 @@ let blue_initial_position =
     y = (world_height -. wheels_position -. 0.054); },
   (-.pi/.2.)
 
-let red_fixed_beacons = [
-  { x = -. 0.062; y = world_height +. 0.062 };
+let red_fixed_beacons = []
+  (*{ x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };
-  { x = world_width +. 0.062; y = world_height /. 2.}]
+    { x = world_width +. 0.062; y = world_height /. 2.}]*)
 
-let blue_fixed_beacons = [
-  { x = world_width +. 0.062; y = world_height +. 0.062 };
+let blue_fixed_beacons = []
+  (*{ x = world_width +. 0.062; y = world_height +. 0.062 };
   { x = world_width +. 0.062; y = -. 0.062 };
-  { x = -. 0.062; y = world_height /. 2.}]
+    { x = -. 0.062; y = world_height /. 2.}]*)
 
 let symetrical p =
   { p with pos = { p.pos with x = world_width -. p.pos.x } }
-
 
 let rec (-->) i j =
   if i > j
@@ -74,9 +73,9 @@ let line_obs p1 p2 rad =
       size = rad } ) l
 
 let left_obstacles =
-  [
+  []
     (* Fire holders on the sides of the table *)
-    { pos =
+    (*{ pos =
         { x = 0.009;
           y = 1.279 };
       size = 0.009; };
@@ -108,14 +107,14 @@ let left_obstacles =
       size = 0.25; };
   ] @ (line_obs {x = 0.41 ; y = 1.71} {x = 0.41 ; y = 2.} 0.03)
     @ (line_obs {x = 0.41 ; y = 1.71} {x = 1.09 ; y = 1.71} 0.03)
-    @ (line_obs {x = 1.09 ; y = 1.71} {x = 1.09 ; y = 2.} 0.03)
+      @ (line_obs {x = 1.09 ; y = 1.71} {x = 1.09 ; y = 2.} 0.03)*)
 let fixed_obstacles =
   [
     (* Central scoring zone *)
-    { pos =
+    (*{ pos =
         { x = 1.5;
           y = 0.95 };
-      size = 0.15; };
+      size = 0.15; };*)
   ] @ (List.map symetrical left_obstacles) @ left_obstacles
 
 let test_obstacles =
@@ -124,8 +123,8 @@ let test_obstacles =
           y = 1.0 };
       size = 0.1; }; ]
 
-let initial_fires =
-  List.map (fun (x, y, a) -> ({x;y},a))
+let initial_fires = []
+  (*List.map (fun (x, y, a) -> ({x;y},a))
   [ 0.4, 0.9, 0.;
     2.6, 0.9, 0.;
     0.9, 1.4, (pi/.2.);
@@ -135,12 +134,12 @@ let initial_fires =
     0.018, 1.2, (pi/.2.);
     2.982, 1.2, (pi/.2.);
     1.3, 0.018, 0.;
-    1.7, 0.018, 0.; ]
+    1.7, 0.018, 0.; ]*)
 
-let initial_torches =
-  List.map (fun (x, y) -> {x;y})
+let initial_torches = []
+  (*List.map (fun (x, y) -> {x;y})
   [ 0.9, 0.9;
-    2.1, 0.9; ]
+    2.1, 0.9; ]*)
 
 let urg_position = { x = 0.095; y = 0. }
 

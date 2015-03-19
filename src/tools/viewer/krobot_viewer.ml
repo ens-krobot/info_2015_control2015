@@ -164,48 +164,68 @@ let draw viewer =
 
   (* Draw the viewer background *)
   Cairo.rectangle ctx 0. 0. world_width world_height;
-  set_color ctx Green;
+  set_color ctx Blue;
   Cairo.fill ctx;
 
   (* Draw the starting areas *)
-  Cairo.move_to ctx 0. world_height;
-  Cairo.line_to ctx 0.39 world_height;
-  Cairo.line_to ctx 0.39 (world_height -. 0.3);
-  Cairo.arc_negative ctx 0. (world_height -. 0.3) 0.39 0. (3.*.pi/.2.);
-  Cairo.move_to ctx 0. world_height;
-  set_color ctx Light_gray;
+  Cairo.rectangle ctx 0. (world_height -. 0.778) 0.4 0.378;
+  set_color ctx Green;
   Cairo.fill ctx;
-  Cairo.move_to ctx 0.39 world_height;
-  Cairo.line_to ctx 0.39 (world_height -. 0.3);
-  Cairo.arc_negative ctx 0. (world_height -. 0.3) 0.39 0. (3.*.pi/.2.);
-  Cairo.set_line_width ctx (5. /. scale);
-  set_color ctx Red;
+  Cairo.move_to ctx 0. (world_height -. 0.778);
+  Cairo.line_to ctx 0.4 (world_height -. 0.778);
+  Cairo.line_to ctx 0.4 (world_height -. 0.8);
+  Cairo.line_to ctx 0.45 (world_height -. 0.8);
+  Cairo.arc_negative ctx 0.45 1. 0.2 (pi/.2.) (3.*.pi/.2.);
+  Cairo.line_to ctx 0.4 0.8;
+  Cairo.line_to ctx 0.4 0.778;
+  Cairo.line_to ctx 0. 0.7788;
+  Cairo.line_to ctx 0. (world_height -. 0.778);
+  set_color ctx Yellow;
+  Cairo.fill ctx;
+  Cairo.rectangle ctx 0. 0.4 0.4 0.378;
+  set_color ctx Green;
+  Cairo.fill ctx;
+  Cairo.set_line_width ctx (2. /. scale);
+  set_color ctx Black;
+  Cairo.rectangle ctx 0. (world_height -. 0.8) 0.4 0.022;
+  Cairo.rectangle ctx 0. 0.778 0.4 0.022;
+  Cairo.rectangle ctx 0.07 0.8 0.022 0.4;
+  Cairo.rectangle ctx 0. 0.965 0.07 0.07;
+  Cairo.stroke ctx;
+  Cairo.arc ctx 0.035 1. 0.0175 0. (2.*.pi);
   Cairo.stroke ctx;
   Cairo.set_line_width ctx (1. /. scale);
-  Cairo.arc ctx 0.15 (world_height -. 0.45) 0.05 0. (2.*.pi);
-  set_color ctx Red;
-  Cairo.fill ctx;
 
-  Cairo.move_to ctx world_width world_height;
-  Cairo.line_to ctx (world_width-.0.39) world_height;
-  Cairo.line_to ctx (world_width-.0.39) (world_height -. 0.3);
-  Cairo.arc ctx world_width (world_height -. 0.3) 0.39 pi (3.*.pi/.2.);
-  Cairo.move_to ctx world_width world_height;
-  set_color ctx Light_gray;
-  Cairo.fill ctx;
-  Cairo.move_to ctx (world_width-.0.39) world_height;
-  Cairo.line_to ctx (world_width-.0.39) (world_height -. 0.3);
-  Cairo.arc ctx world_width (world_height -. 0.3) 0.39 pi (3.*.pi/.2.);
-  Cairo.set_line_width ctx (5. /. scale);
+  Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.778) 0.4 0.378;
   set_color ctx Yellow;
+  Cairo.fill ctx;
+  Cairo.move_to ctx world_width (world_height -. 0.778);
+  Cairo.line_to ctx (world_width -. 0.4) (world_height -. 0.778);
+  Cairo.line_to ctx (world_width -. 0.4) (world_height -. 0.8);
+  Cairo.line_to ctx (world_width -. 0.45) (world_height -. 0.8);
+  Cairo.arc ctx (world_width -. 0.45) 1. 0.2 (pi/.2.) (3.*.pi/.2.);
+  Cairo.line_to ctx (world_width -. 0.4) 0.8;
+  Cairo.line_to ctx (world_width -. 0.4) 0.778;
+  Cairo.line_to ctx world_width 0.7788;
+  Cairo.line_to ctx world_width (world_height -. 0.778);
+  set_color ctx Green;
+  Cairo.fill ctx;
+  Cairo.rectangle ctx (world_width -. 0.4) 0.4 0.4 0.378;
+  set_color ctx Yellow;
+  Cairo.fill ctx;
+  Cairo.set_line_width ctx (2. /. scale);
+  set_color ctx Black;
+  Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.8) 0.4 0.022;
+  Cairo.rectangle ctx (world_width -. 0.4) 0.778 0.4 0.022;
+  Cairo.rectangle ctx (world_width -. 0.092) 0.8 0.022 0.4;
+  Cairo.rectangle ctx (world_width -. 0.07) 0.965 0.07 0.07;
+  Cairo.stroke ctx;
+  Cairo.arc ctx (world_width -. 0.035) 1. 0.0175 0. (2.*.pi);
   Cairo.stroke ctx;
   Cairo.set_line_width ctx (1. /. scale);
-  Cairo.arc ctx (world_width -. 0.15) (world_height -. 0.45) 0.05 0. (2.*.pi);
-  set_color ctx Yellow;
-  Cairo.fill ctx;
 
   (* draw the baskets *)
-  Cairo.rectangle ctx 0.4 (world_height-.0.3) 0.7 0.17;
+(*  Cairo.rectangle ctx 0.4 (world_height-.0.3) 0.7 0.17;
   set_color ctx Red;
   Cairo.fill ctx;
   set_color ctx Black;
@@ -312,6 +332,7 @@ let draw viewer =
     Cairo.fill ctx;
   in
   List.iter (fun ({x;y}, alpha) -> draw_fire x y alpha) viewer.fires;
+*)
 
   (* Draw moving objects *)
   List.iter
