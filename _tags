@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40)
 
 # OASIS_START
-# DO NOT EDIT (digest: 1a50c27254f770e82a5107f337c50694)
+# DO NOT EDIT (digest: 864a12b52af711cbd44c9cb00e10de88)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -89,6 +89,15 @@ true: annot, bin_annot
 <src/tools/viewer/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/viewer/*.ml{,i,y}>: pkg_lwt.unix
 <src/tools/viewer/*.ml{,i,y}>: use_krobot
+# Executable krobot-simulator
+<src/tools/simulator/krobot_simulator.{native,byte}>: pkg_lwt.react
+<src/tools/simulator/krobot_simulator.{native,byte}>: pkg_lwt.syntax
+<src/tools/simulator/krobot_simulator.{native,byte}>: pkg_lwt.unix
+<src/tools/simulator/krobot_simulator.{native,byte}>: use_krobot
+<src/tools/simulator/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/simulator/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/simulator/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/simulator/*.ml{,i,y}>: use_krobot
 # Executable krobot-demo
 <src/tools/demo/demo.{native,byte}>: pkg_lwt.react
 <src/tools/demo/demo.{native,byte}>: pkg_lwt.syntax
