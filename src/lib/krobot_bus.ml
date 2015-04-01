@@ -24,6 +24,11 @@ type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
 
+type mover_message =
+  | Planning_error
+  | Planning_done
+  | Idle
+
 type message =
   | CAN of frame_source * Krobot_can.frame
   | Log of string
@@ -34,7 +39,9 @@ type message =
   | Trajectory_add_vertice of vertice * vector option
   | Trajectory_simplify of float
   | Trajectory_go
+  | Goto of vertice
   | Trajectory_find_path
+  | Mover_message of mover_message
   | Objects of (vertice*float) list
   | Sharps of float array
   | Set_fake_beacons of vertice option * vertice option
@@ -114,8 +121,17 @@ let string_of_message = function
         tolerance
   | Trajectory_go ->
       "Trajectory_go"
+  | Goto v ->
+    sprintf
+      "Goto %s" (string_of_vertice v)
   | Trajectory_find_path ->
-      "Trajectory_find_path"
+    "Trajectory_find_path"
+  | Mover_message mover_message ->
+    begin match mover_message with
+      | Planning_error -> "Mover: Planning_error"
+      | Planning_done -> "Mover: Planning_done"
+      | Idle -> "Mover: Idle"
+    end
   | Objects objects ->
       sprintf
         "Objects [%s]"

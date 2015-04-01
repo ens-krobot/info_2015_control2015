@@ -24,6 +24,7 @@ type robot = {
 type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
+  obstacles : Krobot_rectangle_path.obstacle list; (* TODO: fill that *)
 }
 
 type state =
@@ -32,10 +33,11 @@ type state =
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
+  | Transition_to_Goto of Krobot_geom.vertice
   | Stop of float
 
 type message =
-  | Bus of Krobot_bus.message
+  | Bus of Krobot_bus.mover_message
   | CAN of Krobot_message.t
 
 type output = {
@@ -53,11 +55,12 @@ let init_world = {
   };
 
   prepared_vertices = [];
+  obstacles = [];
 }
 
 let init_state = Transition_to_Idle
 
-let name = "demo"
+let name = "mover"
 
 let time_zero = Unix.gettimeofday ()
 let current_time () = Unix.gettimeofday () -. time_zero
@@ -141,9 +144,12 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
       Lwt_log.ign_info_f "msg: %s" (string_of_message message);
       Some (world, Message message)
 
-let idle world =
+let idle ~notify world =
   { timeout = 1.;
-    messages = [];
+    messages =
+      if notify
+      then [Bus Idle]
+      else [];
     world;
     state = Idle }
 
@@ -154,13 +160,18 @@ let general_step (input:input) (world:world) (state:state) : output =
   match state with
   | Transition_to_Idle ->
     Lwt_log.ign_info_f "Idle";
-    idle world
+    idle ~notify:true world
   | Idle -> begin match input with
+    | Message (Goto dest) ->
+      { timeout = 0.01;
+        messages = [];
+        world;
+        state = Transition_to_Goto dest }
     | Message Trajectory_go -> begin
         match List.rev world.prepared_vertices with
         | [] ->
           Lwt_log.ign_warning_f "nowhere to go";
-          idle world
+          idle ~notify:true world
         | (dest, theta) :: rest ->
           Lwt_log.ign_warning_f "Run Go";
           { timeout = 1.;
@@ -170,9 +181,9 @@ let general_step (input:input) (world:world) (state:state) : output =
       end
     | Timeout ->
       Lwt_log.ign_info_f "still idle...";
-      idle world
+      idle ~notify:true world
     | _ ->
-      idle world
+      idle ~notify:false world
   end
   | Transition_to_Moving_to ((dest, theta), rest) -> begin
       let open Krobot_geom in
@@ -211,6 +222,27 @@ let general_step (input:input) (world:world) (state:state) : output =
       messages = [CAN motor_stop];
       world;
       state = Stop t }
+  | Transition_to_Goto dest ->
+    Lwt_log.ign_info_f "Goto";
+    let path =
+      Krobot_rectangle_path.find_path
+        ~src:world.robot.position
+        ~dst:dest
+        ~obstacles:world.obstacles in
+    begin match path with
+      | [] ->
+        { timeout = 0.01;
+          messages = [Bus Planning_error];
+          world;
+          state = Transition_to_Idle }
+      | h::t ->
+        let theta = world.robot.orientation in
+        let rest = List.map (fun v -> v, theta) t in
+        { timeout = 0.01;
+          messages = [Bus Planning_done];
+          world;
+          state = Transition_to_Moving_to ((h, theta), rest) }
+    end
   | Stop stopped ->
     let state, msg =
       match input with
@@ -252,7 +284,7 @@ let next_event ev (recv:receiver) timeout =
     Lwt.return (mk_recv ev, Some msg)
 
 let send_msg bus time = function
-  | Bus m -> Krobot_bus.send bus (time, m)
+  | Bus m -> Krobot_bus.send bus (time, Mover_message m)
   | CAN c -> Krobot_bus.send bus (time, CAN (Info, Krobot_message.encode c))
 
 let main_loop bus ev =

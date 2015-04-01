@@ -891,12 +891,12 @@ lwt () =
     (ui#button_goto#event#connect#button_release
        (fun ev ->
           if GdkEvent.Button.button ev = 1 then begin
-            match viewer.planner_path with
-            | curve :: _ ->
-              Lwt_log.ign_warning ~section "not implemented"
-            (* ignore (Krobot_bus.send bus (Unix.gettimeofday (), Strategy_set [Krobot_action.Goto(Bezier.dst curve,None)])) *)
-            | _ ->
-                  ()
+            match !button_1_state with
+            | Some point ->
+              Lwt_log.ign_warning_f ~section "goto";
+              ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (), Goto point))
+            | None ->
+              ()
           end;
           false));
 

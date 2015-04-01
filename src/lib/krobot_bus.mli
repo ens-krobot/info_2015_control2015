@@ -28,6 +28,11 @@ type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
 
+type mover_message =
+  | Planning_error
+  | Planning_done
+  | Idle
+
 (** Type of message exchanged over the bus. *)
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -51,8 +56,12 @@ type message =
       (** Simplify the trajectory with the given tolerance. *)
   | Trajectory_go
       (** Follow currently registered trajectory. *)
+  | Goto of vertice
+      (** Find a trajectory to that point and go. *)
   | Trajectory_find_path
       (** Find a path avoiding objects. *)
+
+  | Mover_message of mover_message
 
   (** Objects *)
 
