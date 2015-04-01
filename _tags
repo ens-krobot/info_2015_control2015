@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40)
 
 # OASIS_START
-# DO NOT EDIT (digest: 864a12b52af711cbd44c9cb00e10de88)
+# DO NOT EDIT (digest: a68237a2790463bd6be80c4071efecb7)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -98,13 +98,13 @@ true: annot, bin_annot
 <src/tools/simulator/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/simulator/*.ml{,i,y}>: pkg_lwt.unix
 <src/tools/simulator/*.ml{,i,y}>: use_krobot
-# Executable krobot-demo
-<src/tools/demo/demo.{native,byte}>: pkg_lwt.react
-<src/tools/demo/demo.{native,byte}>: pkg_lwt.syntax
-<src/tools/demo/demo.{native,byte}>: pkg_lwt.unix
-<src/tools/demo/demo.{native,byte}>: use_krobot
-<src/tools/demo/*.ml{,i,y}>: pkg_lwt.react
-<src/tools/demo/*.ml{,i,y}>: pkg_lwt.syntax
-<src/tools/demo/*.ml{,i,y}>: pkg_lwt.unix
-<src/tools/demo/*.ml{,i,y}>: use_krobot
+# Executable krobot-mover
+<src/tools/mover/mover.{native,byte}>: pkg_lwt.react
+<src/tools/mover/mover.{native,byte}>: pkg_lwt.syntax
+<src/tools/mover/mover.{native,byte}>: pkg_lwt.unix
+<src/tools/mover/mover.{native,byte}>: use_krobot
+<src/tools/mover/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/mover/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/mover/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/mover/*.ml{,i,y}>: use_krobot
 # OASIS_STOP

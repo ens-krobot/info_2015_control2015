@@ -545,11 +545,12 @@ let translate_coords viewer x y =
   let x = (x -. x0) /. scale -. 0.102 and y = world_height -. ((y -. y0) /. scale -. 0.102) in
   (x, y)
 
-let add_point viewer x y =
+let add_point viewer ?dir x y =
   let x, y = translate_coords viewer x y in
   if x >= 0. && x < world_width && y >= 0. && y < world_height then
     (* let () = Lwt_log.ign_info_f "add point (%f, %f)" x y in *)
-    ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (), Trajectory_add_vertice { x; y }))
+    ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (),
+                                        Trajectory_add_vertice ({ x; y }, dir)))
 
 let clear viewer =
   ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (), Trajectory_set_vertices []))
@@ -744,6 +745,8 @@ let handle_message viewer (timestamp, message) =
    | Entry point                                                     |
    +-----------------------------------------------------------------+ *)
 
+let button_1_state = ref None
+
 lwt () =
   (* Display all informative messages. *)
   Lwt_log.append_rule "*" Lwt_log.Info;
@@ -810,7 +813,10 @@ lwt () =
        (fun ev ->
          match GdkEvent.Button.button ev with
            | 1 ->
-             add_point viewer (GdkEvent.Button.x ev) (GdkEvent.Button.y ev);
+             let x = GdkEvent.Button.x ev in
+             let y = GdkEvent.Button.y ev in
+             add_point viewer x y;
+             button_1_state := Some {x;y};
              true
            | 3 ->
              set_beacons viewer (GdkEvent.Button.x ev) (GdkEvent.Button.y ev);
@@ -818,11 +824,27 @@ lwt () =
            | _ ->
              false));
 
-  ignore
-    (ui#scene#event#connect#motion_notify
-       (fun ev ->
-         add_point viewer (GdkEvent.Motion.x ev) (GdkEvent.Motion.y ev);
-         true));
+  (* ignore *)
+  (*   (ui#scene#event#connect#motion_notify *)
+  (*      (fun ev -> *)
+  (*        add_point viewer (GdkEvent.Motion.x ev) (GdkEvent.Motion.y ev); *)
+  (*        true)); *)
+
+  (* ignore *)
+  (*   (ui#scene#event#connect#button_release *)
+  (*      (fun ev -> *)
+  (*         match GdkEvent.Button.button ev with *)
+  (*         | 1 -> begin match !button_1_state with *)
+  (*           | None -> true *)
+  (*           | Some click -> *)
+  (*             button_1_state := None; *)
+  (*             let x = GdkEvent.Button.x ev in *)
+  (*             let y = GdkEvent.Button.y ev in *)
+  (*             let dir = Krobot_geom.vector click {x;y} in *)
+  (*             add_point viewer ~dir click.x click.y; *)
+  (*             true *)
+  (*         end *)
+  (*         | _ -> false)); *)
 
   ignore
     (ui#button_clear_beacon#connect#clicked

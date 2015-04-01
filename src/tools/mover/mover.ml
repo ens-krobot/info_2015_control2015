@@ -1,5 +1,5 @@
-open Krobot_bus;;
-open Krobot_message;;
+open Krobot_bus
+open Krobot_message
 
 type world_update =
   | Position_updated
@@ -23,12 +23,12 @@ type robot = {
 
 type world = {
   robot : robot;
-  prepared_vertices : Krobot_geom.vertice list;
+  prepared_vertices : (Krobot_geom.vertice * float) list;
 }
 
 type state =
-  | Transition_to_Moving_to of Krobot_geom.vertice * (Krobot_geom.vertice list)
-  | Moving_to of Krobot_geom.vertice * (Krobot_geom.vertice list)
+  | Transition_to_Moving_to of (Krobot_geom.vertice * float) * ((Krobot_geom.vertice * float) list)
+  | Moving_to of (Krobot_geom.vertice * float) * ((Krobot_geom.vertice * float) list)
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
@@ -121,14 +121,19 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
       let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) l in
       let s = String.concat ", " s in
       Lwt_log.ign_info_f "Set vertice [%s]" s;
+      let l = List.map (fun v -> (v, world.robot.orientation)) l in
       Some ({ world with prepared_vertices = l },
             World_updated New_vertice)
-    | Trajectory_add_vertice v ->
-      Lwt_log.ign_info_f "Add vertice (%f, %f)" v.Krobot_geom.x v.Krobot_geom.y;
-      let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) (v :: world.prepared_vertices) in
+    | Trajectory_add_vertice (v, dir) ->
+      let theta = match dir with
+        | None -> world.robot.orientation
+        | Some vect -> Krobot_geom.angle vect
+      in
+      Lwt_log.ign_info_f "Add vertice (%f, %f, %f)" v.Krobot_geom.x v.Krobot_geom.y theta;
+      let s = List.map (fun ({Krobot_geom.x;y}, theta) -> Printf.sprintf "(%f, %f, %f)" x y theta) ((v, theta) :: world.prepared_vertices) in
       let s = String.concat ", " s in
       Lwt_log.ign_info_f "vertice [%s]" s;
-      Some ({ world with prepared_vertices = v :: world.prepared_vertices },
+      Some ({ world with prepared_vertices = (v, theta) :: world.prepared_vertices },
             World_updated New_vertice)
     | Log _ ->
       None
@@ -156,12 +161,12 @@ let general_step (input:input) (world:world) (state:state) : output =
         | [] ->
           Lwt_log.ign_warning_f "nowhere to go";
           idle world
-        | dest :: rest ->
+        | (dest, theta) :: rest ->
           Lwt_log.ign_warning_f "Run Go";
           { timeout = 1.;
             messages = [];
             world = { world with prepared_vertices = [] };
-            state = Transition_to_Moving_to (dest, rest) }
+            state = Transition_to_Moving_to ((dest, theta), rest) }
       end
     | Timeout ->
       Lwt_log.ign_info_f "still idle...";
@@ -169,30 +174,30 @@ let general_step (input:input) (world:world) (state:state) : output =
     | _ ->
       idle world
   end
-  | Transition_to_Moving_to (dest, rest) -> begin
+  | Transition_to_Moving_to ((dest, theta), rest) -> begin
       let open Krobot_geom in
-      Lwt_log.ign_info_f "Moving_to (%f, %f)" dest.x dest.y;
+      Lwt_log.ign_info_f "Moving_to (%f, %f, %f)" dest.x dest.y theta;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
-      let goto = Motor_omni_goto(dest.x, dest.y, world.robot.orientation) in
+      let goto = Motor_omni_goto(dest.x, dest.y, theta) in
       { timeout = 1.;
         messages = [CAN goto];
         world;
-        state = Moving_to (dest, rest) }
+        state = Moving_to ((dest, theta), rest) }
     end
-  | Moving_to (dest, rest) -> begin
+  | Moving_to (dest_theta, rest) -> begin
       let next_step = function
         | [] -> Idle
-        | dest :: rest -> Transition_to_Moving_to (dest, rest) in
+        | dest_theta :: rest -> Transition_to_Moving_to (dest_theta, rest) in
       let state =
         match input with
         | World_updated Motor_stopped ->
           next_step rest
         | Timeout when world.robot.motors_moving ->
           Lwt_log.ign_info_f "still moving...";
-          Moving_to (dest, rest)
+          Moving_to (dest_theta, rest)
         | Timeout ->
           next_step rest
-        | _ -> Moving_to (dest, rest)
+        | _ -> Moving_to (dest_theta, rest)
       in
       { timeout = safe_stop_time;
         messages = [];

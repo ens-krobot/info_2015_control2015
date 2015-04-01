@@ -31,7 +31,7 @@ type message =
   | Kill of string
   | Trajectory_path of Bezier.curve list
   | Trajectory_set_vertices of vertice list
-  | Trajectory_add_vertice of vertice
+  | Trajectory_add_vertice of vertice * vector option
   | Trajectory_simplify of float
   | Trajectory_go
   | Trajectory_find_path
@@ -104,10 +104,10 @@ let string_of_message = function
       sprintf
         "Trajectory_set_vertices [%s]"
         (String.concat "; " (List.map string_of_vertice l))
-  | Trajectory_add_vertice v ->
+  | Trajectory_add_vertice (v, dir) ->
       sprintf
-        "Trajectory_add_vertice %s"
-        (string_of_vertice v)
+        "Trajectory_add_vertice %s %s"
+        (string_of_vertice v) (string_of_option string_of_vector dir)
   | Trajectory_simplify tolerance ->
       sprintf
         "Trajectory_simplify %f"

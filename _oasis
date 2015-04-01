@@ -123,14 +123,14 @@ Executable "krobot-simulator"
   BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
-# | State machine demo                                                |
+# | State machine mover                                               |
 # +-------------------------------------------------------------------+
 
-Executable "krobot-demo"
-  Path: src/tools/demo/
+Executable "krobot-mover"
+  Path: src/tools/mover/
   Install: true
   CompiledObject: best
-  MainIs: demo.ml
+  MainIs: mover.ml
   BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+

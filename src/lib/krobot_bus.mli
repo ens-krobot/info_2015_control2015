@@ -45,7 +45,7 @@ type message =
       (** The planned trajectory. *)
   | Trajectory_set_vertices of vertice list
       (** Sets the trajectory. *)
-  | Trajectory_add_vertice of vertice
+  | Trajectory_add_vertice of vertice * vector option
       (** Add a vertice to the trajectory. *)
   | Trajectory_simplify of float
       (** Simplify the trajectory with the given tolerance. *)
