@@ -135,6 +135,18 @@ Executable "krobot-mover"
   BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
+# | Forward urg information to the bus                                |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-urg"
+  Path: src/tools/urg/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: main.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
 # | Doc                                                               |
 # +-------------------------------------------------------------------+
 
