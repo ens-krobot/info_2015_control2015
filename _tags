@@ -1,5 +1,5 @@
 <**/*.ml{,i}>: syntax_camlp4o
-<**/*.ml{,i}>: warn(-3-40)
+<**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
 # DO NOT EDIT (digest: a68237a2790463bd6be80c4071efecb7)
