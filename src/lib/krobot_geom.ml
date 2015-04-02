@@ -138,6 +138,38 @@ let diff_angle dir ~start ~stop =
   | Trigo -> d
   | Antitrigo -> -. (2.*.pi -. d)
 
+let epsilon = 0.00000000001
+
+let between ~v ~a ~b =
+  min a b <= v +. epsilon
+  && max a b >= v -. epsilon
+
+let segment_intersect
+    ({x = x_1; y = y_1}, {x = x_2; y = y_2})
+    ({x = x_3; y = y_3}, {x = x_4; y = y_4}) =
+
+  let colin_coef = (x_1 -. x_2) *. (y_3 -. y_4) -. (y_1 -. y_2)*.(x_3 -. x_4) in
+  if abs_float colin_coef <= epsilon then
+    (* Colinear segments: no intersection *)
+    None
+  else
+    let px = ( (x_1*.y_2 -. y_1*.x_2) *. (x_3 -. x_4)
+               -. (x_1 -. x_2) *. (x_3*.y_4 -. y_3*.x_4) )
+             /. colin_coef
+    in
+    let py = ( (x_1*.y_2 -. y_1*.x_2) *. (y_3 -. y_4)
+               -. (y_1 -. y_2)*.(x_3*.y_4 -. y_3*.x_4) )
+             /. colin_coef
+    in
+
+    if
+      between px x_1 x_2
+      && between px x_3 x_4
+      && between py y_1 y_2
+      && between py y_3 y_4
+    then Some { x = px; y = py }
+    else None
+
 (* +-----------------------------------------------------------------+
    | Cubic bezier curves                                             |
    +-----------------------------------------------------------------+ *)

@@ -47,6 +47,8 @@ Library krobot
     Krobot_pathfinding,
     Krobot_config,
     Krobot_path,
+    Krobot_heap,
+    Krobot_rectangle_path,
     Krobot_world_update,
     Krobot_ax12_format
   CSources:
