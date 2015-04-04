@@ -747,6 +747,16 @@ let handle_message viewer (timestamp, message) =
 
 let button_1_state = ref None
 
+let rem_button_1_state viewer x y =
+  let x, y = translate_coords viewer x y in
+  if x >= 0. && x < world_width && y >= 0. && y < world_height then
+    button_1_state := Some {x;y}
+  else
+    button_1_state := None
+
+let clear_button_1_state () =
+  button_1_state := None
+
 lwt () =
   (* Display all informative messages. *)
   Lwt_log.append_rule "*" Lwt_log.Info;
@@ -816,7 +826,7 @@ lwt () =
              let x = GdkEvent.Button.x ev in
              let y = GdkEvent.Button.y ev in
              add_point viewer x y;
-             button_1_state := Some {x;y};
+             rem_button_1_state viewer x y;
              true
            | 3 ->
              set_beacons viewer (GdkEvent.Button.x ev) (GdkEvent.Button.y ev);
@@ -884,6 +894,7 @@ lwt () =
     (ui#button_go#event#connect#button_release
        (fun ev ->
           if GdkEvent.Button.button ev = 1 then
+            clear_button_1_state ();
             ignore (Krobot_bus.send bus (Unix.gettimeofday (), Trajectory_go));
           false));
 
@@ -893,10 +904,11 @@ lwt () =
           if GdkEvent.Button.button ev = 1 then begin
             match !button_1_state with
             | Some point ->
-              Lwt_log.ign_warning_f ~section "goto";
-              ignore (Krobot_bus.send viewer.bus (Unix.gettimeofday (), Goto point))
+              clear_button_1_state ();
+              ignore (Krobot_bus.send bus (Unix.gettimeofday (), Goto point));
+              Lwt_log.ign_warning_f ~section "goto"
             | None ->
-              ()
+              Lwt_log.ign_warning_f ~section "nowhere to goto"
           end;
           false));
 
