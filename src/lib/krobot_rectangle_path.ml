@@ -54,7 +54,7 @@ let epsilon = 0.00000001
 let add_vertices_and_blocking { vertices; blocking } (v1,v2) =
   let {x = x1; y = y1} = v1 in
   let {x = x2; y = y2} = v2 in
-  let radius = Krobot_config.robot_radius in
+  let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin) in
   let min_x = min x1 x2 -. radius in
   let max_x = max x1 x2 +. radius in
   let min_y = min y1 y2 -. radius in
