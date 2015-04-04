@@ -34,7 +34,7 @@ type state =
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
-  | Transition_to_Goto of Krobot_geom.vertice
+  | Transition_to_Goto of Krobot_geom.vertice * bool
   | Stop of float
 
 type message =
@@ -184,7 +184,19 @@ let general_step (input:input) (world:world) (state:state) : output =
       { timeout = 0.01;
         messages = [];
         world;
-        state = Transition_to_Goto dest }
+        state = Transition_to_Goto (dest, true) }
+    | Message Trajectory_find_path -> begin
+        match world.prepared_vertices with
+        | [] ->
+          Lwt_log.ign_warning_f "nowhere to go";
+          idle ~notify:true world
+        | (dest, _) :: _ ->
+          Lwt_log.ign_warning_f "Path finding...";
+          { timeout = 0.01;
+            messages = [];
+            world = { world with prepared_vertices = [] };
+            state = Transition_to_Goto (dest, false) }
+      end
     | Message Trajectory_go -> begin
         match List.rev world.prepared_vertices with
         | [] ->
@@ -245,7 +257,7 @@ let general_step (input:input) (world:world) (state:state) : output =
       messages = [CAN motor_stop];
       world;
       state = Stop t }
-  | Transition_to_Goto dest ->
+  | Transition_to_Goto (dest, move) ->
     Lwt_log.ign_info_f "Goto";
     let path =
       Krobot_rectangle_path.find_path
@@ -261,10 +273,16 @@ let general_step (input:input) (world:world) (state:state) : output =
       | h::t ->
         let theta = world.robot.orientation in
         let rest = List.map (fun v -> v, theta) t in
-        { timeout = 0.01;
-          messages = [Bus Planning_done];
-          world = {world with prepared_vertices = []};
-          state = Transition_to_Moving_to ((h, theta), rest) }
+        if move then
+          { timeout = 0.01;
+            messages = [Bus Planning_done];
+            world = {world with prepared_vertices = []};
+            state = Transition_to_Moving_to ((h, theta), rest) }
+        else
+          { timeout = 0.01;
+            messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
+            world = {world with prepared_vertices = (h,theta)::rest};
+            state = Transition_to_Idle }
     end
   | Stop stopped ->
     let state, msg =
