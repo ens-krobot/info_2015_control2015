@@ -1,5 +1,6 @@
 open Krobot_bus
 open Krobot_message
+open Krobot_geom
 
 type world_update =
   | Position_updated
@@ -39,6 +40,7 @@ type state =
 type message =
   | Bus of Krobot_bus.mover_message
   | CAN of Krobot_message.t
+  | Msg of Krobot_bus.message
 
 type output = {
   timeout : float; (* in seconds *)
@@ -78,7 +80,18 @@ end = struct
     max 0. (dest -. now ())
 end
 
-let update_world : world -> Krobot_bus.message -> (world * input) option =
+let generate_path_display world waypoints =
+  let _, curves = List.fold_left (fun (prev_vert,curves) (vert,_) ->
+    let dir = vector prev_vert vert in
+    let cp1 = translate prev_vert (dir *| 0.1) in
+    let cp2 = translate vert (dir *| -0.1) in
+    vert, (Bezier.of_vertices prev_vert cp1 cp2 vert) :: curves )
+    (world.robot.position,[])
+    waypoints
+  in
+  curves
+
+let update_world : world -> Krobot_bus.message -> ((world * input) option) * (message list) =
   fun world message ->
     match message with
     | Kill killed when killed = name ->
@@ -92,12 +105,13 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
           let orientation = math_mod_float theta (2. *. pi) in
           if position = world.robot.position (* maybe add a threshold ? *)
              && orientation = world.robot.orientation
-          then None
+          then None, []
           else
             Some
               ({ world with
                  robot = { world.robot with position;orientation } },
-               World_updated Position_updated)
+               World_updated Position_updated),
+            []
 
         | Motor_status (b1, b2, b3, b4) ->
           let r = b1 || b2 || b3 || b4 in
@@ -114,11 +128,12 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
             in
             Some ({ world with
                     robot = { world.robot with motors_moving = r } },
-                  World_updated update)
+                  World_updated update),
+            []
           else
-            None
+            None, []
         | _ ->
-          Some (world, Message message)
+          Some (world, Message message), []
       end
     | Trajectory_set_vertices l ->
       let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) l in
@@ -126,7 +141,8 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
       Lwt_log.ign_info_f "Set vertice [%s]" s;
       let l = List.map (fun v -> (v, world.robot.orientation)) l in
       Some ({ world with prepared_vertices = l },
-            World_updated New_vertice)
+            World_updated New_vertice),
+      [Msg (Trajectory_path (generate_path_display world (List.rev l)))]
     | Trajectory_add_vertice (v, dir) ->
       let theta = match dir with
         | None -> world.robot.orientation
@@ -136,13 +152,15 @@ let update_world : world -> Krobot_bus.message -> (world * input) option =
       let s = List.map (fun ({Krobot_geom.x;y}, theta) -> Printf.sprintf "(%f, %f, %f)" x y theta) ((v, theta) :: world.prepared_vertices) in
       let s = String.concat ", " s in
       Lwt_log.ign_info_f "vertice [%s]" s;
-      Some ({ world with prepared_vertices = (v, theta) :: world.prepared_vertices },
-            World_updated New_vertice)
+      let new_vertices = (v, theta) :: world.prepared_vertices in
+      Some ({ world with prepared_vertices = new_vertices },
+            World_updated New_vertice),
+      [Msg (Trajectory_path (generate_path_display world (List.rev new_vertices)))]
     | Log _ ->
-      None
+      None, []
     | message ->
       Lwt_log.ign_info_f "msg: %s" (string_of_message message);
-      Some (world, Message message)
+      Some (world, Message message), []
 
 let idle ~notify world =
   { timeout = 1.;
@@ -191,7 +209,7 @@ let general_step (input:input) (world:world) (state:state) : output =
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
       { timeout = 1.;
-        messages = [CAN goto];
+        messages = [CAN goto; Msg (Trajectory_path (generate_path_display world ((dest, theta)::rest)))];
         world;
         state = Moving_to ((dest, theta), rest) }
     end
@@ -210,8 +228,13 @@ let general_step (input:input) (world:world) (state:state) : output =
           next_step rest
         | _ -> Moving_to (dest_theta, rest)
       in
+      let messages =
+        match state with
+        | Idle -> [Msg (Trajectory_path [])]
+        | _ -> []
+      in
       { timeout = safe_stop_time;
-        messages = [];
+        messages = messages;
         world;
         state }
     end
@@ -233,14 +256,14 @@ let general_step (input:input) (world:world) (state:state) : output =
       | [] ->
         { timeout = 0.01;
           messages = [Bus Planning_error];
-          world;
+          world = {world with prepared_vertices = []};
           state = Transition_to_Idle }
       | h::t ->
         let theta = world.robot.orientation in
         let rest = List.map (fun v -> v, theta) t in
         { timeout = 0.01;
           messages = [Bus Planning_done];
-          world;
+          world = {world with prepared_vertices = []};
           state = Transition_to_Moving_to ((h, theta), rest) }
     end
   | Stop stopped ->
@@ -286,15 +309,16 @@ let next_event ev (recv:receiver) timeout =
 let send_msg bus time = function
   | Bus m -> Krobot_bus.send bus (time, Mover_message m)
   | CAN c -> Krobot_bus.send bus (time, CAN (Info, Krobot_message.encode c))
+  | Msg m -> Krobot_bus.send bus (time, m)
 
 let main_loop bus ev =
   let rec aux recv world state timeout =
     lwt (recv,msg) = next_event ev recv Date.(time_to_wait timeout) in
-    let update =
+    let update, update_messages =
       match msg with
       | None ->
         (* Lwt_log.ign_info_f "timeout"; *)
-        Some (world, Timeout)
+        Some (world, Timeout), []
       | Some m -> update_world world m in
     match update with
     | None ->
@@ -302,6 +326,7 @@ let main_loop bus ev =
     | Some (world, input) ->
       let output = step input world state in
       let time = Unix.gettimeofday () in
+      lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) update_messages in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) output.messages in
       let timeout_date = Date.(add (now ()) output.timeout) in
       aux recv output.world output.state timeout_date in
