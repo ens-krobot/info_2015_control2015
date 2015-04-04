@@ -185,16 +185,17 @@ let draw viewer =
   Cairo.rectangle ctx 0. 0.4 0.4 0.378;
   set_color ctx Green;
   Cairo.fill ctx;
-  Cairo.set_line_width ctx (2. /. scale);
+  Cairo.set_line_width ctx 0.005;
   set_color ctx Black;
   Cairo.rectangle ctx 0. (world_height -. 0.8) 0.4 0.022;
   Cairo.rectangle ctx 0. 0.778 0.4 0.022;
-  Cairo.rectangle ctx 0.07 0.8 0.022 0.4;
+  Cairo.rectangle ctx 0.07 0.8 (-0.022) 0.165;
+  Cairo.rectangle ctx 0.07 1.2 (-0.022) (-0.165);
   Cairo.rectangle ctx 0. 0.965 0.07 0.07;
   Cairo.stroke ctx;
   Cairo.arc ctx 0.035 1. 0.0175 0. (2.*.pi);
   Cairo.stroke ctx;
-  Cairo.set_line_width ctx (1. /. scale);
+  Cairo.set_line_width ctx 0.001;
 
   Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.778) 0.4 0.378;
   set_color ctx Yellow;
@@ -213,126 +214,152 @@ let draw viewer =
   Cairo.rectangle ctx (world_width -. 0.4) 0.4 0.4 0.378;
   set_color ctx Yellow;
   Cairo.fill ctx;
-  Cairo.set_line_width ctx (2. /. scale);
+  Cairo.set_line_width ctx 0.005;
   set_color ctx Black;
   Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.8) 0.4 0.022;
   Cairo.rectangle ctx (world_width -. 0.4) 0.778 0.4 0.022;
-  Cairo.rectangle ctx (world_width -. 0.092) 0.8 0.022 0.4;
+  Cairo.rectangle ctx (world_width -. 0.07) 0.8 0.022 0.165;
+  Cairo.rectangle ctx (world_width -. 0.07) 1.2 0.022 (-0.165);
   Cairo.rectangle ctx (world_width -. 0.07) 0.965 0.07 0.07;
   Cairo.stroke ctx;
   Cairo.arc ctx (world_width -. 0.035) 1. 0.0175 0. (2.*.pi);
   Cairo.stroke ctx;
-  Cairo.set_line_width ctx (1. /. scale);
+  Cairo.set_line_width ctx 0.001;
 
-  (* draw the baskets *)
-(*  Cairo.rectangle ctx 0.4 (world_height-.0.3) 0.7 0.17;
-  set_color ctx Red;
-  Cairo.fill ctx;
-  set_color ctx Black;
-  Cairo.rectangle ctx 0.4 (world_height-.0.28) 0.02 0.28;
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 1.08 (world_height-.0.28) 0.02 0.28;
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 0.4 (world_height-.0.3) 0.7 0.02;
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 0.4 (world_height-.0.13);
-  Cairo.line_to ctx 1.1 (world_height-.0.13);
-  Cairo.stroke ctx;
-
-  Cairo.rectangle ctx 1.9 (world_height-.0.3) 0.7 0.17;
+  (* draw the stairs*)
+  Cairo.rectangle ctx 0.989 (world_height -. 0.022) 0.5 (-0.58 +. 0.022);
   set_color ctx Yellow;
   Cairo.fill ctx;
+  Cairo.rectangle ctx 2.011 (world_height -. 0.022) (-0.5) (-0.58 +. 0.022);
+  set_color ctx Green;
+  Cairo.fill ctx;
+  set_color ctx Light_gray;
+  Cairo.rectangle ctx 0.989 (world_height -. 0.3) 0.1 (-0.28);
+  Cairo.fill ctx;
+  Cairo.rectangle ctx 1.489 (world_height -. 0.3) (-0.1) (-0.28);
+  Cairo.fill ctx;
+  Cairo.rectangle ctx 1.511 (world_height -. 0.3) 0.1 (-0.28);
+  Cairo.fill ctx;
+  Cairo.rectangle ctx 2.011 (world_height -. 0.3) (-0.1) (-0.28);
+  Cairo.fill ctx;
+  Cairo.set_line_width ctx 0.005;
   set_color ctx Black;
-  Cairo.rectangle ctx 1.9 (world_height-.0.28) 0.02 0.28;
+  Cairo.rectangle ctx 0.967 world_height 0.022 (-0.58);
   Cairo.stroke ctx;
-  Cairo.rectangle ctx 2.58 (world_height-.0.28) 0.02 0.28;
+  Cairo.rectangle ctx 1.489 world_height 0.022 (-0.58);
   Cairo.stroke ctx;
-  Cairo.rectangle ctx 1.9 (world_height-.0.3) 0.7 0.02;
+  Cairo.rectangle ctx 2.011 world_height 0.022 (-0.58);
   Cairo.stroke ctx;
-  Cairo.move_to ctx 1.9 (world_height-.0.13);
-  Cairo.line_to ctx 2.6 (world_height-.0.13);
+  Cairo.rectangle ctx 0.989 world_height 0.5 (-0.022);
   Cairo.stroke ctx;
+  Cairo.rectangle ctx 1.511 world_height 0.5 (-0.022);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.967 (world_height -. 0.37);
+  Cairo.line_to ctx 2.033 (world_height -. 0.37);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.989 (world_height -. 0.44);
+  Cairo.line_to ctx 1.489 (world_height -. 0.44);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.989 (world_height -. 0.51);
+  Cairo.line_to ctx 1.489 (world_height -. 0.51);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.989 (world_height -. 0.58);
+  Cairo.line_to ctx 1.489 (world_height -. 0.58);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 1.511 (world_height -. 0.44);
+  Cairo.line_to ctx 2.011 (world_height -. 0.44);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 1.511 (world_height -. 0.51);
+  Cairo.line_to ctx 2.011 (world_height -. 0.51);
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 1.511 (world_height -. 0.58);
+  Cairo.line_to ctx 2.011 (world_height -. 0.58);
+  Cairo.stroke ctx;
+  Cairo.set_line_width ctx 0.01;
 
-  (* draw the trees *)
-  let draw_tree x y rad alpha = begin
-    Cairo.arc ctx x y rad 0. (2.*.pi);
-    set_color ctx Green;
-    Cairo.fill ctx;
-    Cairo.arc ctx x y rad 0. (2.*.pi);
-    set_color ctx Black;
-    Cairo.stroke ctx;
-    set_color ctx Black;
-    let rec draw_pt i =
-      let beta = (float i)*.pi/.3. +. alpha in
-      Cairo.arc ctx (x+.0.8*.rad*.(cos(beta))) (y+.0.8*.rad*.(sin(beta))) 0.01 0. (2.*.pi);
-      Cairo.fill ctx;
-      if i < 5 then draw_pt (i+1);
-    in
-    draw_pt 0;
-  end in
-  draw_tree 0. (world_height-.1.3) 0.15 (pi/.2.);
-  draw_tree 0.7 0. 0.15 0.;
-  draw_tree 2.3 0. 0.15 0.;
-  draw_tree world_width (world_height-.1.3) 0.15 (pi/.2.);
+  (* draw the spot-light area *)
+  Cairo.move_to ctx (world_width /. 2. -. 0.4) 0.;
+  Cairo.line_to ctx (world_width /. 2. -. 0.4) 0.1;
+  Cairo.arc_negative ctx (world_width /. 2. -. 0.3) 0.1 0.1 pi (pi/.2.);
+  Cairo.line_to ctx (world_width /. 2. +. 0.3) 0.2;
+  Cairo.arc_negative ctx (world_width /. 2. +. 0.3) 0.1 0.1 (pi/.2.) (0.);
+  Cairo.line_to ctx (world_width /. 2. +. 0.4) 0.;
+  set_color ctx Red;
+  Cairo.fill ctx;
+  Cairo.set_line_width ctx 0.005;
+  set_color ctx Black;
+  Cairo.rectangle ctx 1.2 0. 0.6 0.1;
+  Cairo.stroke ctx;
+  Cairo.arc ctx 1.25 0.05 0.0175 0. (2.*.pi);
+  Cairo.stroke ctx;
+  Cairo.arc ctx 1.75 0.05 0.0175 0. (2.*.pi);
+  Cairo.stroke ctx;
+  Cairo.set_line_width ctx 0.001;
 
   (* draw black lines *)
   set_color ctx Black;
-  Cairo.set_line_width ctx (5. /. scale);
+  Cairo.set_line_width ctx 0.02;
 
-  Cairo.move_to ctx 0. (world_height-.0.6);
-  Cairo.line_to ctx 1.2 (world_height-.0.6);
-  Cairo.arc ctx 1.2 (world_height-.0.45) 0.15 (3.*.pi/.2.) (2.*.pi);
-  Cairo.line_to ctx 1.35 world_height;
+  (* Yellow part *)
+  Cairo.move_to ctx 0.55 1.18;
+  Cairo.line_to ctx 0.55 0.3;
+  Cairo.arc_negative ctx 0.4 0.3 0.15 0. (3.*.pi/.2.);
+  Cairo.arc ctx 0.4 0. 0.15 (pi/.2.) pi;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.4 0.15;
+  Cairo.line_to ctx 0.86 0.15;
+  Cairo.arc ctx 0.86 0.3 0.15 (3.*.pi/.2.) 0.;
+  Cairo.arc_negative ctx 1.16 0.3 0.15 pi (pi/.2.);
+  Cairo.line_to ctx 1.5 0.45;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.55 0.;
+  Cairo.line_to ctx 0.55 0.15;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx 0.85 0.;
+  Cairo.line_to ctx 0.85 0.15;
+  Cairo.stroke ctx;
+  (* Green part *)
+  Cairo.move_to ctx (world_width -. 0.55) 1.18;
+  Cairo.line_to ctx (world_width -. 0.55) 0.3;
+  Cairo.arc ctx (world_width -. 0.4) 0.3 0.15 pi (3.*.pi/.2.);
+  Cairo.arc_negative ctx (world_width -. 0.4) 0. 0.15 (pi/.2.) 0.;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx (world_width -. 0.4) 0.15;
+  Cairo.line_to ctx (world_width -. 0.86) 0.15;
+  Cairo.arc_negative ctx (world_width -. 0.86) 0.3 0.15 (3.*.pi/.2.) pi;
+  Cairo.arc ctx (world_width -. 1.16) 0.3 0.15 0. (pi/.2.);
+  Cairo.line_to ctx (world_width -. 1.5) 0.45;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx (world_width -. 0.55) 0.;
+  Cairo.line_to ctx (world_width -. 0.55) 0.15;
+  Cairo.stroke ctx;
+  Cairo.move_to ctx (world_width -. 0.85) 0.;
+  Cairo.line_to ctx (world_width -. 0.85) 0.15;
   Cairo.stroke ctx;
 
-  Cairo.move_to ctx world_width (world_height-.0.6);
-  Cairo.line_to ctx (world_width-.1.2) (world_height-.0.6);
-  Cairo.arc_negative ctx (world_width-.1.2) (world_height-.0.45) 0.15 (3.*.pi/.2.) pi;
-  Cairo.line_to ctx (world_width-.1.35) world_height;
+  Cairo.set_line_width ctx 0.001;
+
+  (* Draw pop-corn dispensers *)
+  Cairo.set_line_width ctx 0.005;
+  set_color ctx Black;
+  Cairo.rectangle ctx 0.265 world_height 0.07 (-0.07);
+  Cairo.stroke ctx;
+  Cairo.rectangle ctx 0.565 world_height 0.07 (-0.07);
+  Cairo.stroke ctx;
+  Cairo.rectangle ctx 2.365 world_height 0.07 (-0.07);
+  Cairo.stroke ctx;
+  Cairo.rectangle ctx 2.665 world_height 0.07 (-0.07);
+  Cairo.stroke ctx;
+  Cairo.arc ctx 0.3 (world_height -. 0.035) 0.025 0. (2.*.pi);
+  Cairo.stroke ctx;
+  Cairo.arc ctx 0.6 (world_height -. 0.035) 0.025 0. (2.*.pi);
+  Cairo.stroke ctx;
+  Cairo.arc ctx 2.4 (world_height -. 0.035) 0.025 0. (2.*.pi);
+  Cairo.stroke ctx;
+  Cairo.arc ctx 2.7 (world_height -. 0.035) 0.025 0. (2.*.pi);
   Cairo.stroke ctx;
 
-  Cairo.set_line_width ctx (1. /. scale);
-
-  (* Draw marking zones *)
-  Cairo.move_to ctx 0. 0.;
-  Cairo.line_to ctx 0.25 0.;
-  Cairo.arc ctx 0. 0. 0.25 0. (pi/.2.);
-  set_color ctx Brown;
-  Cairo.fill ctx;
-
-  Cairo.move_to ctx world_width 0.;
-  Cairo.line_to ctx (world_width-.0.25) 0.;
-  Cairo.arc_negative ctx world_width 0. 0.25 pi (pi/.2.);
-  set_color ctx Brown;
-  Cairo.fill ctx;
-
-  Cairo.arc ctx 1.5 (world_height-.1.05) 0.15 0. (2.*.pi);
-  set_color ctx Brown;
-  Cairo.fill ctx;
-
-  (* Draw torches *)
-  let draw_torch x y =
-    Cairo.arc ctx x y 0.08 0. (2.*.pi);
-    set_color ctx Brown;
-    Cairo.fill ctx;
-  in
-  List.iter (fun { x; y } -> draw_torch x y) viewer.torches;
-
-  (* Draw fires *)
-  let draw_fire x y alpha =
-    let dx1 = 0.07 *. (cos alpha) in
-    let dy1 = 0.07 *. (sin alpha) in
-    let dx2 = 0.018 *. (sin alpha) in
-    let dy2 = -0.018 *. (cos alpha) in
-    Cairo.move_to ctx (x-.dx1-.dx2) (y-.dy1-.dy2);
-    Cairo.line_to ctx (x+.dx1-.dx2) (y+.dy1-.dy2);
-    Cairo.line_to ctx (x+.dx1+.dx2) (y+.dy1+.dy2);
-    Cairo.line_to ctx (x-.dx1+.dx2) (y-.dy1+.dy2);
-    set_color ctx Black;
-    Cairo.fill ctx;
-  in
-  List.iter (fun ({x;y}, alpha) -> draw_fire x y alpha) viewer.fires;
-*)
+  Cairo.set_line_width ctx 0.001;
 
   (* Draw moving objects *)
   List.iter
