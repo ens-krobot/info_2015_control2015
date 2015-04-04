@@ -137,6 +137,17 @@ Executable "krobot-mover"
   BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
+# | Fake beacon emulator                                              |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-fake-beacons"
+  Path: src/tools/fake_beacons/
+  Install: true
+  CompiledObject: best
+  MainIs: krobot_fake_beacons.ml
+  BuildDepends: krobot, lwt.syntax
+
+# +-------------------------------------------------------------------+
 # | Forward urg information to the bus                                |
 # +-------------------------------------------------------------------+
 
