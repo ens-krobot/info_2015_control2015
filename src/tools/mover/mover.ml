@@ -324,7 +324,7 @@ let general_step (input:input) (world:world) (state:state) : output =
         else
           { timeout = 0.01;
             messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
-            world = {world with prepared_vertices = (h,theta)::rest};
+            world = {world with prepared_vertices = List.rev ((h,theta)::rest)};
             state = Transition_to_Idle }
     end
   | Stop stopped ->
