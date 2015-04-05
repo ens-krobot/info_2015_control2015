@@ -26,7 +26,7 @@ type robot = {
 type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
-  obstacles : Krobot_rectangle_path.obstacle list; (* TODO: fill that *)
+  obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
 }
 
@@ -59,7 +59,7 @@ let init_world = {
   };
 
   prepared_vertices = [];
-  obstacles = [];
+  obstacles = Krobot_config.fixed_obstacles;
   beacons = [];
 }
 
@@ -237,7 +237,7 @@ let general_step (input:input) (world:world) (state:state) : output =
           idle ~notify:true world
         | (dest, theta) :: rest ->
           Lwt_log.ign_warning_f "Run Go";
-          { timeout = 1.;
+          { timeout = 0.1;
             messages = [];
             world = { world with prepared_vertices = [] };
             state = Transition_to_Moving_to ((dest, theta), rest) }
@@ -253,7 +253,7 @@ let general_step (input:input) (world:world) (state:state) : output =
       Lwt_log.ign_info_f "Moving_to (%f, %f, %f)" dest.x dest.y theta;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
-      { timeout = 1.;
+      { timeout = 0.1;
         messages = [CAN goto; Msg (Trajectory_path (generate_path_display world ((dest, theta)::rest)))];
         world;
         state = Moving_to ((dest, theta), rest) }
@@ -295,38 +295,52 @@ let general_step (input:input) (world:world) (state:state) : output =
       state = Stop t }
   | Transition_to_Goto (dest, move) ->
     Lwt_log.ign_info_f "Goto";
-    let beacon_obstacles = List.fold_left (fun obstacles beacon ->
-      let dir = normalize { vx = 1.; vy = 1.} in
-      (translate beacon (dir *| Krobot_config.beacon_radius),
-       translate beacon (dir *| (-. Krobot_config.beacon_radius))) :: obstacles)
-      []
-      world.beacons
-    in
-    let path =
-      Krobot_rectangle_path.find_path
-        ~src:world.robot.position
-        ~dst:dest
-        ~obstacles:(beacon_obstacles @ world.obstacles) in
-    begin match path with
-      | [] ->
-        { timeout = 0.01;
-          messages = [Bus Planning_error];
-          world = {world with prepared_vertices = []};
-          state = Transition_to_Idle }
-      | h::t ->
-        let theta = world.robot.orientation in
-        let rest = List.map (fun v -> v, theta) t in
-        if move then
-          { timeout = 0.01;
-            messages = [Bus Planning_done];
-            world = {world with prepared_vertices = []};
-            state = Transition_to_Moving_to ((h, theta), rest) }
-        else
-          { timeout = 0.01;
-            messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
-            world = {world with prepared_vertices = List.rev ((h,theta)::rest)};
-            state = Transition_to_Idle }
+    if dest.x < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
+       dest.x > Krobot_config.world_width -. Krobot_config.robot_radius -. Krobot_config.safety_margin ||
+       dest.y < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
+       dest.y > Krobot_config.world_height -. Krobot_config.robot_radius -. Krobot_config.safety_margin
+    then begin
+      Lwt_log.ign_warning_f "Pathfinding error: destination out of game area";
+      { timeout = 0.01;
+        messages = [Bus Planning_error];
+        world = {world with prepared_vertices = []};
+        state = Transition_to_Idle }
     end
+    else
+      let beacon_obstacles = List.fold_left (fun obstacles beacon ->
+        let dir = normalize { vx = 1.; vy = 1.} in
+        let radius = (sqrt 2.) *. Krobot_config.beacon_radius in
+        (translate beacon (dir *| radius),
+         translate beacon (dir *| (-. radius))) :: obstacles)
+        []
+        world.beacons
+      in
+      let path =
+        Krobot_rectangle_path.find_path
+          ~src:world.robot.position
+          ~dst:dest
+          ~obstacles:(beacon_obstacles @ world.obstacles) in
+      begin match path with
+        | [] ->
+          Lwt_log.ign_warning_f "Pathfinding error: destination unreachable";
+          { timeout = 0.01;
+            messages = [Bus Planning_error];
+            world = {world with prepared_vertices = []};
+            state = Transition_to_Idle }
+        | h::t ->
+          let theta = world.robot.orientation in
+          let rest = List.map (fun v -> v, theta) t in
+          if move then
+            { timeout = 0.01;
+              messages = [Bus Planning_done];
+              world = {world with prepared_vertices = []};
+              state = Transition_to_Moving_to ((h, theta), rest) }
+          else
+            { timeout = 0.01;
+              messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
+              world = {world with prepared_vertices = List.rev ((h,theta)::rest)};
+              state = Transition_to_Idle }
+      end
   | Stop stopped ->
     let state, msg =
       match input with
