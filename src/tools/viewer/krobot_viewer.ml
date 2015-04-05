@@ -139,7 +139,7 @@ let draw viewer =
 
   (* Draw beacon supports *)
   Cairo.rectangle ctx (-0.102) (-0.102) 0.08 0.08;
-  set_color ctx Red;
+  set_color ctx Green;
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (-0.102) (world_height /. 2. -. 0.04) 0.08 0.08;
@@ -147,7 +147,7 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (-0.102) (world_height +. 0.022) 0.08 0.08;
-  set_color ctx Red;
+  set_color ctx Green;
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (-0.102) 0.08 0.08;
@@ -155,7 +155,7 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (world_height /. 2. -. 0.04) 0.08 0.08;
-  set_color ctx Red;
+  set_color ctx Green;
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (world_height +. 0.022) 0.08 0.08;
@@ -377,21 +377,49 @@ let draw viewer =
   Cairo.set_source_rgba ctx 1. 1. 1. 0.5;
   let () =
     List.iter
-      (fun { Krobot_geom.pos = { x; y }; Krobot_geom.size } ->
-        Cairo.arc ctx x y size 0. (2. *. pi);
-        Cairo.fill ctx)
+      (fun (c1,c2) ->
+         Cairo.rectangle ctx c1.x c1.y (c2.x -. c1.x) (c2.y -. c1.y);
+         Cairo.fill ctx)
       Krobot_config.fixed_obstacles
   in
 
-  (* Draw the robot bounding circle *)
+  (* Draw the robot safety-margin bounding circle *)
 
   Cairo.arc ctx viewer.state.pos.x viewer.state.pos.y
-    Krobot_config.robot_radius 0. (2. *. pi);
+    (Krobot_config.robot_radius +. Krobot_config.safety_margin) 0. (2. *. pi);
   Cairo.set_source_rgba ctx 1. 1. 1. 0.5;
   Cairo.fill ctx;
 
+  (* Draw the robot *)
+  Cairo.save ctx;
+  Cairo.translate ctx viewer.state.pos.x viewer.state.pos.y;
+  Cairo.rotate ctx viewer.state.theta;
+
+  Cairo.arc ctx 0. 0. Krobot_config.robot_radius 0. (2. *. pi);
+  Cairo.set_source_rgb ctx 0.8 0.8 0.8;
+  Cairo.fill ctx;
+
+  (* Draw architecture on robot *)
+  set_color ctx Black;
+  let wheel_angle = (2.*.pi/.3. -. pi/.2.) in
+  let x_delta = wheels_distance *. (cos wheel_angle) in
+  let y_delta = wheels_distance *. (sin wheel_angle) in begin
+    Cairo.move_to ctx 0. wheels_distance;
+    Cairo.line_to ctx x_delta (-. y_delta);
+    Cairo.line_to ctx (-. x_delta) (-. y_delta);
+    Cairo.line_to ctx 0. wheels_distance;
+    Cairo.line_to ctx 0. (-. y_delta);
+    Cairo.stroke ctx;
+  end;
+
+  Cairo.set_source_rgba ctx 0. 0. 1. 0.5;
+  Cairo.arc ctx 0. 0. 0.03 0. (2.*.pi);
+  Cairo.fill ctx;
+
+  Cairo.restore ctx;
+
   (* Draw the robot and the ghost *)
-  List.iter
+  (*List.iter
     (fun (state, (r,g,b,alpha)) ->
       Cairo.save ctx;
 
@@ -440,7 +468,7 @@ let draw viewer =
       Cairo.restore ctx)
     [(viewer.ghost, (1., 1., 1., 0.5));
      (viewer.state_indep, (0.8, 0.8, 1., 0.8));
-     (viewer.state, (0.8, 0.8, 0.8, 1.5));];
+      (viewer.state, (0.8, 0.8, 0.8, 1.5));];*)
 
   (* Draw the beacon *)
   let draw_beacon = function
@@ -940,19 +968,21 @@ lwt () =
           false));
 
   ignore
-    (ui#button_start_red#event#connect#button_release
+    (ui#button_start_yellow#event#connect#button_release
        (fun ev ->
-          if GdkEvent.Button.button ev = 1 then
-            Lwt_log.ign_warning ~section "not implemented";
-            (* ignore (Krobot_bus.send bus (Unix.gettimeofday (), Strategy_set [Krobot_action.Reset_odometry `Red])); *)
+          if GdkEvent.Button.button ev = 1 then begin
+            let {x; y}, theta = Krobot_config.yellow_initial_position in
+            ignore (Krobot_message.send bus (Unix.gettimeofday (), Set_odometry(x, y, theta)))
+          end;
           false));
 
   ignore
-    (ui#button_start_blue#event#connect#button_release
+    (ui#button_start_green#event#connect#button_release
        (fun ev ->
-          if GdkEvent.Button.button ev = 1 then
-            Lwt_log.ign_warning ~section "not implemented";
-            (* ignore (Krobot_bus.send bus (Unix.gettimeofday (), Strategy_set [Krobot_action.Reset_odometry `Blue])); *)
+          if GdkEvent.Button.button ev = 1 then begin
+            let {x; y}, theta = Krobot_config.green_initial_position in
+            ignore (Krobot_message.send bus (Unix.gettimeofday (), Set_odometry(x, y, theta)))
+          end;
           false));
 
   ignore

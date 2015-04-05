@@ -21,6 +21,7 @@ type vector = { vx : float; vy : float }
 type vertice = { x : float; y : float }
 
 type obj = { pos : vertice; size : float }
+type rect_obj = vertice * vertice
 
 val null : vector
 val origin : vertice

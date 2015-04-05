@@ -3,7 +3,7 @@
 
 open Krobot_geom
 
-type obstacle = vertice * vertice
+type obstacle = rect_obj
 type segment = vertice * vertice
 type distance = float
 

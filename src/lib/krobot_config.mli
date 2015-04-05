@@ -15,11 +15,11 @@ val world_width : float
 val world_height : float
   (** The height of the board. *)
 
-val red_fixed_beacons : Krobot_geom.vertice list
-  (** Positions of the fixed beacons for the red team *)
+val green_fixed_beacons : Krobot_geom.vertice list
+  (** Positions of the fixed beacons for the green team *)
 
-val blue_fixed_beacons : Krobot_geom.vertice list
-  (** Positions of the fixed beacons for the blue team *)
+val yellow_fixed_beacons : Krobot_geom.vertice list
+  (** Positions of the fixed beacons for the yellow team *)
 
 val robot_length : float
 val robot_width : float
@@ -51,16 +51,16 @@ val beacon_radius : float
 val fire_radius : float
   (** Bounding box radius of fires. *)
 
-val red_initial_position : Krobot_geom.vertice * float
-  (** position and angle of the robot as red *)
+val green_initial_position : Krobot_geom.vertice * float
+  (** position and angle of the robot as green *)
 
-val blue_initial_position : Krobot_geom.vertice * float
-  (** position and angle of the robot as blue *)
+val yellow_initial_position : Krobot_geom.vertice * float
+  (** position and angle of the robot as yellow *)
 
 
-val fixed_obstacles : Krobot_geom.obj list
+val fixed_obstacles : Krobot_geom.rect_obj list
 
-val test_obstacles : Krobot_geom.obj list
+val test_obstacles : Krobot_geom.rect_obj list
 
 val initial_fires : (Krobot_geom.vertice * float) list
 

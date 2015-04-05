@@ -1,5 +1,5 @@
 
-type obstacle = Krobot_geom.vertice * Krobot_geom.vertice
+type obstacle = Krobot_geom.rect_obj
 
 val find_path :
   src:Krobot_geom.vertice ->

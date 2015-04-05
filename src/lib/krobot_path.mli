@@ -16,7 +16,7 @@ val find :
   ?dst_orient:float * vector ->
   src : vertice -> dst : vertice ->
   beacon : vertice option * vertice option ->
-  obj list ->
+  rect_obj list ->
   vertice list option
 (** [goto ~src ~dst ~beacon] find a path from [src] to [dst]. *)
 (*
@@ -32,5 +32,5 @@ val find_with_real_center :
   ?dst_orient:float * vector ->
   dst : vertice ->
   beacon : vertice option * vertice option ->
-  obj list ->
+  rect_obj list ->
   vertice list option

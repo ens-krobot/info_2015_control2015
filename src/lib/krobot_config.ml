@@ -13,17 +13,13 @@ let world_height = 2.
 let world_width = 3.
 let robot_length = 0.245
 let robot_width = 0.30
-let wheels_diameter = 0.098
-let wheels_distance = 0.224
+let wheels_diameter = (0.02475843 *. 2.)
+let wheels_distance = 0.15474249
 let wheels_position = 0.165
-let robot_radius =
-  let l1 = wheels_position in
-  (* let l1 = robot_length -. wheels_position in *)
-  let l2 = robot_width /. 2. in
-  sqrt (l1 *. l1 +. l2 *. l2)
+let robot_radius = wheels_position +. 0.02
 let rotary_beacon_index_pos = 0.
 
-let safety_margin = 0.0
+let safety_margin = 0.02
 
 let beacon_radius = 0.2
 
@@ -33,28 +29,31 @@ open Krobot_geom
 
 let pi = 4. *. atan 1.
 
-let red_initial_position =
-  { x = 0.05 +. robot_width/.2.;
-    y = world_height -. wheels_position -. 0.054; },
-  (-.pi/.2.)
+let green_initial_position =
+  { x = (world_width -. robot_radius -. 0.07);
+    y = world_height /. 2.; },
+  (pi)
 
-let blue_initial_position =
-  { x = (world_width -. robot_width/.2. -. 0.05);
-    y = (world_height -. wheels_position -. 0.054); },
-  (-.pi/.2.)
+let yellow_initial_position =
+  { x = 0.07 +. robot_radius;
+    y = world_height /. 2.; },
+  (pi)
 
-let red_fixed_beacons = []
-  (*{ x = -. 0.062; y = world_height +. 0.062 };
+let green_fixed_beacons = [
+  { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };
-    { x = world_width +. 0.062; y = world_height /. 2.}]*)
+  { x = world_width +. 0.062; y = world_height /. 2.}]
 
-let blue_fixed_beacons = []
-  (*{ x = world_width +. 0.062; y = world_height +. 0.062 };
+let yellow_fixed_beacons = [
+  { x = world_width +. 0.062; y = world_height +. 0.062 };
   { x = world_width +. 0.062; y = -. 0.062 };
-    { x = -. 0.062; y = world_height /. 2.}]*)
+  { x = -. 0.062; y = world_height /. 2.}]
 
 let symetrical p =
   { p with pos = { p.pos with x = world_width -. p.pos.x } }
+
+let symetrical_rect (c1,c2) =
+  { c1 with x = world_width -. c1.x }, { c2 with x = world_width -. c2.x }
 
 let rec (-->) i j =
   if i > j
@@ -72,56 +71,28 @@ let line_obs p1 p2 rad =
               y = c *. v.vy +. p1.y;};
       size = rad } ) l
 
-let left_obstacles =
-  []
-    (* Fire holders on the sides of the table *)
-    (*{ pos =
-        { x = 0.009;
-          y = 1.279 };
-      size = 0.009; };
-    { pos =
-        { x = 0.009;
-          y = 1.121 };
-      size = 0.009; };
-    { pos =
-        { x = 1.379;
-          y = 0.009 };
-      size = 0.009; };
-    { pos =
-        { x = 1.221;
-          y = 0.009 };
-      size = 0.009; };
-    (* Trees *)
-    { pos =
-        { x = 0.;
-          y = 0.7 };
-      size = 0.15; };
-    { pos =
-        { x = 0.7;
-          y = 0. };
-      size = 0.15; };
-    (* Side scoring zone *)
-    { pos =
-        { x = 0.;
-          y = 0. };
-      size = 0.25; };
-  ] @ (line_obs {x = 0.41 ; y = 1.71} {x = 0.41 ; y = 2.} 0.03)
-    @ (line_obs {x = 0.41 ; y = 1.71} {x = 1.09 ; y = 1.71} 0.03)
-      @ (line_obs {x = 1.09 ; y = 1.71} {x = 1.09 ; y = 2.} 0.03)*)
-let fixed_obstacles =
+let left_obstacles = [
+  (* Pop-corn dispensers *)
+  { x = 0.265; y = world_height }, { x = 0.335; y = world_height -. 0.07 };
+  { x = 0.565; y = world_height }, { x = 0.635; y = world_height -. 0.07 };
+
+  (* Starting area *)
+  { x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
+  { x = 0.; y = 1.2 }, { x = 0.4; y = 1.222 };
+  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };
+]
+
+  let fixed_obstacles =
   [
-    (* Central scoring zone *)
-    (*{ pos =
-        { x = 1.5;
-          y = 0.95 };
-      size = 0.15; };*)
-  ] @ (List.map symetrical left_obstacles) @ left_obstacles
+    (* Central spot-light zone *)
+    { x = 1.2; y =  0.}, {x = 1.8; y =  0.1};
+
+    (* Stairs *)
+    { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };
+  ] @ (List.map symetrical_rect left_obstacles) @ left_obstacles
 
 let test_obstacles =
-  [ { pos =
-        { x = 1.5;
-          y = 1.0 };
-      size = 0.1; }; ]
+  [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
 
 let initial_fires = []
   (*List.map (fun (x, y, a) -> ({x;y},a))

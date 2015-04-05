@@ -18,12 +18,21 @@ let rec prev_last = function
   | _ :: l ->
       prev_last l
 
+let bounding_circle (c1, c2) =
+  let diag = vector c1 c2 in
+  let middle = translate c1 (diag *| 0.5) in
+  {pos = middle; size = (norm diag) /. 2.}
+
 let object_list ~beacon objects =
-  let fixed_objects = List.map (fun { pos; size } -> pos,
+  let fixed_objects = List.map (fun obj ->
+    let { pos; size } = bounding_circle obj in
+    pos,
     size +. Krobot_config.robot_radius +. 0.01)
     Krobot_config.fixed_obstacles in
 
-  let objects = List.map (fun { pos; size } -> pos,
+  let objects = List.map (fun obj ->
+    let { pos; size } = bounding_circle obj in
+    pos,
     size +. Krobot_config.robot_radius +. 0.01)
     objects in
 

@@ -124,6 +124,7 @@ let baricenter = function
     { x = x /. n; y = y /. n }
 
 type obj = { pos : vertice; size : float }
+type rect_obj = vertice * vertice
 
 type direction = Trigo | Antitrigo
 

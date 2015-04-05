@@ -510,9 +510,10 @@ let gen_data robot =
   let l = ref [] in
   for i = 0 to dim - 1 do
     let angle = Krobot_config.urg_angles.(i) in
-    let test_obstacles = List.map (circle_obstacle 0.2)
+    (*let test_obstacles = List.map (circle_obstacle 0.2)
         Krobot_config.test_obstacles in
-    let obstacles = test_obstacles @ Krobot_config.fixed_obstacles in
+      let obstacles = test_obstacles @ Krobot_config.fixed_obstacles in*)
+    let obstacles = [] in
     match closest_obstacle robot.x robot.y (robot.theta +. angle) obstacles with
       | Some dist ->
         let x = dist *. cos angle in
