@@ -4,6 +4,7 @@ open Krobot_geom
 
 type world_update =
   | Position_updated
+  | Beacons_updated
   | Motor_started
   | Motor_stopped
   | New_vertice
@@ -26,6 +27,7 @@ type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
   obstacles : Krobot_rectangle_path.obstacle list; (* TODO: fill that *)
+  beacons : Krobot_geom.vertice list;
 }
 
 type state =
@@ -58,6 +60,7 @@ let init_world = {
 
   prepared_vertices = [];
   obstacles = [];
+  beacons = [];
 }
 
 let init_state = Transition_to_Idle
@@ -132,6 +135,36 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
             []
           else
             None, []
+
+        | Beacon_position (a1, a2, d1, d2) ->
+          let new_beacons = List.fold_left (fun beacons (d,a) ->
+            if d > 0.001 then
+              let delta = vector_of_polar d (a +. world.robot.orientation) in
+              (translate world.robot.position delta) :: beacons
+            else
+              beacons)
+            []
+            [(d1,a1);(d2,a2)]
+          in
+          if (List.length world.beacons) == (List.length new_beacons) then
+            let total_diff = List.fold_left2 (fun t_diff beacon new_beacon ->
+              t_diff +. (square_distance beacon new_beacon))
+              0.
+              world.beacons
+              new_beacons
+            in
+            if total_diff > (0.05 *. 0.05) then
+              Some ({ world with
+                      beacons = new_beacons},
+                    World_updated Beacons_updated),
+              []
+            else
+              None, []
+          else
+            Some ({ world with
+                    beacons = new_beacons},
+                  World_updated Beacons_updated),
+            []
         | _ ->
           Some (world, Message message), []
       end
@@ -233,6 +266,9 @@ let general_step (input:input) (world:world) (state:state) : output =
         match input with
         | World_updated Motor_stopped ->
           next_step rest
+        | World_updated Beacons_updated ->
+          Lwt_log.ign_warning_f "New beacons while moving...";
+          Moving_to (dest_theta, rest)
         | Timeout when world.robot.motors_moving ->
           Lwt_log.ign_info_f "still moving...";
           Moving_to (dest_theta, rest)
@@ -259,11 +295,18 @@ let general_step (input:input) (world:world) (state:state) : output =
       state = Stop t }
   | Transition_to_Goto (dest, move) ->
     Lwt_log.ign_info_f "Goto";
+    let beacon_obstacles = List.fold_left (fun obstacles beacon ->
+      let dir = normalize { vx = 1.; vy = 1.} in
+      (translate beacon (dir *| Krobot_config.beacon_radius),
+       translate beacon (dir *| (-. Krobot_config.beacon_radius))) :: obstacles)
+      []
+      world.beacons
+    in
     let path =
       Krobot_rectangle_path.find_path
         ~src:world.robot.position
         ~dst:dest
-        ~obstacles:world.obstacles in
+        ~obstacles:(beacon_obstacles @ world.obstacles) in
     begin match path with
       | [] ->
         { timeout = 0.01;
