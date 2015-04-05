@@ -77,19 +77,18 @@ let left_obstacles = [
   { x = 0.565; y = world_height }, { x = 0.635; y = world_height -. 0.07 };
 
   (* Starting area *)
-  { x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
+  (*{ x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
   { x = 0.; y = 1.2 }, { x = 0.4; y = 1.222 };
-  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };
+  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };*)
 ]
 
-  let fixed_obstacles =
-  [
-    (* Central spot-light zone *)
-    { x = 1.2; y =  0.}, {x = 1.8; y =  0.1};
+let fixed_obstacles = [
+  (* Central spot-light zone *)
+  { x = 1.2; y =  0.}, {x = 1.8; y =  0.1};
 
-    (* Stairs *)
-    { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };
-  ] @ (List.map symetrical_rect left_obstacles) @ left_obstacles
+  (* Stairs *)
+  { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };
+] @ (List.map symetrical_rect left_obstacles) @ left_obstacles
 
 let test_obstacles =
   [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
