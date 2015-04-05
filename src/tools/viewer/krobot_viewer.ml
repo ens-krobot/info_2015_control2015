@@ -518,6 +518,7 @@ let draw viewer =
   in
 
   (* Draw points. *)
+  Cairo.set_line_width ctx 0.005;
   Cairo.set_source_rgb ctx 1. 1. 0.;
   (match path with
     | [] ->
@@ -542,6 +543,7 @@ let draw viewer =
   (* Draw bezier curves. *)
   Cairo.set_source_rgb ctx 1. 0. 1.;
   List.iter draw_bezier path;
+  Cairo.set_line_width ctx 0.001;
 
   (* Draw collisions. *)
   (match viewer.collisions with
