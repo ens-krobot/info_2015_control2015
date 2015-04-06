@@ -105,11 +105,16 @@ type t =
           - [acceleration] is in rad/s^2
       *)
   | Lock_target of float * float * float
-      (** [Odometry(x, y)] the position of the target on the
+      (** [Lock_target(x, y)] the position of the target on the
           table to look at with orientation [theta] of the robot.
           - [x, y] in m
           - [theta] in rad *)
   | Unlock_target
+  | Lock_status of float * bool
+      (** [Lock_status(error, enabled] the status of the target locking
+          system.
+          - [error] in rad
+          - [enabled] if true if the system is locked upon a target *)
   | Motor_bezier of float * float * float * float * float * float
       (** [Motor_bezier(x_end, y_end, d1, d2, theta_end, v_end)] *)
   | Motor_command of int * int

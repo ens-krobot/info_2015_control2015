@@ -53,6 +53,7 @@ type t =
   | Motor_turn of float * float * float
   | Lock_target of float * float * float
   | Unlock_target
+  | Lock_status of float * bool
   | Motor_bezier of float * float * float * float * float * float
   | Motor_command of int * int
   | Motor_activation of int * bool
@@ -231,6 +232,10 @@ let to_string = function
         x y theta
   | Unlock_target ->
       "Unlock_target"
+  | Lock_status(error, enabled) ->
+      sprintf
+        "Lock_status(%f, %B)"
+        error enabled
   | Motor_bezier(x, y, d1, d2, theta, v) ->
       sprintf
         "Motor_bezier(%f, %f, %f, %f, %f, %f)"
@@ -938,6 +943,17 @@ let encode = function
         ~format:F29bits
         ~data:""
 
+  | Lock_status(error, enabled) ->
+      let data = Bytes.create 5 in
+      put_float32 data 0 error;
+      put_uint8 data 4 (if enabled then 1 else 0);
+      frame
+        ~identifier:221
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+
   | Unknown frame ->
       frame
 
@@ -1135,6 +1151,11 @@ let decode frame =
                float (get_sint16 frame.data 4) /. 10000.)
         | 220 ->
             Unlock_target
+        | 221 ->
+            let x = get_uint8 frame.data 4 in
+            Lock_status
+              (get_float32 frame.data 0,
+               x <> 0)
         | 231 ->
             Elevator_command
               (get_float32 frame.data 0,
