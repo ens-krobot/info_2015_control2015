@@ -5,6 +5,7 @@ open Krobot_geom
 type world_update =
   | Position_updated
   | Beacons_updated
+  | Target_lock_updated
   | Motor_started
   | Motor_stopped
   | New_vertice
@@ -28,6 +29,7 @@ type world = {
   prepared_vertices : (Krobot_geom.vertice * float) list;
   obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
+  manage_theta : bool;
 }
 
 type state =
@@ -61,6 +63,7 @@ let init_world = {
   prepared_vertices = [];
   obstacles = Krobot_config.fixed_obstacles;
   beacons = [];
+  manage_theta = true;
 }
 
 let init_state = Transition_to_Idle
@@ -102,6 +105,16 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
 
     | CAN (_,frame) as message -> begin
         match decode frame with
+        | Lock_target _ ->
+          Some ({ world with
+                  manage_theta = false},
+                World_updated Target_lock_updated),
+          []
+        | Unlock_target ->
+          Some ({ world with
+                  manage_theta = true},
+                World_updated Target_lock_updated),
+          []
         | Odometry(x, y, theta) ->
           let open Krobot_geom in
           let position = { x; y } in
@@ -117,7 +130,12 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
             []
 
         | Motor_status (b1, b2, b3, b4) ->
-          let r = b1 || b2 || b3 || b4 in
+          let r =
+            if world.manage_theta then
+              b1 || b2 || b3
+            else
+              b1 || b2
+          in
           if world.robot.motors_moving <> r
           then
             let update =
