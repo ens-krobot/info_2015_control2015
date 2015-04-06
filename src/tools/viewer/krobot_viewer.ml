@@ -56,11 +56,8 @@ type viewer = {
   mutable motor_status : bool * bool * bool *bool;
   (* Status of the four motor controller. *)
 
-  mutable fires : (vertice * float) list;
-  (* The fires on the table *)
-
-  mutable torches : vertice list;
-  (* The torches on the table *)
+  mutable target_position : vertice option;
+  (* The position of the target of the robot *)
 
   mutable collisions : Krobot_bus.collision option;
   (* A curve and a list of: [(curve_parameter, (center, radius))] *)
@@ -418,58 +415,6 @@ let draw viewer =
 
   Cairo.restore ctx;
 
-  (* Draw the robot and the ghost *)
-  (*List.iter
-    (fun (state, (r,g,b,alpha)) ->
-      Cairo.save ctx;
-
-      if state == viewer.state then begin
-        let sqr x = x *. x in
-        let pos = state.pos and angle = state.theta in
-        let norm_front = sqrt (sqr (robot_width /. 2.) +. sqr (robot_length -. wheels_position)) in
-        let norm_back = sqrt (sqr (robot_width /. 2.) +. sqr wheels_position) in
-        let a_front = atan2 (robot_width /. 2.) (robot_length -. wheels_position) in
-        let a_back = atan2 (robot_width /. 2.) wheels_position in
-        let v1 = translate pos (vector_of_polar ~norm:norm_front ~angle:(angle -. a_front)) in
-        let v2 = translate pos (vector_of_polar ~norm:norm_front ~angle:(angle +. a_front)) in
-        let v3 = translate pos (vector_of_polar ~norm:norm_back ~angle:(angle -. (pi -. a_back))) in
-        let v4 = translate pos (vector_of_polar ~norm:norm_back ~angle:(angle +. (pi -. a_back))) in
-        let point v =
-          set_color ctx Yellow;
-          Cairo.arc ctx v.x v.y safety_margin 0. (2. *. pi);
-          Cairo.fill ctx
-        in
-        point v1;
-        point v2;
-        point v3;
-        point v4
-      end;
-
-      (* Draw the robot *)
-      Cairo.translate ctx state.pos.x state.pos.y;
-      Cairo.rotate ctx state.theta;
-      Cairo.rectangle ctx (-. wheels_position) (-. robot_width /. 2.) robot_length robot_width;
-      Cairo.set_source_rgba ctx r g b alpha;
-      Cairo.fill ctx;
-
-      (* Draw an arrow on the robot *)
-      let d = robot_length /. 2. -. wheels_position in
-      Cairo.move_to ctx (-. wheels_position +. robot_length /. 4.) 0.;
-      Cairo.line_to ctx (d +. robot_length /. 4.) 0.;
-      Cairo.line_to ctx d (-. robot_length /. 4.);
-      Cairo.line_to ctx d (robot_length /. 4.);
-      Cairo.line_to ctx (d +. robot_length /. 4.) 0.;
-      Cairo.set_source_rgba ctx 0. 0. 0. 0.5;
-      Cairo.stroke ctx;
-      Cairo.set_source_rgba ctx 0. 0. 1. 0.5;
-      Cairo.arc ctx 0. 0. 0.03 0. (2.*.pi);
-      Cairo.fill ctx;
-
-      Cairo.restore ctx)
-    [(viewer.ghost, (1., 1., 1., 0.5));
-     (viewer.state_indep, (0.8, 0.8, 1., 0.8));
-      (viewer.state, (0.8, 0.8, 0.8, 1.5));];*)
-
   (* Draw the beacon *)
   let draw_beacon = function
     | Some v ->
@@ -508,6 +453,26 @@ let draw viewer =
     in
     Array.iter aux a in
   draw_urg_lines viewer.urg_lines;
+
+  (* Draw the target *)
+  Cairo.set_line_width ctx 0.005;
+  begin
+    match viewer.target_position with
+    | Some target ->
+      Cairo.arc ctx target.x target.y 0.04 0. (2. *. pi);
+      set_color ctx Purple;
+      Cairo.fill ctx;
+      set_color ctx Black;
+      Cairo.move_to ctx target.x (target.y -. 0.04);
+      Cairo.line_to ctx target.x (target.y +. 0.04);
+      Cairo.stroke ctx;
+      Cairo.move_to ctx (target.x -. 0.04) target.y;
+      Cairo.line_to ctx (target.x +. 0.04) target.y;
+      Cairo.stroke ctx;
+    | None ->
+      ()
+  end;
+  Cairo.set_line_width ctx 0.001;
 
   (* Draw the path of the VM if any or the path of the planner if the
      VM is not following a trajectory. *)
@@ -857,8 +822,7 @@ lwt () =
     vm_path = None;
     statusbar_context = ui#statusbar#new_context "";
     motor_status = (false, false, false, false);
-    fires = Krobot_config.initial_fires;
-    torches = Krobot_config.initial_torches;
+    target_position = None;
     collisions = None;
     urg = [||];
     urg_lines = [||];
@@ -884,6 +848,20 @@ lwt () =
              let y = GdkEvent.Button.y ev in
              add_point viewer x y;
              rem_button_1_state viewer x y;
+             true
+           | 2 ->
+             let x = GdkEvent.Button.x ev in
+             let y = GdkEvent.Button.y ev in
+             let x, y = translate_coords viewer x y in
+             if x >= 0. && x <= world_width && y >= 0. && y <= world_height then begin
+               viewer.target_position <- Some {x; y};
+               ignore (Krobot_message.send viewer.bus (Unix.gettimeofday (), Krobot_message.Lock_target(x, y, pi/.2.)));
+               end
+             else begin
+               viewer.target_position <- None;
+               ignore (Krobot_message.send viewer.bus (Unix.gettimeofday (), Krobot_message.Unlock_target));
+             end ;
+             queue_draw viewer;
              true
            | 3 ->
              set_beacons viewer (GdkEvent.Button.x ev) (GdkEvent.Button.y ev);

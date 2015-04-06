@@ -104,6 +104,12 @@ type t =
           - [speed] is in rad/s
           - [acceleration] is in rad/s^2
       *)
+  | Lock_target of float * float * float
+      (** [Odometry(x, y)] the position of the target on the
+          table to look at with orientation [theta] of the robot.
+          - [x, y] in m
+          - [theta] in rad *)
+  | Unlock_target
   | Motor_bezier of float * float * float * float * float * float
       (** [Motor_bezier(x_end, y_end, d1, d2, theta_end, v_end)] *)
   | Motor_command of int * int

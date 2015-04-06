@@ -51,6 +51,8 @@ type t =
   | Motor_move_x of float * float * float
   | Motor_move_y of float * float * float
   | Motor_turn of float * float * float
+  | Lock_target of float * float * float
+  | Unlock_target
   | Motor_bezier of float * float * float * float * float * float
   | Motor_command of int * int
   | Motor_activation of int * bool
@@ -223,6 +225,12 @@ let to_string = function
       sprintf
         "Motor_turn(%f, %f, %f)"
         angle speed acc
+  | Lock_target(x, y, theta) ->
+      sprintf
+        "Lock_target(%f, %f, %f)"
+        x y theta
+  | Unlock_target ->
+      "Unlock_target"
   | Motor_bezier(x, y, d1, d2, theta, v) ->
       sprintf
         "Motor_bezier(%f, %f, %f, %f, %f, %f)"
@@ -910,6 +918,26 @@ let encode = function
         ~format:F29bits
         ~data:(encode_omni_goto (x_end, y_end, theta_end))
 
+  | Lock_target(x, y, theta) ->
+      let data = Bytes.create 6 in
+      put_sint16 data 0 (truncate (x *. 1000.));
+      put_sint16 data 2 (truncate (y *. 1000.));
+      put_sint16 data 4 (truncate (theta *. 10000.));
+      frame
+        ~identifier:219
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+
+  | Unlock_target ->
+      frame
+        ~identifier:220
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data:""
+
   | Unknown frame ->
       frame
 
@@ -935,7 +963,7 @@ let decode frame =
     if frame.remote then
       match frame.identifier with
         | 103 ->
-            Req_motor_status
+          Req_motor_status
         | _ ->
             Unknown frame
     else
@@ -1100,6 +1128,13 @@ let decode frame =
             Motor_omni_goto(float x_end /. 1000.,
                             float y_end /. 1000.,
                             float theta_end /. 100.)
+        | 219 ->
+            Lock_target
+              (float (get_sint16 frame.data 0) /. 1000.,
+               float (get_sint16 frame.data 2) /. 1000.,
+               float (get_sint16 frame.data 4) /. 10000.)
+        | 220 ->
+            Unlock_target
         | 231 ->
             Elevator_command
               (get_float32 frame.data 0,

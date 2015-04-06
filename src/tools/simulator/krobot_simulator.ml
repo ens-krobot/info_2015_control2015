@@ -70,6 +70,7 @@ type command =
       (* [Trapezoid(t_start, t_end, t_acc, velocity)] *)
   | Speed of float * float
       (* [Speed(t_end, velocity)] *)
+  | Lock_theta of float * float * float
 
 (* Type of simulators. *)
 type simulator = {
@@ -91,6 +92,8 @@ type simulator = {
   (* The current command for X axis. *)
   mutable command_y : command;
   (* The current command for Y axis. *)
+  mutable lock_ref : float;
+  (* reference for the lock_target control loop *)
   mutable command_theta : command;
   (* The current command for orientation axis. *)
   mutable omni_limits : float * float * float * float;
@@ -132,6 +135,28 @@ velocities:
    | Trajectory generation                                           |
    +-----------------------------------------------------------------+ *)
 
+let lock_target sim target_x target_y angle =
+  (* Compute orientation to target *)
+  let target_ori = (atan2 (target_y -. sim.state.y) (target_x -. sim.state.x)) in
+  let error = target_ori -. sim.state.theta in
+  (*let error =
+    if error > pi then
+      error -. 2.*.pi
+    else if error < (-.pi) then
+      error +. 2.*.pi
+    else
+      error
+    in*)
+  let dtheta = time_step *. pi /. 4. in
+  sim.lock_ref <-
+    if (abs_float error) <= dtheta then
+      target_ori
+    else if error >= 0. then
+      sim.lock_ref +. dtheta
+    else
+      sim.lock_ref -. dtheta ;
+  1. *. (sim.lock_ref -. sim.state.theta)
+
 let eval_command sim command =
   let new_cmd = match command with
     | Idle ->
@@ -139,6 +164,8 @@ let eval_command sim command =
     | Speed (t_end, _)
     | Trapezoid (_, t_end, _, _) ->
       if sim.time > t_end then Idle else command
+    | Lock_theta _ ->
+      command
   in
   let u = match command with
     | Idle ->
@@ -152,6 +179,8 @@ let eval_command sim command =
         vel
       else
         vel *. (t_end -. sim.time) /. t_acc
+    | Lock_theta (x, y, angle) ->
+      lock_target sim x y angle
   in
   (u, new_cmd)
 
@@ -236,7 +265,11 @@ let goto sim x_end y_end theta_end =
     move_x sim dx vx ax;
     move_y sim dy vy ay;
   end;
-  turn sim dtheta v_rot_max a_rot_max
+  begin
+    match sim.command_theta with
+    | Lock_theta _ -> ()
+    | _ -> turn sim dtheta v_rot_max a_rot_max
+  end
 
 
 let set_velocities sim u_x u_y w duration =
@@ -332,7 +365,7 @@ let send_CAN_messages sim bus =
     (* Sends the state of the motors. *)
     let tc_x = match sim.command_x with Idle -> false | _ -> true in
     let tc_y = match sim.command_y with Idle -> false | _ -> true in
-    let tc_theta = match sim.command_theta with Idle -> false | _ -> true in
+    let tc_theta = match sim.command_theta with Idle | Lock_theta _ -> false | _ -> true in
     lwt () = Krobot_message.send bus (Unix.gettimeofday (), Motor_status(tc_x, tc_y, tc_theta, false)) in
     lwt () = Lwt_unix.sleep 0.005 in
     aux () in
@@ -353,6 +386,11 @@ let handle_message bus (timestamp, message) =
           (match decode frame with
             | Set_odometry(x, y, theta) ->
               sim.state <- { x; y; theta }
+            | Lock_target(x, y, theta) ->
+              sim.lock_ref <- sim.state.theta;
+              sim.command_theta <- Lock_theta (x, y, theta)
+            | Unlock_target ->
+              sim.command_theta <- Idle
             | _ ->
               ());
           (* Messages related to HIL mode *)
@@ -581,6 +619,7 @@ lwt () =
     command_x = Idle;
     command_y = Idle;
     command_theta = Idle;
+    lock_ref = 0.;
     time = Unix.gettimeofday ();
     omni_limits = 0.3, pi/.4., 0.5, pi/.4.;
   } in
