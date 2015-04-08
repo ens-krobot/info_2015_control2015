@@ -44,6 +44,7 @@ Library krobot
     Krobot_daemon,
     Krobot_message,
     Krobot_geom,
+    Krobot_spatial_search,
     Krobot_solve,
     Krobot_pathfinding,
     Krobot_config,

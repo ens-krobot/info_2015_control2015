@@ -1,11 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: e4b5b92890f544c6ad13569046379f8e)
+# DO NOT EDIT (digest: 306d69b89c33e260c5c24afcdd006084)
 Krobot_utils
 Krobot_can
 Krobot_bus
 Krobot_daemon
 Krobot_message
 Krobot_geom
+Krobot_spatial_search
 Krobot_solve
 Krobot_pathfinding
 Krobot_config
