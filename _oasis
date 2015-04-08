@@ -38,6 +38,7 @@ Library krobot
   Path: src/lib
   Install: true
   Modules:
+    Krobot_utils,
     Krobot_can,
     Krobot_bus,
     Krobot_daemon,

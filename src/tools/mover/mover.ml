@@ -73,6 +73,8 @@ let name = "mover"
 let time_zero = Unix.gettimeofday ()
 let current_time () = Unix.gettimeofday () -. time_zero
 
+let distance_before_stop = 0.5 (* stop if half a metter before collision *)
+
 module Date : sig
   type t
   val add : t -> float -> t
@@ -96,6 +98,17 @@ let generate_path_display world waypoints =
     waypoints
   in
   curves
+
+let obstacles world =
+  let beacon_obstacles = List.fold_left (fun obstacles beacon ->
+    let dir = normalize { vx = 1.; vy = 1.} in
+    let radius = (sqrt 2.) *. Krobot_config.beacon_radius in
+    (translate beacon (dir *| radius),
+     translate beacon (dir *| (-. radius))) :: obstacles)
+    []
+    world.beacons
+  in
+  (beacon_obstacles @ world.obstacles)
 
 let update_world : world -> Krobot_bus.message -> ((world * input) option) * (message list) =
   fun world message ->
@@ -278,26 +291,40 @@ let general_step (input:input) (world:world) (state:state) : output =
     end
   | Moving_to (dest_theta, rest) -> begin
       let next_step = function
-        | [] -> Idle
-        | dest_theta :: rest -> Transition_to_Moving_to (dest_theta, rest) in
-      let state =
+        | [] -> Idle, [Msg (Trajectory_path [])]
+        | dest_theta :: rest -> Transition_to_Moving_to (dest_theta, rest), [] in
+     let state, messages =
         match input with
         | World_updated Motor_stopped ->
           next_step rest
-        | World_updated Beacons_updated ->
-          Lwt_log.ign_warning_f "New beacons while moving...";
-          Moving_to (dest_theta, rest)
+        | World_updated Beacons_updated -> begin
+            Lwt_log.ign_warning_f "New beacons while moving...";
+            let first_intersection =
+              Krobot_rectangle_path.first_collision
+                ~src:world.robot.position
+                ~path:(List.map fst (dest_theta :: rest))
+                ~obstacles:(obstacles world)
+            in
+            match first_intersection with
+            | None -> Moving_to (dest_theta, rest), []
+            | Some { Krobot_rectangle_path.distance } ->
+              if distance >= distance_before_stop then
+                (* If this is too far, just ignore it *)
+                Moving_to (dest_theta, rest), []
+              else begin
+                Lwt_log.ign_warning_f "Collision";
+                Transition_to_Stop, [Bus Collision]
+              end
+          end
         | Timeout when world.robot.motors_moving ->
           Lwt_log.ign_info_f "still moving...";
-          Moving_to (dest_theta, rest)
+          Moving_to (dest_theta, rest), []
         | Timeout ->
           next_step rest
-        | _ -> Moving_to (dest_theta, rest)
-      in
-      let messages =
-        match state with
-        | Idle -> [Msg (Trajectory_path [])]
-        | _ -> []
+        | World_updated (Position_updated | Motor_started |
+                         Target_lock_updated | New_vertice )
+        | Message _
+          -> Moving_to (dest_theta, rest), []
       in
       { timeout = safe_stop_time;
         messages = messages;
@@ -325,19 +352,11 @@ let general_step (input:input) (world:world) (state:state) : output =
         state = Transition_to_Idle }
     end
     else
-      let beacon_obstacles = List.fold_left (fun obstacles beacon ->
-        let dir = normalize { vx = 1.; vy = 1.} in
-        let radius = (sqrt 2.) *. Krobot_config.beacon_radius in
-        (translate beacon (dir *| radius),
-         translate beacon (dir *| (-. radius))) :: obstacles)
-        []
-        world.beacons
-      in
       let path =
         Krobot_rectangle_path.find_path
           ~src:world.robot.position
           ~dst:dest
-          ~obstacles:(beacon_obstacles @ world.obstacles) in
+          ~obstacles:(obstacles world) in
       begin match path with
         | [] ->
           Lwt_log.ign_warning_f "Pathfinding error: destination unreachable";

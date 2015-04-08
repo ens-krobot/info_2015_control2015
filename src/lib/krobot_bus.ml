@@ -28,6 +28,7 @@ type mover_message =
   | Planning_error
   | Planning_done
   | Idle
+  | Collision
 
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -131,6 +132,7 @@ let string_of_message = function
       | Planning_error -> "Mover: Planning_error"
       | Planning_done -> "Mover: Planning_done"
       | Idle -> "Mover: Idle"
+      | Collision -> "Mover: Collision"
     end
   | Objects objects ->
       sprintf

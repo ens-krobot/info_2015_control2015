@@ -85,6 +85,23 @@ let graph_vertices : dst:vertice -> obstacle list -> graph = fun ~dst obstacles 
       blocking = [] }
     obstacles
 
+let first_intersections graph ~src ~dst =
+  let intersections =
+    Krobot_utils.filter_map (fun s -> segment_intersect s (src, dst)) graph.blocking
+  in
+  match intersections with
+  | [] -> None
+  | h :: t ->
+    let _, intersection =
+      List.fold_left (fun ((d, min) as acc) p ->
+        let d' = distance src p in
+        if d' < d then
+          d', p
+        else
+          acc)
+        (distance src h, h) t in
+    Some intersection
+
 let exists_intersection graph segment =
   List.exists (fun s -> segment_intersect s segment <> None) graph.blocking
 
@@ -142,3 +159,30 @@ let find_path ~src ~dst ~obstacles =
   let graph = graph_vertices ~dst obstacles in
   let state = init_state ~src ~dst graph.vertices in
   loop ~dst state graph
+
+
+type collision = {
+  prefix_without_collision : Krobot_geom.vertice list;
+  collision : Krobot_geom.vertice;
+  distance : float;
+}
+
+let first_collision ~src ~path ~obstacles =
+  let graph = graph_vertices ~dst:src obstacles in
+  let rec loop src path = match path with
+    | [] -> None
+    | h :: t ->
+      match first_intersections graph ~src ~dst:h with
+      | Some collision ->
+        Some { collision;
+               prefix_without_collision = [];
+               distance = distance src h }
+      | None ->
+        match loop h t with
+        | None -> None
+        | Some collision_info ->
+          Some { collision_info with
+                 prefix_without_collision = h :: collision_info.prefix_without_collision;
+                 distance = distance src h +. collision_info.distance }
+  in
+  loop src path

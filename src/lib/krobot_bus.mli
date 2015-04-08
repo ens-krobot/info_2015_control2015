@@ -32,6 +32,7 @@ type mover_message =
   | Planning_error
   | Planning_done
   | Idle
+  | Collision
 
 (** Type of message exchanged over the bus. *)
 type message =
