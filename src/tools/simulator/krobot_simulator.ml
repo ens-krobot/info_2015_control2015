@@ -94,6 +94,8 @@ type simulator = {
   (* The current command for Y axis. *)
   mutable lock_ref : float;
   (* reference for the lock_target control loop *)
+  mutable lock_error : float;
+  (* latest error in theta control *)
   mutable command_theta : command;
   (* The current command for orientation axis. *)
   mutable omni_limits : float * float * float * float;
@@ -148,6 +150,7 @@ let lock_target sim target_x target_y angle =
       error
     in*)
   let dtheta = time_step *. pi /. 4. in
+  sim.lock_error <- error;
   sim.lock_ref <-
     if (abs_float error) <= dtheta then
       target_ori
@@ -361,6 +364,11 @@ let send_CAN_messages sim bus =
     lwt () = Krobot_message.send bus (sim.time, Odometry(sim.state.x, sim.state.y, sim.state.theta)) in
     (*lwt () = Krobot_message.send bus (sim.time, Odometry_indep(sim.state.x, sim.state.y, sim.state.theta)) in*)
     (* Wait before next batch of packets (emulate the electronic board behavior) *)
+    let lock_error, lock_status = match sim.command_theta with
+      | Lock_theta _ -> sim.lock_error, true
+      | _ -> 0., false
+    in
+    lwt () = Krobot_message.send bus (sim.time, Lock_status(lock_error, lock_status)) in
     lwt () = Lwt_unix.sleep 0.005 in
     (* Sends the state of the motors. *)
     let tc_x = match sim.command_x with Idle -> false | _ -> true in
@@ -620,6 +628,7 @@ lwt () =
     command_y = Idle;
     command_theta = Idle;
     lock_ref = 0.;
+    lock_error = 0.;
     time = Unix.gettimeofday ();
     omni_limits = 0.3, pi/.4., 0.5, pi/.4.;
   } in
