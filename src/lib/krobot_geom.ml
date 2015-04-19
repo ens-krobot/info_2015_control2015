@@ -7,6 +7,11 @@
  * This file is a part of [kro]bot.
  *)
 
+let min (x:float) (y:float) =
+  if x < y then x else y
+let max (x:float) (y:float) =
+  if x < y then y else x
+
 let sqr x = x *. x
 
 let pi = 4. *. atan 1.

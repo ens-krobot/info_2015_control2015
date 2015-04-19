@@ -32,6 +32,7 @@ type graph =
   {
     vertices : VerticeSet.t;
     blocking : segment list;
+    blocking_tree : segment Krobot_spatial_search.t;
   }
 
 type state =
@@ -39,6 +40,9 @@ type state =
     queue : VerticeHeap.t;
     not_visited : VerticeSet.t;
   }
+
+let count_intersect = ref 0
+let count_steps = ref 0
 
 let init_state ~src ~dst vertices =
   let v : Vertice_with_cost.t =
@@ -51,7 +55,17 @@ let init_state ~src ~dst vertices =
 
 let epsilon = 0.00000001
 
-let add_vertices_and_blocking { vertices; blocking } (v1,v2) =
+let add_segment_to_tree tree ((v1, v2) as s) =
+  let open Krobot_spatial_search in
+  let box : bounding_box = {
+    min_x = min v1.x v2.x;
+    max_x = max v1.x v2.x;
+    min_y = min v1.y v2.y;
+    max_y = max v1.y v2.y;
+  } in
+  add s box tree
+
+let add_vertices_and_blocking ( vertices, blocking ) (v1,v2) =
   let {x = x1; y = y1} = v1 in
   let {x = x2; y = y2} = v2 in
   let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin) in
@@ -70,20 +84,35 @@ let add_vertices_and_blocking { vertices; blocking } (v1,v2) =
   let max_x = max_x -. epsilon in
   let min_y = min_y +. epsilon in
   let max_y = max_y -. epsilon in
+  let s1 = {x = min_x ; y = min_y}, {x = min_x ; y = max_y} in
+  let s2 = {x = min_x ; y = max_y}, {x = max_x ; y = max_y} in
+  let s3 = {x = max_x ; y = max_y}, {x = max_x ; y = min_y} in
+  let s4 = {x = max_x ; y = min_y}, {x = min_x ; y = min_y} in
   let blocking =
-    ({x = min_x ; y = min_y}, {x = min_x ; y = max_y}) ::
-    ({x = min_x ; y = max_y}, {x = max_x ; y = max_y}) ::
-    ({x = max_x ; y = max_y}, {x = max_x ; y = min_y}) ::
-    ({x = max_x ; y = min_y}, {x = min_x ; y = min_y}) :: blocking in
-  { vertices; blocking }
+    s1 :: s2 :: s3 :: s4 :: blocking in
+  ( vertices, blocking )
 
 (** list graph vertices: points where it is allowed to go.
     i.e. les sommets des rectangles étendus par le rayon du robot *)
 let graph_vertices : dst:vertice -> obstacle list -> graph = fun ~dst obstacles ->
-  List.fold_left add_vertices_and_blocking
-    { vertices = VerticeSet.singleton dst;
-      blocking = [] }
+  let (vertices, blocking) =
+    List.fold_left add_vertices_and_blocking
+    ( VerticeSet.singleton dst, [] )
     obstacles
+  in
+  let min_x = VerticeSet.fold (fun { x } min_x -> min min_x x) vertices min_float in
+  let max_x = VerticeSet.fold (fun { x } max_x -> max max_x x) vertices max_float in
+  let min_y = VerticeSet.fold (fun { y } min_y -> min min_y y) vertices min_float in
+  let max_y = VerticeSet.fold (fun { y } max_y -> max max_y y) vertices max_float in
+  let world_box : Krobot_spatial_search.world_box =
+    { min_x; max_x; min_y; max_y }
+  in
+  let blocking_tree =
+    List.fold_left add_segment_to_tree
+      Krobot_spatial_search.(empty world_box)
+      blocking
+  in
+  { vertices; blocking; blocking_tree }
 
 let first_intersections graph ~src ~dst =
   let intersections =
@@ -103,7 +132,11 @@ let first_intersections graph ~src ~dst =
     Some intersection
 
 let exists_intersection graph segment =
-  List.exists (fun s -> segment_intersect s segment <> None) graph.blocking
+  let blocking = Krobot_spatial_search.segment_collisions segment graph.blocking_tree in
+  (* let blocking = List.map (fun v -> (v, v)) graph.blocking in *)
+  List.exists (fun (s,_) ->
+    incr count_intersect;
+    segment_intersect s segment <> None) blocking
 
 (** Les voisins du sommet src: l'ensemble des sommets [s] de [graph] pour
     lesquels il n'y a pas d'intersection entre le segment [src, s] et un
@@ -122,6 +155,7 @@ let next_to_evaluate : VerticeHeap.t -> VerticeHeap.t * Vertice_with_cost.t = fu
   queue, v
 
 let step : dst:vertice -> state -> graph -> step = fun ~dst state graph ->
+  incr count_steps;
   if VerticeHeap.is_empty state.queue then
     Unreachable
   else
@@ -156,9 +190,18 @@ let rec loop ~dst state graph =
     loop ~dst state graph
 
 let find_path ~src ~dst ~obstacles =
+  count_intersect := 0;
+  count_steps := 0;
+
   let graph = graph_vertices ~dst obstacles in
   let state = init_state ~src ~dst graph.vertices in
-  loop ~dst state graph
+  let r = loop ~dst state graph in
+
+  (* Printf.printf "steps %i\nintersect %i\n%!" *)
+  (*   !count_steps *)
+  (*   !count_intersect; *)
+
+  r
 
 
 type collision = {

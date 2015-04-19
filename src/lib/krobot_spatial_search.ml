@@ -1,5 +1,10 @@
 open Krobot_geom
 
+let min (x:float) (y:float) =
+  if x < y then x else y
+let max (x:float) (y:float) =
+  if x < y then y else x
+
 type world_box = {
   min_x : float;
   min_y : float;
@@ -54,6 +59,10 @@ let box_inside_world (box:bounding_box) (world_box:world_box) =
   box.max_y >= world_box.min_y &&
   box.min_y <= world_box.max_y
 
+let box_across_split ~x ~y (box:bounding_box) =
+  (box.max_x >= x && box.min_x <= x) ||
+  (box.max_y >= y && box.min_y <= y)
+
 let world_included_in_box (box:bounding_box) (world_box:world_box) =
   box.max_x >= world_box.max_x &&
   box.min_x <= world_box.min_x &&
@@ -62,7 +71,7 @@ let world_included_in_box (box:bounding_box) (world_box:world_box) =
 
 let rec add_tree depth value (box:bounding_box) tree (world_box:world_box) = match tree with
   | Leaf l ->
-    if depth >= 0 && List.length l >= 4 then begin
+    if depth >= 0 && List.length l >= 2 then begin
       (* If the node is too crowded, split it *)
       let node =
         { elements = [];
@@ -86,7 +95,7 @@ let rec add_tree depth value (box:bounding_box) tree (world_box:world_box) = mat
     Node (add_node depth value box node world_box)
 
 and add_node depth value (box:bounding_box) node (world_box:world_box) =
-  if world_included_in_box box world_box then
+  if box_across_split ~x:node.x_split ~y:node.y_split box then
     { node with elements = (value, box) :: node.elements }
   else
     let wboxes = cut_world_box ~x:node.x_split ~y:node.y_split world_box in
@@ -108,7 +117,7 @@ let add value box t =
   else
     t
 
-let empty ?(max_depth=6) world_box =
+let empty ?(max_depth=10) world_box =
   { world_box;
     tree = Leaf [];
     max_depth }
