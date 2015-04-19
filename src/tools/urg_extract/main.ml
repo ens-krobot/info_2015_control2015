@@ -79,7 +79,8 @@ let mark_circles diameter data =
 
 let obstacles transform diameter data =
   let sets = mark_circles diameter data in
-  let diam_vect = { vx = sqrt diameter; vy = sqrt diameter } in
+  let diam_vect = { vx = (diameter *. 0.5) /. (sqrt 2.); vy = (diameter *. 0.5) /. (sqrt 2.) } in
+  Rectangle ({ x = 0.5; y = 0.5 }, { x = 0.6; y = 0.4 }) ::
   List.map (fun l ->
     let center = transform_vertice transform (baricenter l) in
     Rectangle (translate center diam_vect,

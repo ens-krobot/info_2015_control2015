@@ -66,6 +66,8 @@ type viewer = {
   mutable urg_lines : (vertice*vertice) array;
 
   mutable obstacles : Krobot_bus.obstacle list;
+
+  mutable first_obstacle : vertice option;
 }
 
 (* +-----------------------------------------------------------------+
@@ -405,6 +407,14 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.restore ctx;
+
+  let () = match viewer.first_obstacle with
+    | None -> ()
+    | Some vert ->
+      Cairo.arc ctx vert.x vert.y 0.1 0. (2. *. pi);
+      Cairo.set_source_rgba ctx 1. 0.05 0. 1.;
+      Cairo.fill ctx
+  in
 
   (* Draw the beacon *)
   let draw_beacon = function
@@ -751,6 +761,13 @@ let handle_message viewer (timestamp, message) =
       viewer.obstacles <- obstacles;
       queue_draw viewer
 
+    | Mover_message (First_obstacle first_obstacle) ->
+      if (viewer.first_obstacle <> first_obstacle)
+      then begin
+        viewer.first_obstacle <- first_obstacle;
+        queue_draw viewer
+      end
+
     | _ ->
         ()
 
@@ -818,6 +835,7 @@ lwt () =
     urg = [||];
     urg_lines = [||];
     obstacles = [];
+    first_obstacle = None;
   } in
 
   (* Handle messages. *)

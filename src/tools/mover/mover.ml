@@ -7,6 +7,7 @@ let start_date = Unix.gettimeofday ()
 type world_update =
   | Position_updated
   | Beacons_updated
+  | Obstacles_updated
   | Target_lock_updated
   | Motor_started
   | Motor_stopped
@@ -29,7 +30,7 @@ type robot = {
 type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
-  obstacles : Krobot_rectangle_path.obstacle list;
+  urg_obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
   manage_theta : bool;
 }
@@ -78,7 +79,7 @@ let init_world = {
   };
 
   prepared_vertices = [];
-  obstacles = Krobot_config.fixed_obstacles;
+  urg_obstacles = [];
   beacons = [];
   manage_theta = true;
 }
@@ -90,7 +91,9 @@ let name = "mover"
 let time_zero = Unix.gettimeofday ()
 let current_time () = Unix.gettimeofday () -. time_zero
 
-let distance_before_stop = 0.5 (* stop if half a metter before collision *)
+let distance_before_stop = 0.6 (* stop if half a metter before collision *)
+let distance_before_handling_obstacle = distance_before_stop +. 0.1
+let close_distance_from_destination = 0.01
 
 module Date : sig
   type t
@@ -125,7 +128,7 @@ let obstacles world =
     []
     world.beacons
   in
-  (beacon_obstacles @ world.obstacles)
+  (beacon_obstacles @ world.urg_obstacles @ Krobot_config.fixed_obstacles)
 
 let update_world : world -> Krobot_bus.message -> ((world * input) option) * (message list) =
   fun world message ->
@@ -241,7 +244,11 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
     | Log _ ->
       None, []
     | Urg _ -> None, []
-    | Obstacles _ -> None, []
+    | Obstacles obstacles ->
+      let world =
+        { world with
+          urg_obstacles = List.map (fun (Rectangle (v1, v2)) -> (v1, v2)) obstacles } in
+      Some (world, World_updated Obstacles_updated), []
     | message ->
       Lwt_log.ign_info_f "msg: %s" (string_of_message message);
       Some (world, Message message), []
@@ -314,7 +321,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             { original_position = world.robot.position;
               start_motor_stopped = world.robot.motors_moving;
               moving_to =
-                { first_obstacle = None;
+                { first_obstacle = Some world.robot.position;
+                  (* force testing for intersections *)
                   next = (dest, theta);
                   rest } } }
     end
@@ -343,8 +351,16 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           general_step input world (Moving_to moving_to)
         end
       | Timeout ->
-        Lwt_log.ign_info_f "Still starting %.02f" date;
-        nothing
+        if Krobot_geom.distance world.robot.position (fst moving_to.next)
+           <= close_distance_from_destination
+        then begin
+          Lwt_log.ign_info_f "Already arrived %.02f" date;
+          general_step input world (Moving_to moving_to)
+        end
+        else begin
+          Lwt_log.ign_info_f "Still starting %.02f" date;
+          nothing
+        end
       | _ ->
         nothing
     end
@@ -355,10 +371,12 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       let close_to_first_obstacle = match first_obstacle with
         | None -> false
         | Some first_obstacle ->
-          Krobot_geom.distance world.robot.position first_obstacle <= distance_before_stop
+          Krobot_geom.distance world.robot.position first_obstacle
+          <= distance_before_handling_obstacle
       in
       let date = (Unix.gettimeofday ()) -. start_date in
       let handle_collision () =
+        Lwt_log.ign_warning_f "Collision handling";
         let first_intersection =
           Krobot_rectangle_path.first_collision
             ~src:world.robot.position
@@ -366,11 +384,17 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             ~obstacles:(obstacles world)
         in
         match first_intersection with
-        | None -> Moving_to { first_obstacle; next = dest_theta; rest }, []
+        | None ->
+          Lwt_log.ign_warning_f "No collision";
+          Moving_to { first_obstacle; next = dest_theta; rest },
+          [Bus (First_obstacle None)]
         | Some { Krobot_rectangle_path.distance; collision } ->
-          if distance >= distance_before_stop then
+          if distance >= distance_before_stop then begin
+            Lwt_log.ign_warning_f "Far collision %f" distance;
             (* If this is too far, just ignore it *)
-            Moving_to { first_obstacle = Some collision; next = dest_theta; rest }, []
+            Moving_to { first_obstacle = Some collision; next = dest_theta; rest },
+            [Bus (First_obstacle (Some collision))]
+          end
           else begin
             Lwt_log.ign_warning_f "Collision";
             Transition_to_Stop, [Bus Collision]
@@ -380,6 +404,9 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         match input with
         | World_updated Position_updated when close_to_first_obstacle ->
           handle_collision ()
+        | World_updated Obstacles_updated -> begin
+            handle_collision ()
+          end
         | World_updated Beacons_updated -> begin
             Lwt_log.ign_warning_f "New beacons while moving...";
             handle_collision ()

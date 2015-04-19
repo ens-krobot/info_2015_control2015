@@ -36,6 +36,7 @@ type mover_message =
   | Planning_done
   | Idle
   | Collision
+  | First_obstacle of vertice option
 
 (** Type of message exchanged over the bus. *)
 type message =

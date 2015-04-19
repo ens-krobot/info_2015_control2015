@@ -32,6 +32,7 @@ type mover_message =
   | Planning_done
   | Idle
   | Collision
+  | First_obstacle of vertice option
 
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -137,6 +138,8 @@ let string_of_message = function
       | Planning_done -> "Mover: Planning_done"
       | Idle -> "Mover: Idle"
       | Collision -> "Mover: Collision"
+      | First_obstacle v ->
+        Printf.sprintf "Mover: First_obstacle %s" (string_of_option string_of_vertice v)
     end
   | Obstacles obstacles ->
       sprintf
