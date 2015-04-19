@@ -162,6 +162,18 @@ Executable "krobot-urg"
   BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
 
 # +-------------------------------------------------------------------+
+# | Extract obstacles from urg informations                           |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-urg-extract"
+  Path: src/tools/urg_extract/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: main.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
 # | Doc                                                               |
 # +-------------------------------------------------------------------+
 

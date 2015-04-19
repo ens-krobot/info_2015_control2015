@@ -20,6 +20,9 @@ let port = 50000
 
 type frame_source = Elec | Info
 
+type obstacle =
+  | Rectangle of vertice * vertice
+
 type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
@@ -43,7 +46,7 @@ type message =
   | Goto of vertice
   | Trajectory_find_path
   | Mover_message of mover_message
-  | Objects of (vertice*float) list
+  | Obstacles of obstacle list
   | Sharps of float array
   | Set_fake_beacons of vertice option * vertice option
   | Collisions of collision
@@ -75,8 +78,9 @@ open Printf
 let string_of_vertice v =
   sprintf "{ x = %f; y = %f }" v.x v.y
 
-let string_of_object (v,d) =
-  sprintf "{ x = %f; y = %f; d = %f }" v.x v.y d
+let string_of_obstacle = function
+  | Rectangle (v1, v2) ->
+    sprintf "{ v1 = %s; v2 = %s }" (string_of_vertice v1) (string_of_vertice v2)
 
 let string_of_vector v =
   sprintf "{ vx = %f; vy = %f }" v.vx v.vy
@@ -134,10 +138,10 @@ let string_of_message = function
       | Idle -> "Mover: Idle"
       | Collision -> "Mover: Collision"
     end
-  | Objects objects ->
+  | Obstacles obstacles ->
       sprintf
-        "Objects [%s]"
-        (String.concat "; " (List.map string_of_object objects))
+        "Obstacles [%s]"
+        (String.concat "; " (List.map string_of_obstacle obstacles))
   | Sharps a ->
       sprintf
         "Sharps [|%s|]"

@@ -24,6 +24,9 @@ val logger : t -> Lwt_log.logger
 type frame_source = Elec | Info
     (** The source of CAN frames. *)
 
+type obstacle =
+  | Rectangle of vertice * vertice
+
 type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
@@ -64,10 +67,10 @@ type message =
 
   | Mover_message of mover_message
 
-  (** Objects *)
+  (** Obstacles *)
 
-  | Objects of (vertice*float) list
-      (** The list of objects on the board. *)
+  | Obstacles of obstacle list
+  (** The list of objects on the board. *)
 
   (** Sharps *)
 

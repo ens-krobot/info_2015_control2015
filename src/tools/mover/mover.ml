@@ -2,6 +2,8 @@ open Krobot_bus
 open Krobot_message
 open Krobot_geom
 
+let start_date = Unix.gettimeofday ()
+
 type world_update =
   | Position_updated
   | Beacons_updated
@@ -32,9 +34,24 @@ type world = {
   manage_theta : bool;
 }
 
+type first_obstacle = Krobot_geom.vertice option
+
+type moving_to = {
+  first_obstacle : vertice option;
+  next : Krobot_geom.vertice * float;
+  rest : (Krobot_geom.vertice * float) list;
+}
+
+type start_moving_to = {
+  original_position : vertice;
+  start_motor_stopped : bool;
+  moving_to : moving_to;
+}
+
 type state =
   | Transition_to_Moving_to of (Krobot_geom.vertice * float) * ((Krobot_geom.vertice * float) list)
-  | Moving_to of (Krobot_geom.vertice * float) * ((Krobot_geom.vertice * float) list)
+  | Start_moving_to of start_moving_to
+  | Moving_to of moving_to
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
@@ -114,6 +131,7 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
   fun world message ->
     match message with
     | Kill killed when killed = name ->
+      (* Printf.printf "%s dying\n%!" name; *)
       exit 0
 
     | CAN (_,frame) as message -> begin
@@ -222,6 +240,8 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
       [Msg (Trajectory_path (generate_path_display world (List.rev new_vertices)))]
     | Log _ ->
       None, []
+    | Urg _ -> None, []
+    | Obstacles _ -> None, []
     | message ->
       Lwt_log.ign_info_f "msg: %s" (string_of_message message);
       Some (world, Message message), []
@@ -237,8 +257,9 @@ let idle ~notify world =
 
 let motor_stop = Motor_stop(0.4, 0.4)
 let safe_stop_time = 0.1 (* second *)
+let started_distance = 0.005
 
-let general_step (input:input) (world:world) (state:state) : output =
+let rec general_step (input:input) (world:world) (state:state) : output =
   match state with
   | Transition_to_Idle ->
     Lwt_log.ign_info_f "Idle";
@@ -281,50 +302,101 @@ let general_step (input:input) (world:world) (state:state) : output =
   end
   | Transition_to_Moving_to ((dest, theta), rest) -> begin
       let open Krobot_geom in
-      Lwt_log.ign_info_f "Moving_to (%f, %f, %f)" dest.x dest.y theta;
+      let date = (Unix.gettimeofday ()) -. start_date in
+      Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %.02f" dest.x dest.y theta date;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
       { timeout = 0.1;
         messages = [CAN goto; Msg (Trajectory_path (generate_path_display world ((dest, theta)::rest)))];
         world;
-        state = Moving_to ((dest, theta), rest) }
+        state =
+          Start_moving_to
+            { original_position = world.robot.position;
+              start_motor_stopped = world.robot.motors_moving;
+              moving_to =
+                { first_obstacle = None;
+                  next = (dest, theta);
+                  rest } } }
     end
-  | Moving_to (dest_theta, rest) -> begin
+  | Start_moving_to { original_position; start_motor_stopped; moving_to } -> begin
+      let date = (Unix.gettimeofday ()) -. start_date in
+      let nothing = { timeout = 0.1; messages = []; world; state } in
+      match input with
+      | World_updated Position_updated ->
+        if Krobot_geom.distance original_position world.robot.position >= started_distance
+        then begin
+          let (dest, theta) = moving_to.next in
+          Lwt_log.ign_info_f "Moving_to (%f, %f, %f) %.02f" dest.x dest.y theta date;
+          general_step input world (Moving_to moving_to)
+        end
+        else
+          nothing
+      | World_updated Motor_stopped ->
+        if start_motor_stopped then begin
+          Lwt_log.ign_info_f "Moving_to: Motor stopped %.02f" date;
+          general_step input world (Moving_to moving_to)
+        end
+        else
+          nothing
+      | World_updated Motor_started -> begin
+          Lwt_log.ign_info_f "Moving_to: Motor started %.02f" date;
+          general_step input world (Moving_to moving_to)
+        end
+      | Timeout ->
+        Lwt_log.ign_info_f "Still starting %.02f" date;
+        nothing
+      | _ ->
+        nothing
+    end
+  | Moving_to ({ first_obstacle; next = dest_theta; rest } as moving_to) -> begin
       let next_step = function
         | [] -> Idle, [Msg (Trajectory_path [])]
         | dest_theta :: rest -> Transition_to_Moving_to (dest_theta, rest), [] in
-     let state, messages =
+      let close_to_first_obstacle = match first_obstacle with
+        | None -> false
+        | Some first_obstacle ->
+          Krobot_geom.distance world.robot.position first_obstacle <= distance_before_stop
+      in
+      let date = (Unix.gettimeofday ()) -. start_date in
+      let handle_collision () =
+        let first_intersection =
+          Krobot_rectangle_path.first_collision
+            ~src:world.robot.position
+            ~path:(List.map fst (dest_theta :: rest))
+            ~obstacles:(obstacles world)
+        in
+        match first_intersection with
+        | None -> Moving_to { first_obstacle; next = dest_theta; rest }, []
+        | Some { Krobot_rectangle_path.distance; collision } ->
+          if distance >= distance_before_stop then
+            (* If this is too far, just ignore it *)
+            Moving_to { first_obstacle = Some collision; next = dest_theta; rest }, []
+          else begin
+            Lwt_log.ign_warning_f "Collision";
+            Transition_to_Stop, [Bus Collision]
+          end
+      in
+      let state, messages =
         match input with
-        | World_updated Motor_stopped ->
-          next_step rest
+        | World_updated Position_updated when close_to_first_obstacle ->
+          handle_collision ()
         | World_updated Beacons_updated -> begin
             Lwt_log.ign_warning_f "New beacons while moving...";
-            let first_intersection =
-              Krobot_rectangle_path.first_collision
-                ~src:world.robot.position
-                ~path:(List.map fst (dest_theta :: rest))
-                ~obstacles:(obstacles world)
-            in
-            match first_intersection with
-            | None -> Moving_to (dest_theta, rest), []
-            | Some { Krobot_rectangle_path.distance } ->
-              if distance >= distance_before_stop then
-                (* If this is too far, just ignore it *)
-                Moving_to (dest_theta, rest), []
-              else begin
-                Lwt_log.ign_warning_f "Collision";
-                Transition_to_Stop, [Bus Collision]
-              end
+            handle_collision ()
           end
+        | World_updated Motor_stopped ->
+          Lwt_log.ign_info_f "Motor_stopped %.02f" date;
+          next_step rest
         | Timeout when world.robot.motors_moving ->
-          Lwt_log.ign_info_f "still moving...";
-          Moving_to (dest_theta, rest), []
+          (* Lwt_log.ign_info_f "still moving..."; *)
+          Moving_to moving_to, []
         | Timeout ->
+          Lwt_log.ign_info_f "Timeout with motor stopped %.02f" date;
           next_step rest
         | World_updated (Position_updated | Motor_started |
                          Target_lock_updated | New_vertice )
         | Message _
-          -> Moving_to (dest_theta, rest), []
+          -> Moving_to moving_to, []
       in
       { timeout = safe_stop_time;
         messages = messages;
@@ -339,7 +411,7 @@ let general_step (input:input) (world:world) (state:state) : output =
       world;
       state = Stop t }
   | Transition_to_Goto (dest, move) ->
-    Lwt_log.ign_info_f "Goto";
+    Lwt_log.ign_info_f "Goto %b" move;
     if dest.x < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
        dest.x > Krobot_config.world_width -. Krobot_config.robot_radius -. Krobot_config.safety_margin ||
        dest.y < Krobot_config.robot_radius +. Krobot_config.safety_margin ||

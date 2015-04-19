@@ -65,7 +65,7 @@ type viewer = {
   mutable urg : vertice array;
   mutable urg_lines : (vertice*vertice) array;
 
-  mutable objects : (vertice*float) list;
+  mutable obstacles : Krobot_bus.obstacle list;
 }
 
 (* +-----------------------------------------------------------------+
@@ -358,27 +358,18 @@ let draw viewer =
 
   Cairo.set_line_width ctx 0.001;
 
-  (* Draw moving objects *)
-  List.iter
-    (fun ({ x; y }, radius) ->
-      set_color ctx Green;
-      Cairo.arc ctx x y radius 0. (2. *. pi);
-      Cairo.fill ctx;
+  let draw_obstacle (c1, c2) =
+    Cairo.rectangle ctx c1.x c1.y (c2.x -. c1.x) (c2.y -. c1.y);
+    Cairo.fill ctx
+  in
 
-      set_color ctx Black;
-      Cairo.arc ctx x y radius 0. (2. *. pi);
-      Cairo.stroke ctx)
-    viewer.objects;
+  (* Draw moving objects *)
+  Cairo.set_source_rgba ctx 1. 0.8 0.8 0.5;
+  List.iter (fun (Rectangle (v1, v2)) -> draw_obstacle (v1, v2)) viewer.obstacles;
 
   (* Draw obstacles *)
   Cairo.set_source_rgba ctx 1. 1. 1. 0.5;
-  let () =
-    List.iter
-      (fun (c1,c2) ->
-         Cairo.rectangle ctx c1.x c1.y (c2.x -. c1.x) (c2.y -. c1.y);
-         Cairo.fill ctx)
-      Krobot_config.fixed_obstacles
-  in
+  List.iter draw_obstacle Krobot_config.fixed_obstacles;
 
   (* Draw the robot safety-margin bounding circle *)
 
@@ -756,8 +747,8 @@ let handle_message viewer (timestamp, message) =
     | Urg_lines lines ->
       viewer.urg_lines <- project_urg_lines viewer lines
 
-    | Objects objects ->
-      viewer.objects <- objects;
+    | Obstacles obstacles ->
+      viewer.obstacles <- obstacles;
       queue_draw viewer
 
     | _ ->
@@ -826,7 +817,7 @@ lwt () =
     collisions = None;
     urg = [||];
     urg_lines = [||];
-    objects = [];
+    obstacles = [];
   } in
 
   (* Handle messages. *)
