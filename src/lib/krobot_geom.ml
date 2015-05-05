@@ -176,6 +176,25 @@ let segment_intersect
     then Some { x = px; y = py }
     else None
 
+let turn_trigo { vx; vy } = { vx = -. vy; vy = vx }
+
+let distance_vertice_segment (v1,v2) vert =
+  let is_between =
+    (prod
+       (vector v1 v2)
+       (vector v1 vert) >= 0.) &&
+    (prod
+       (vector v2 v1)
+       (vector v2 vert) >= 0.)
+  in
+  if is_between
+  then
+    let vect = vector v1 v2 in
+    let nv = vect /| (norm vect) in
+    abs_float (prod (turn_trigo nv) (vector v1 vert))
+  else
+    min (distance v1 vert) (distance v2 vert)
+
 (* +-----------------------------------------------------------------+
    | Cubic bezier curves                                             |
    +-----------------------------------------------------------------+ *)

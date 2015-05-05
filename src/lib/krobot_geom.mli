@@ -72,6 +72,8 @@ val diff_angle : direction -> start:float -> stop:float -> float
 
 val segment_intersect : vertice * vertice -> vertice * vertice -> vertice option
 
+val distance_vertice_segment : vertice * vertice -> vertice -> float
+
 (** {6 Cubic Bezier curves} *)
 
 module Bezier : sig
