@@ -219,7 +219,7 @@ let first_collision ~src ~path ~obstacles =
       | Some collision ->
         Some { collision;
                prefix_without_collision = [];
-               distance = distance src h }
+               distance = distance src collision }
       | None ->
         match loop h t with
         | None -> None
