@@ -86,8 +86,6 @@ let init_world = {
 
 let init_state = Transition_to_Idle
 
-let name = "mover"
-
 let time_zero = Unix.gettimeofday ()
 let current_time () = Unix.gettimeofday () -. time_zero
 
@@ -133,9 +131,6 @@ let obstacles world =
 let update_world : world -> Krobot_bus.message -> ((world * input) option) * (message list) =
   fun world message ->
     match message with
-    | Kill killed when killed = name ->
-      (* Printf.printf "%s dying\n%!" name; *)
-      exit 0
 
     | CAN (_,frame) as message -> begin
         match decode frame with
@@ -503,79 +498,38 @@ let step (input:input) (world:world) (state:state) : output =
     | _ -> state in
   general_step input world state
 
-type receiver = (float * Krobot_bus.message) option Lwt.t
-
-(* quite wrong: can loose messages *)
-let mk_recv ev = Lwt.(Lwt_react.E.next ev >|= fun v -> Some v)
-
-let next_event ev (recv:receiver) timeout =
-  lwt () = Lwt_unix.yield () in
-  let time = Lwt.(Lwt_unix.sleep timeout >>= fun _ -> return_none) in
-  match_lwt Lwt.(time <?> recv) with
-  | None -> Lwt.return (recv, None)
-  | Some (msg_time, msg) ->
-    Lwt.cancel time;
-    Lwt.return (mk_recv ev, Some msg)
-
 let send_msg bus time = function
   | Bus m -> Krobot_bus.send bus (time, Mover_message m)
   | CAN c -> Krobot_bus.send bus (time, CAN (Info, Krobot_message.encode c))
   | Msg m -> Krobot_bus.send bus (time, m)
 
-let main_loop bus ev =
-  let rec aux recv world state timeout =
-    lwt (recv,msg) = next_event ev recv Date.(time_to_wait timeout) in
+let main_loop bus iter =
+  let rec aux world state timeout =
+    lwt msg = Krobot_entry_point.next ~timeout:Date.(time_to_wait timeout) iter  in
     let update, update_messages =
       match msg with
-      | None ->
+      | Krobot_entry_point.Timeout ->
         (* Lwt_log.ign_info_f "timeout"; *)
         Some (world, Timeout), []
-      | Some m -> update_world world m in
+      | Krobot_entry_point.Message(t,m) -> update_world world m in
     match update with
     | None ->
-      aux recv world state timeout
+      aux world state timeout
     | Some (world, input) ->
       let output = step input world state in
       let time = Unix.gettimeofday () in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) update_messages in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) output.messages in
       let timeout_date = Date.(add (now ()) output.timeout) in
-      aux recv output.world output.state timeout_date in
-  aux (mk_recv ev) init_world init_state (Date.now ())
+      aux output.world output.state timeout_date in
+  aux init_world init_state (Date.now ())
 
-(* +-----------------------------------------------------------------+
-   | Command-line arguments                                          |
-   +-----------------------------------------------------------------+ *)
+module S : Krobot_entry_point.S = struct
+  let name = "mover"
+  let options = []
+  let main bus ev =
+    let iter = Krobot_entry_point.iterator_from_react ev in
+    main_loop bus iter
+end
 
-let fork = ref true
-
-let options = Arg.align [
-  "-no-fork", Arg.Clear fork, " Run in foreground";
-]
-
-let usage = Printf.sprintf "\
-Usage: krobot-%s [options]\n\
-options are:"
-    name
-
-(* +-----------------------------------------------------------------+
-   | Entry point                                                     |
-   +-----------------------------------------------------------------+ *)
-
-lwt () =
-  Arg.parse options ignore usage;
-
-  (* Display all informative messages. *)
-  Lwt_log.append_rule "*" Lwt_log.Info;
-
-  (* Open the krobot bus. *)
-  lwt bus = Krobot_bus.get () in
-
-  (* Fork if not prevented. *)
-  if !fork then Krobot_daemon.daemonize bus;
-
-  (* Kill any running vm. *)
-  lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill name) in
-
-  let ev = Krobot_bus.recv bus in
-  main_loop bus ev
+module Run = Krobot_entry_point.Make(S)

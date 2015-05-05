@@ -77,9 +77,9 @@ let left_obstacles = [
   { x = 0.565; y = world_height }, { x = 0.635; y = world_height -. 0.07 };
 
   (* Starting area *)
-  (*{ x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
+  { x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
   { x = 0.; y = 1.2 }, { x = 0.4; y = 1.222 };
-  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };*)
+  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };
 ]
 
 let fixed_obstacles = [

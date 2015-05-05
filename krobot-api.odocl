@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: b30646ee3a00b51638122cdcd52f30d0)
+# DO NOT EDIT (digest: b8cf10f006fb43125a06a8c759fb7fb1)
 src/lib/Krobot_utils
 src/lib/Krobot_can
 src/lib/Krobot_bus
@@ -15,6 +15,7 @@ src/lib/Krobot_heap
 src/lib/Krobot_rectangle_path
 src/lib/Krobot_world_update
 src/lib/Krobot_ax12_format
+src/lib/Krobot_entry_point
 src/can/Krobot_can_bus
 src/can/Krobot_can_decoder
 src/can/Krobot_can_desc_lexer

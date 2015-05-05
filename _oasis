@@ -52,7 +52,8 @@ Library krobot
     Krobot_heap,
     Krobot_rectangle_path,
     Krobot_world_update,
-    Krobot_ax12_format
+    Krobot_ax12_format,
+    Krobot_entry_point
   CSources:
     krobot_message_stubs.c
 
