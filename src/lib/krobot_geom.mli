@@ -23,6 +23,13 @@ type vertice = { x : float; y : float }
 type obj = { pos : vertice; size : float }
 type rect_obj = vertice * vertice
 
+type bounding_box = {
+  min_x : float;
+  min_y : float;
+  max_x : float;
+  max_y : float;
+}
+
 val null : vector
 val origin : vertice
 
@@ -72,7 +79,13 @@ val diff_angle : direction -> start:float -> stop:float -> float
 
 val segment_intersect : vertice * vertice -> vertice * vertice -> vertice option
 
-val distance_vertice_segment : vertice * vertice -> vertice -> float
+val distance_vertice_segment : vertice * vertice -> vertice -> float * vertice
+(** The distance between a vertice and a segment. It also returns the
+    closest point *)
+
+val rect_bounding_box : rect_obj -> bounding_box
+
+val is_inside_bounding_box : vertice -> bounding_box -> bool
 
 (** {6 Cubic Bezier curves} *)
 

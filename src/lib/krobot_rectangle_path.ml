@@ -56,14 +56,8 @@ let init_state ~src ~dst vertices =
 let epsilon = 0.00000001
 
 let add_segment_to_tree tree ((v1, v2) as s) =
-  let open Krobot_spatial_search in
-  let box : bounding_box = {
-    min_x = min v1.x v2.x;
-    max_x = max v1.x v2.x;
-    min_y = min v1.y v2.y;
-    max_y = max v1.y v2.y;
-  } in
-  add s box tree
+  let box = rect_bounding_box (v1, v2) in
+  Krobot_spatial_search.add s box tree
 
 let add_vertices_and_blocking ( vertices, blocking ) (v1,v2) =
   let {x = x1; y = y1} = v1 in

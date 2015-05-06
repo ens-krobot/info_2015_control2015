@@ -27,13 +27,6 @@ let cut_world_box ~x ~y (box:world_box) : world_boxes =
     high_x_high_y = { box with min_x = x; min_y = y };
   }
 
-type bounding_box = {
-  min_x : float;
-  min_y : float;
-  max_x : float;
-  max_y : float;
-}
-
 type 'a tree =
   | Leaf of ('a * bounding_box) list
   | Node of 'a node

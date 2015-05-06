@@ -131,6 +131,23 @@ let baricenter = function
 type obj = { pos : vertice; size : float }
 type rect_obj = vertice * vertice
 
+type bounding_box = {
+  min_x : float;
+  min_y : float;
+  max_x : float;
+  max_y : float;
+}
+
+let rect_bounding_box (v1, v2) : bounding_box =
+  { min_x = min v1.x v2.x;
+    max_x = max v1.x v2.x;
+    min_y = min v1.y v2.y;
+    max_y = max v1.y v2.y; }
+
+let is_inside_bounding_box { x; y } bb =
+  x >= bb.min_x && x <= bb.max_x &&
+  y >= bb.min_y && y <= bb.max_y
+
 type direction = Trigo | Antitrigo
 
 let positive_angle angle =
@@ -190,10 +207,15 @@ let distance_vertice_segment (v1,v2) vert =
   if is_between
   then
     let vect = vector v1 v2 in
-    let nv = vect /| (norm vect) in
-    abs_float (prod (turn_trigo nv) (vector v1 vert))
+    let nv = turn_trigo (vect /| (norm vect)) in
+    let dist = prod nv (vector v1 vert) in
+    abs_float dist, translate vert (nv *| (-. dist))
   else
-    min (distance v1 vert) (distance v2 vert)
+    let d1 = distance v1 vert in
+    let d2 = distance v2 vert in
+    if d1 < d2
+    then d1, v1
+    else d2, v2
 
 (* +-----------------------------------------------------------------+
    | Cubic bezier curves                                             |

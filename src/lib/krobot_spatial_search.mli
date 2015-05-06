@@ -9,13 +9,6 @@ type world_box = {
   max_y : float;
 }
 
-type bounding_box = {
-  min_x : float;
-  min_y : float;
-  max_x : float;
-  max_y : float;
-}
-
 val empty : ?max_depth:int -> world_box -> 'a t
 
 val add : 'a -> bounding_box -> 'a t -> 'a t
