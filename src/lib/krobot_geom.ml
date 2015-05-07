@@ -130,6 +130,7 @@ let baricenter = function
 
 type obj = { pos : vertice; size : float }
 type rect_obj = vertice * vertice
+type segment = vertice * vertice
 
 type bounding_box = {
   min_x : float;
@@ -144,15 +145,34 @@ let rect_bounding_box (v1, v2) : bounding_box =
     min_y = min v1.y v2.y;
     max_y = max v1.y v2.y; }
 
+let expand_bounding_box bb expand =
+  { min_x = bb.min_x -. expand;
+    max_x = bb.max_x +. expand;
+    min_y = bb.min_y -. expand;
+    max_y = bb.max_y +. expand; }
+
 let is_inside_bounding_box { x; y } bb =
   x >= bb.min_x && x <= bb.max_x &&
   y >= bb.min_y && y <= bb.max_y
+
+let bounding_box_vertices { min_x; min_y; max_x; max_y } =
+  let v1 = {x = min_x ; y = min_y} in
+  let v2 = {x = min_x ; y = max_y} in
+  let v3 = {x = max_x ; y = max_y} in
+  let v4 = {x = max_x ; y = min_y} in
+  (v1, v2),
+  (v2, v3),
+  (v3, v4),
+  (v4, v1)
 
 type direction = Trigo | Antitrigo
 
 let positive_angle angle =
   let dpi = 2.*.pi in
   mod_float (dpi +. (mod_float angle dpi)) dpi
+
+let angle_pi_minus_pi angle =
+  positive_angle (pi +. angle) -. pi
 
 let diff_angle dir ~start ~stop =
   let d = stop -. start in
@@ -216,6 +236,47 @@ let distance_vertice_segment (v1,v2) vert =
     if d1 < d2
     then d1, v1
     else d2, v2
+
+let distance_bounding_box v bb =
+  (* Far from optimal ... *)
+  let s1, s2, s3, s4 = bounding_box_vertices bb in
+  let d1, v1 = distance_vertice_segment s1 v in
+  let d2, v2 = distance_vertice_segment s2 v in
+  let d3, v3 = distance_vertice_segment s3 v in
+  let d4, v4 = distance_vertice_segment s4 v in
+  let dmin, vmin = if d1 < d2 then d1, v1 else d2, v2 in
+  let dmin, vmin = if dmin < d3 then dmin, vmin else d3, v3 in
+  let dmin, vmin = if dmin < d4 then dmin, vmin else d4, v4 in
+  dmin, vmin
+
+(* +-----------------------------------------------------------------+
+   | Angle set                                                       |
+   +-----------------------------------------------------------------+ *)
+
+module AngleSet = struct
+  type t =
+    { bisect : float;
+      width : float }
+
+  let all = {
+    bisect = 0.;
+    width = pi;
+  }
+
+  let half bisect = {
+    bisect = angle_pi_minus_pi bisect;
+    width = pi /. 2.
+  }
+
+  let intersect a1 a2 =
+    let d = angle_pi_minus_pi (a1.bisect -. a2.bisect) in
+    let w1 = min a1.width (a2.width -. d) in
+    let w2 = min a1.width (a2.width +. d) in
+    let bisect = ((a1.bisect +. w1) +. (a1.bisect -. w2)) /. 2. in
+    let width = (w1 +. w2) /. 2. in
+    { bisect = angle_pi_minus_pi bisect; width }
+
+end
 
 (* +-----------------------------------------------------------------+
    | Cubic bezier curves                                             |

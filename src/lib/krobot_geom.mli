@@ -22,6 +22,7 @@ type vertice = { x : float; y : float }
 
 type obj = { pos : vertice; size : float }
 type rect_obj = vertice * vertice
+type segment = vertice * vertice
 
 type bounding_box = {
   min_x : float;
@@ -74,6 +75,9 @@ type direction = Trigo | Antitrigo
 val positive_angle : float -> float
 (** return an angle between 0 and 2pi *)
 
+val angle_pi_minus_pi : float -> float
+(** return an angle between -pi and pi *)
+
 val diff_angle : direction -> start:float -> stop:float -> float
 (** between -2pi and +2pi *)
 
@@ -85,7 +89,34 @@ val distance_vertice_segment : vertice * vertice -> vertice -> float * vertice
 
 val rect_bounding_box : rect_obj -> bounding_box
 
+val expand_bounding_box : bounding_box -> float -> bounding_box
+(** [expand_bounding_box bb expand] The bounding box extanded in
+    every direction of [expand] *)
+
 val is_inside_bounding_box : vertice -> bounding_box -> bool
+
+val bounding_box_vertices : bounding_box ->
+  (segment * segment * segment * segment)
+
+val distance_bounding_box : vertice -> bounding_box -> float * vertice
+
+(** {6 set of angle manipulation} *)
+
+module AngleSet : sig
+
+  type t = private
+    { bisect : float;
+      width : float }
+  (** The set of angles between [bisect - width, bisect + width] *)
+
+  val all : t
+
+  val half : float -> t
+  (** [half bisect] The set of angles between [bisect - (pi/2), bisect + (pi/2)] *)
+
+  val intersect : t -> t -> t
+
+end
 
 (** {6 Cubic Bezier curves} *)
 
