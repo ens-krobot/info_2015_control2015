@@ -114,7 +114,9 @@ module AngleSet : sig
   val half : float -> t
   (** [half bisect] The set of angles between [bisect - (pi/2), bisect + (pi/2)] *)
 
-  val intersect : t -> t -> t
+  val intersection : t -> t -> t
+
+  val is_all : t -> bool
 
 end
 

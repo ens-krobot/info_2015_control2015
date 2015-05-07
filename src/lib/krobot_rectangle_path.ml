@@ -223,3 +223,28 @@ let first_collision ~src ~path ~obstacles =
                  distance = distance src h +. collision_info.distance }
   in
   loop src path
+
+let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
+
+let colliding ~obstacles point =
+  List.filter (fun obj -> is_inside_bounding_box point
+                  (expand_bounding_box (rect_bounding_box obj) radius))
+    obstacles
+
+let escaping_directions ~obstacles ~src:origin =
+  let colliding_obstacles = colliding ~obstacles origin in
+  (* the closest points of each obstacle too close *)
+  let closest_points = List.map (fun obstacle ->
+    let bb = rect_bounding_box obstacle in
+    let _, point = distance_bounding_box origin bb in
+    point)
+    colliding_obstacles
+  in
+  (* the direction of the closest points from the origin *)
+  let forbidden_directions = List.map (fun point ->
+    angle (vector origin point))
+    closest_points
+  in
+  List.fold_left (fun set forbidden_direction ->
+    AngleSet.(intersection set (half forbidden_direction)))
+    AngleSet.all forbidden_directions

@@ -23,3 +23,10 @@ val first_collision :
   collision option
 (** If there is a collision between the trajectory and an obstacle, returns
     the prefix without collision and the first collision *)
+
+val escaping_directions :
+  obstacles:obstacle list ->
+  src:Krobot_geom.vertice ->
+  Krobot_geom.AngleSet.t
+(** The escaping directions are the directions where we are going away of
+    every colliding obstacles *)

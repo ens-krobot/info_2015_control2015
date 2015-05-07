@@ -268,13 +268,15 @@ module AngleSet = struct
     width = pi /. 2.
   }
 
-  let intersect a1 a2 =
+  let intersection a1 a2 =
     let d = angle_pi_minus_pi (a1.bisect -. a2.bisect) in
     let w1 = min a1.width (a2.width -. d) in
     let w2 = min a1.width (a2.width +. d) in
     let bisect = ((a1.bisect +. w1) +. (a1.bisect -. w2)) /. 2. in
     let width = (w1 +. w2) /. 2. in
     { bisect = angle_pi_minus_pi bisect; width }
+
+  let is_all { width } = width >= pi
 
 end
 
