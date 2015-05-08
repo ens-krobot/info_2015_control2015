@@ -31,11 +31,15 @@ val escaping_directions :
 (** The escaping directions are the directions where we are going away of
     every colliding obstacles *)
 
+type escaping_path =
+  { escape_point : Krobot_geom.vertice;
+    path : Krobot_geom.vertice * Krobot_geom.vertice list }
+
 type pathfinding_result =
   | Cannot_escape
   | No_path
-  | Simple_path of Krobot_geom.vertice list
-  | Escaping_path of Krobot_geom.vertice * Krobot_geom.vertice list
+  | Simple_path of Krobot_geom.vertice * Krobot_geom.vertice list
+  | Escaping_path of escaping_path
 
 val colliding_pathfinding :
   src:Krobot_geom.vertice ->

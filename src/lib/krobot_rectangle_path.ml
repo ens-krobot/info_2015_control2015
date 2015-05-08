@@ -276,17 +276,21 @@ let escaping_directions ~obstacles ~src:origin =
     AngleSet.(intersection set (half forbidden_direction)))
     AngleSet.all forbidden_directions
 
+type escaping_path =
+  { escape_point : Krobot_geom.vertice;
+    path : Krobot_geom.vertice * Krobot_geom.vertice list }
+
 type pathfinding_result =
   | Cannot_escape
   | No_path
-  | Simple_path of vertice list
-  | Escaping_path of vertice * vertice list
+  | Simple_path of Krobot_geom.vertice * Krobot_geom.vertice list
+  | Escaping_path of escaping_path
 
 let colliding_pathfinding ~src ~dst ~obstacles =
   if not (has_collision ~obstacles src)
   then match find_path ~src ~dst ~obstacles with
     | [] -> No_path
-    | path -> Simple_path path
+    | h::t -> Simple_path (h,t)
   else
     let dir = escaping_directions ~obstacles ~src in
     if dir.AngleSet.width <= 0. then
@@ -299,5 +303,6 @@ let colliding_pathfinding ~src ~dst ~obstacles =
       | Some start ->
         match find_path ~src:start ~dst ~obstacles with
         | [] -> No_path
-        | path -> Escaping_path (start, path)
+        | h::t -> Escaping_path {escape_point = start;
+                                 path = (h,t)}
     end

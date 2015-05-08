@@ -447,30 +447,39 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     end
     else
       let path =
-        Krobot_rectangle_path.find_path
+        Krobot_rectangle_path.colliding_pathfinding
           ~src:world.robot.position
           ~dst:dest
           ~obstacles:(obstacles world) in
-      begin match path with
-        | [] ->
-          Lwt_log.ign_warning_f "Pathfinding error: destination unreachable";
+      let path_error world msg =
+        Lwt_log.ign_warning msg;
+        { timeout = 0.01;
+          messages = [Bus Planning_error];
+          world = {world with prepared_vertices = []};
+          state = Transition_to_Idle } in
+      let go world h t =
+        let theta = world.robot.orientation in
+        let rest = List.map (fun v -> v, theta) t in
+        if move then
           { timeout = 0.01;
-            messages = [Bus Planning_error];
+            messages = [Bus Planning_done];
             world = {world with prepared_vertices = []};
+            state = Transition_to_Moving_to ((h, theta), rest) }
+        else
+          { timeout = 0.01;
+            messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
+            world = {world with prepared_vertices = List.rev ((h,theta)::rest)};
             state = Transition_to_Idle }
-        | h::t ->
-          let theta = world.robot.orientation in
-          let rest = List.map (fun v -> v, theta) t in
-          if move then
-            { timeout = 0.01;
-              messages = [Bus Planning_done];
-              world = {world with prepared_vertices = []};
-              state = Transition_to_Moving_to ((h, theta), rest) }
-          else
-            { timeout = 0.01;
-              messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::rest)))];
-              world = {world with prepared_vertices = List.rev ((h,theta)::rest)};
-              state = Transition_to_Idle }
+      in
+      begin match path with
+        | Cannot_escape ->
+          path_error world "Pathfinding error: cannot escape";
+        | No_path ->
+          path_error world "Pathfinding error: destination unreachable";
+        | Simple_path (h,t) -> go world h t
+        | Escaping_path { escape_point; path = (h, t) } ->
+          (* TODO: handle the first one specificaly *)
+          go world escape_point (h::t)
       end
   | Stop stopped ->
     let state, msg =
