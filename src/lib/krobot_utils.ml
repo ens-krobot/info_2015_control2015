@@ -9,3 +9,6 @@ let filter_map f l =
       | Some h -> loop f t (h :: acc)
   in
   loop f l []
+
+let array_rev a =
+  Array.mapi (fun i _ -> a.(Array.length a - i - 1)) a

@@ -111,12 +111,15 @@ let initial_torches = []
   [ 0.9, 0.9;
     2.1, 0.9; ]*)
 
-let urg_position = { x = 0.095; y = 0. }
-
-let urg_angle_limits = -. (pi/.2.), (pi/.2.)
+(* TODO: calibrate *)
+let urg_up_position = { x = 0.095; y = 0. }
+let urg_down_position = { x = 0.095; y = 0. }
 
 let urg_min_distance = 0.04
 
+type urg_angle =
+  | Normal
+  | Inverser
 let urg_up_id = "H1111961"
 let urg_down_id = "H1111964"
 
@@ -484,3 +487,11 @@ let urg_angles =
     2.061670178918301843395965988748; 2.067806102069844165214362874394;
     2.073942025221386931121969610103; 2.080077948372929252940366495750;
     2.086213871524472018847973231459; 2.092349794676014340666370117106; |]
+
+let urg_up_angles = urg_angles
+let urg_down_angles = Krobot_utils.array_rev urg_angles
+
+
+(* TODO *)
+let urg_up_filter = Array.map (fun _ -> false) urg_up_angles
+let urg_down_filter = Array.map (fun _ -> false) urg_down_angles

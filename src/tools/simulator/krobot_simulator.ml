@@ -552,10 +552,10 @@ let circle_obstacle r { pos = { Krobot_geom.x; y }; size } =
   { pos = { Krobot_geom.x = x'; y = y' }; size }
 
 let gen_data robot =
-  let dim = Array.length Krobot_config.urg_angles in
+  let dim = Array.length Krobot_config.urg_down_angles in
   let l = ref [] in
   for i = 0 to dim - 1 do
-    let angle = Krobot_config.urg_angles.(i) in
+    let angle = Krobot_config.urg_down_angles.(i) in
     (*let test_obstacles = List.map (circle_obstacle 0.2)
         Krobot_config.test_obstacles in
       let obstacles = test_obstacles @ Krobot_config.fixed_obstacles in*)

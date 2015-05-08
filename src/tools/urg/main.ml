@@ -29,42 +29,43 @@ let scale = 0.001
 let min_distance = (* in millimeters *)
   int_of_float (1000. *. Krobot_config.urg_min_distance)
 
-let min_angle, max_angle = Krobot_config.urg_angle_limits
-
-
-let convert_pos dist angle =
-  let x = float dist *. cos angle *. scale +. Krobot_config.urg_position.x in
-  let y = float dist *. sin angle *. scale +. Krobot_config.urg_position.y in
+let convert_pos dist angle urg_position =
+  let x = float dist *. cos angle *. scale +. urg_position.x in
+  let y = float dist *. sin angle *. scale +. urg_position.y in
   (x), (-. y) (* the urg is top down -> y is reversed *)
 
-let convert (b:Urg.point_data) =
+let convert (b:Urg.point_data) angles filter urg_position =
   let dim = Bigarray.Array1.dim b in
   let l = ref [] in
   for i = 0 to dim - 1 do
     let data = Nativeint.to_int b.{i} in
-    if data > min_distance
-    then
-      let angle = Krobot_config.urg_angles.(i) in
-      if angle >= min_angle && angle <= max_angle
-      then
-        let (x,y) = convert_pos data angle in
+    if data > min_distance then
+      if not filter.(i) then
+        let (x,y) = convert_pos data angles.(i) urg_position in
         l := {x;y} :: !l
   done;
   Array.of_list !l
 
+let up_config =
+  Krobot_bus.Up, Krobot_config.urg_up_angles,
+  Krobot_config.urg_up_filter, Krobot_config.urg_up_position
+let down_config =
+  Krobot_bus.Down, Krobot_config.urg_down_angles,
+  Krobot_config.urg_down_filter, Krobot_config.urg_down_position
+
 let loop bus urg =
-  let id =
+  let id, angles, filter, position =
     let id = urg.Urg_simple.id in
     if id = Krobot_config.urg_up_id then
-      Krobot_bus.Up
+      up_config
     else if id = Krobot_config.urg_down_id then
-      Krobot_bus.Down
+      down_config
     else failwith (Printf.sprintf "unknown urg id %s" id)
   in
   let rec aux () =
     lwt _ = Lwt_preemptive.detach Urg_simple.get urg in
     let time = Unix.gettimeofday () in
-    let msg = Urg (id, convert urg.Urg_simple.data) in
+    let msg = Urg (id, convert urg.Urg_simple.data angles filter position) in
     lwt () = Krobot_bus.send bus (time, msg) in
     lwt () = Lwt_unix.sleep 0.01 in
     aux () in
