@@ -451,12 +451,6 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           ~src:world.robot.position
           ~dst:dest
           ~obstacles:(obstacles world) in
-      let path_error world msg =
-        Lwt_log.ign_warning msg;
-        { timeout = 0.01;
-          messages = [Bus Planning_error];
-          world = {world with prepared_vertices = []};
-          state = Transition_to_Idle } in
       let go world h t =
         let theta = world.robot.orientation in
         let rest = List.map (fun v -> v, theta) t in
@@ -472,13 +466,16 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             state = Transition_to_Idle }
       in
       begin match path with
-        | Cannot_escape ->
-          path_error world "Pathfinding error: cannot escape";
-        | No_path ->
-          path_error world "Pathfinding error: destination unreachable";
+        | No_path msg ->
+          Lwt_log.ign_warning msg;
+          { timeout = 0.01;
+            messages = [Bus Planning_error];
+            world = {world with prepared_vertices = []};
+            state = Transition_to_Idle }
         | Simple_path (h,t) -> go world h t
         | Escaping_path { escape_point; path = (h, t) } ->
           (* TODO: handle the first one specificaly *)
+          Printf.printf "escaping: %f %f\n%!" escape_point.x escape_point.y;
           go world escape_point (h::t)
       end
   | Stop stopped ->

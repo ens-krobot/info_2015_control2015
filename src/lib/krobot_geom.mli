@@ -102,21 +102,53 @@ val distance_bounding_box : vertice -> bounding_box -> float * vertice
 
 (** {6 set of angle manipulation} *)
 
+(* module AngleSet : sig *)
+
+(*   type t = private *)
+(*     { bisect : float; *)
+(*       width : float (\* less than pi/2 *\) } *)
+(*   (\** The set of angles between [bisect - width, bisect + width] *\) *)
+
+(*   (\* val all : t *\) *)
+
+(*   val half : float -> t *)
+(*   (\** [half bisect] The set of angles between [bisect - (pi/2), bisect + (pi/2)] *\) *)
+
+(*   val intersection : t -> t -> t *)
+
+(*   (\* val complement : t -> t *\) *)
+
+(*   (\* val is_all : t -> bool *\) *)
+
+(* end *)
+
 module AngleSet : sig
 
-  type t = private
+  type a = private
     { bisect : float;
-      width : float }
+      width : float (* in ]0., pi/2] *) }
   (** The set of angles between [bisect - width, bisect + width] *)
+
+  type t = private a list
 
   val all : t
 
   val half : float -> t
   (** [half bisect] The set of angles between [bisect - (pi/2), bisect + (pi/2)] *)
 
+  val create : bisect:float -> width:float -> t
+
   val intersection : t -> t -> t
 
-  val is_all : t -> bool
+  val complement : t -> t
+
+  val is_empty : t -> bool
+
+  val some_bisect : t -> float option
+
+  (* val is_all : t -> bool *)
+
+  val print : Format.formatter -> t -> unit
 
 end
 

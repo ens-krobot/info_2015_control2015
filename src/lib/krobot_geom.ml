@@ -253,22 +253,90 @@ let distance_bounding_box v bb =
    | Angle set                                                       |
    +-----------------------------------------------------------------+ *)
 
+(* module AngleSet = struct *)
+(*   type t = *)
+(*     { bisect : float; *)
+(*       width : float (\* in ]0, pi/2] *\) } *)
+
+(*   (\* let all = { *\) *)
+(*   (\*   bisect = 0.; *\) *)
+(*   (\*   width = pi; *\) *)
+(*   (\* } *\) *)
+
+(*   let half bisect = { *)
+(*     bisect = angle_pi_minus_pi bisect; *)
+(*     width = pi /. 2. *)
+(*             (\* ...... TODO ....... *\) *)
+(*             -. 0.1 *)
+(*   } *)
+
+(*   (\* let complement { bisect; width } = { *\) *)
+(*   (\*   bisect = angle_pi_minus_pi (pi +. bisect); *\) *)
+(*   (\*   width = pi -. (max width 0.); *\) *)
+(*   (\* } *\) *)
+
+(*   let intersection a1 a2 = *)
+(*     let d = angle_pi_minus_pi (a1.bisect -. a2.bisect) in *)
+(*     let w1 = min a1.width (a2.width -. d) in *)
+(*     let w2 = min a1.width (a2.width +. d) in *)
+(*     let bisect = ((a1.bisect +. w1) +. (a1.bisect -. w2)) /. 2. in *)
+(*     let width = (w1 +. w2) /. 2. in *)
+(*     { bisect = angle_pi_minus_pi bisect; width } *)
+
+(*   let is_all { width } = width >= pi *)
+
+(* end *)
+
 module AngleSet = struct
-  type t =
+
+  type a =
     { bisect : float;
-      width : float }
+      width : float (* in ]0, pi/2] *) }
 
-  let all = {
-    bisect = 0.;
-    width = pi;
-  }
+  type t = a list
 
-  let half bisect = {
+  let filter = List.filter (fun { width } -> width > epsilon)
+
+  let split a =
+    assert(a.width < 2. *. pi);
+    if a.width > pi /. 2. then
+      [ { bisect = angle_pi_minus_pi (a.bisect +. a.width /. 2.);
+          width = a.width /. 2. };
+        { bisect = angle_pi_minus_pi (a.bisect -. a.width /. 2.);
+          width = a.width /. 2. } ]
+    else
+      [a]
+
+  let complem { bisect; width } : a list =
+    split {
+      bisect = angle_pi_minus_pi (pi +. bisect);
+      width = pi -. (max width 0.);
+    }
+
+  let complement l =
+    List.flatten (List.map complem l)
+
+  let all = [
+    { bisect = 0.;
+      width = pi /. 2.; };
+    { bisect = pi;
+      width = pi /. 2.; };
+  ]
+
+  let half bisect = [{
     bisect = angle_pi_minus_pi bisect;
-    width = pi /. 2.
-  }
+    width = pi /. 2.;
+  }]
 
-  let intersection a1 a2 =
+  let create ~bisect ~width =
+    if width > 0. then
+      let width = min width (2. *. pi) in
+      let bisect = angle_pi_minus_pi bisect in
+      split { width; bisect }
+    else
+      []
+
+  let inter a1 a2 =
     let d = angle_pi_minus_pi (a1.bisect -. a2.bisect) in
     let w1 = min a1.width (a2.width -. d) in
     let w2 = min a1.width (a2.width +. d) in
@@ -276,7 +344,26 @@ module AngleSet = struct
     let width = (w1 +. w2) /. 2. in
     { bisect = angle_pi_minus_pi bisect; width }
 
-  let is_all { width } = width >= pi
+  let intersection l1 l2 =
+    List.flatten (List.map (fun a1 -> filter (List.map (fun a2 -> inter a1 a2) l2)) l1)
+
+  (* let is_all { width } = width >= pi *)
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+
+  let some_bisect = function
+    | [] -> None
+    | h :: t -> Some (h.bisect)
+
+  let print_a ppf { width; bisect } =
+    Format.fprintf ppf "{ b: %f; w: %f}" bisect width
+
+  let print ppf t =
+    Format.fprintf ppf "[";
+    List.iter (fun a -> Format.fprintf ppf "%a@ " print_a a) t;
+    Format.fprintf ppf "]"
 
 end
 

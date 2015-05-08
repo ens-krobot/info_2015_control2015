@@ -272,37 +272,52 @@ let escaping_directions ~obstacles ~src:origin =
     angle (vector origin point))
     closest_points
   in
-  List.fold_left (fun set forbidden_direction ->
-    AngleSet.(intersection set (half forbidden_direction)))
-    AngleSet.all forbidden_directions
+  match forbidden_directions with
+  | [] -> AngleSet.all
+  | h :: t ->
+    let mk forbidden_direction =
+      let set =
+        AngleSet.(complement
+                    (create ~bisect:forbidden_direction ~width:(pi/.2. -. 0.05))) in
+      (* Format.printf "mk: %a@." AngleSet.print set; *)
+      set
+    in
+    let set =
+      List.fold_left (fun set forbidden_direction ->
+        let forbidden_set = mk forbidden_direction in
+        AngleSet.(intersection set forbidden_set))
+        (mk h) t
+    in
+    (* Format.printf "set: %a@." AngleSet.print set; *)
+    set
 
 type escaping_path =
   { escape_point : Krobot_geom.vertice;
     path : Krobot_geom.vertice * Krobot_geom.vertice list }
 
 type pathfinding_result =
-  | Cannot_escape
-  | No_path
+  | No_path of string
   | Simple_path of Krobot_geom.vertice * Krobot_geom.vertice list
   | Escaping_path of escaping_path
 
 let colliding_pathfinding ~src ~dst ~obstacles =
   if not (has_collision ~obstacles src)
   then match find_path ~src ~dst ~obstacles with
-    | [] -> No_path
+    | [] -> No_path "no path"
     | h::t -> Simple_path (h,t)
   else
     let dir = escaping_directions ~obstacles ~src in
-    if dir.AngleSet.width <= 0. then
-      Cannot_escape
-    else begin
-      let dir = vector_of_polar ~norm:1. ~angle:dir.AngleSet.bisect in
+    match AngleSet.some_bisect dir with
+    | None ->
+      No_path "cannot go away from obstacles"
+    | Some bisect ->
+      (* Printf.printf "bisect: %f\n%!" bisect; *)
+      let dir = vector_of_polar ~norm:1. ~angle:bisect in
       match first_position_non_colliding ~obstacles ~src dir with
       | None ->
-        Cannot_escape
+        No_path "nowhere to go away"
       | Some start ->
         match find_path ~src:start ~dst ~obstacles with
-        | [] -> No_path
+        | [] -> No_path "no path after escaping"
         | h::t -> Escaping_path {escape_point = start;
                                  path = (h,t)}
-    end

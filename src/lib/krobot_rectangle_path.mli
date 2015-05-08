@@ -36,8 +36,7 @@ type escaping_path =
     path : Krobot_geom.vertice * Krobot_geom.vertice list }
 
 type pathfinding_result =
-  | Cannot_escape
-  | No_path
+  | No_path of string
   | Simple_path of Krobot_geom.vertice * Krobot_geom.vertice list
   | Escaping_path of escaping_path
 
