@@ -226,10 +226,37 @@ let first_collision ~src ~path ~obstacles =
 
 let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
 
+let is_colliding_object obstacle point =
+  is_inside_bounding_box point
+    (expand_bounding_box (rect_bounding_box obstacle) radius)
+
 let colliding ~obstacles point =
-  List.filter (fun obj -> is_inside_bounding_box point
-                  (expand_bounding_box (rect_bounding_box obj) radius))
-    obstacles
+  List.filter (fun obj -> is_colliding_object obj point) obstacles
+
+let has_collision ~obstacles point =
+  List.exists (fun obj -> is_colliding_object obj point) obstacles
+
+let first_position_non_colliding ~obstacles ~src direction =
+  let colliding, not_colliding =
+    List.partition (fun obj -> is_colliding_object obj src) obstacles in
+  let max_distance = 10. in
+  let dst = translate src (normalize direction *| max_distance) in
+  let graph = graph_vertices ~dst not_colliding in
+  let bound =
+    match first_intersections graph ~src ~dst with
+    | None -> dst
+    | Some bound -> bound in
+  if has_collision ~obstacles:colliding bound then
+    (* If the first intersection with the world is still too close
+       from an original object, we consider that we can't escape *)
+    None
+  else
+    let co_graph = graph_vertices ~dst:bound colliding in
+    let first_acceptable =
+      match first_intersections co_graph ~src:bound ~dst:src with
+      | None -> src
+      | Some bound -> bound in
+    Some first_acceptable
 
 let escaping_directions ~obstacles ~src:origin =
   let colliding_obstacles = colliding ~obstacles origin in
@@ -248,3 +275,29 @@ let escaping_directions ~obstacles ~src:origin =
   List.fold_left (fun set forbidden_direction ->
     AngleSet.(intersection set (half forbidden_direction)))
     AngleSet.all forbidden_directions
+
+type pathfinding_result =
+  | Cannot_escape
+  | No_path
+  | Simple_path of vertice list
+  | Escaping_path of vertice * vertice list
+
+let colliding_pathfinding ~src ~dst ~obstacles =
+  if not (has_collision ~obstacles src)
+  then match find_path ~src ~dst ~obstacles with
+    | [] -> No_path
+    | path -> Simple_path path
+  else
+    let dir = escaping_directions ~obstacles ~src in
+    if dir.AngleSet.width <= 0. then
+      Cannot_escape
+    else begin
+      let dir = vector_of_polar ~norm:1. ~angle:dir.AngleSet.bisect in
+      match first_position_non_colliding ~obstacles ~src dir with
+      | None ->
+        Cannot_escape
+      | Some start ->
+        match find_path ~src:start ~dst ~obstacles with
+        | [] -> No_path
+        | path -> Escaping_path (start, path)
+    end
