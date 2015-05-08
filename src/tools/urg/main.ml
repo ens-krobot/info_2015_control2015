@@ -53,10 +53,18 @@ let convert (b:Urg.point_data) =
   Array.of_list !l
 
 let loop bus urg =
+  let id =
+    let id = urg.Urg_simple.id in
+    if id = Krobot_config.urg_up_id then
+      Krobot_bus.Up
+    else if id = Krobot_config.urg_down_id then
+      Krobot_bus.Down
+    else failwith (Printf.sprintf "unknown urg id %s" id)
+  in
   let rec aux () =
     lwt _ = Lwt_preemptive.detach Urg_simple.get urg in
     let time = Unix.gettimeofday () in
-    let msg = Urg (convert urg.Urg_simple.data) in
+    let msg = Urg (id, convert urg.Urg_simple.data) in
     lwt () = Krobot_bus.send bus (time, msg) in
     lwt () = Lwt_unix.sleep 0.01 in
     aux () in
@@ -66,33 +74,34 @@ let loop bus urg =
    | Message handling                                                |
    +-----------------------------------------------------------------+ *)
 
-let urg = ref None
+let urgs = ref []
 
 let handle_message (timestamp, message) =
   match message with
-    | Kill "urg" ->
-      begin match !urg with
-        | None -> ()
-        | Some urg ->
-          Urg.urg_disconnect urg.Urg_simple.urg end;
-      exit 0
-    | _ ->
-        ()
+  | Kill "urg" ->
+    List.iter (fun urg -> Urg.urg_disconnect urg.Urg_simple.urg) !urgs;
+    exit 0
+  | _ ->
+    ()
 
 (* let print_pos l = *)
 (*   Format.printf "[@[<1>@ "; *)
 (*   Array.iter (fun {x;y} -> Format.printf "(%f,%f);@ " x y) l; *)
 (*   Format.printf "@]]@." *)
 
-let print_pos ts l =
-  Printf.printf "%f " ts;
+let string_of_urg_id = function
+  | Up -> "Up"
+  | Down -> "Down"
+
+let print_pos id ts l =
+  Printf.printf "%f %s " ts (string_of_urg_id id);
   Array.iter (fun {x;y} -> Format.printf "%f %f " x y) l;
   Printf.printf "\n%!"
 
 let handle_listener (timestamp, message) =
   match message with
-    | Urg data ->
-      print_pos timestamp data;
+    | Urg (id, data) ->
+      print_pos id timestamp data;
       return ()
     | _ -> Lwt.return ()
 
@@ -102,10 +111,12 @@ let handle_listener (timestamp, message) =
 
 let fork = ref true
 let listen = ref false
+let tty = ref []
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
   "-listen", Arg.Set listen, " listen results";
+  "-tty", Arg.String (fun s -> tty := s :: !tty), " add tty";
 ]
 
 let usage = "\
@@ -129,11 +140,10 @@ let run_sender bus =
   (* Wait a bit to let the other handler release the connection *)
   lwt () = Lwt_unix.sleep 0.4 in
 
-  let local_urg = Urg_simple.init () in
-  urg := Some local_urg;
+  urgs := List.map (fun tty -> Urg_simple.init ~tty ()) !tty;
 
   (* Loop forever. *)
-  loop bus local_urg
+  Lwt_list.iter_p (fun urg -> loop bus urg) !urgs
 
 let run_listener bus =
   E.keep (E.map_s handle_listener (Krobot_bus.recv bus));
@@ -142,6 +152,11 @@ let run_listener bus =
 
 lwt () =
   Arg.parse options ignore usage;
+  begin match !tty with
+    | [] ->
+      Printf.printf "No urg tty provided\n%!";
+      exit 1;
+    | _ -> () end;
 
   (* Display all informative messages. *)
   Lwt_log.append_rule "*" Lwt_log.Info;

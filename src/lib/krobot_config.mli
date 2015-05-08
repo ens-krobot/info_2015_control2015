@@ -76,3 +76,6 @@ val urg_min_distance : float
 
 val urg_angles : float array
 (* angles (in radiant) for each index of urg messages *)
+
+val urg_up_id : string
+val urg_down_id : string

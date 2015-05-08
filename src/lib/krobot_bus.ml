@@ -20,6 +20,8 @@ let port = 50000
 
 type frame_source = Elec | Info
 
+type urg_id = Up | Down
+
 type obstacle =
   | Rectangle of vertice * vertice
 
@@ -51,7 +53,7 @@ type message =
   | Sharps of float array
   | Set_fake_beacons of vertice option * vertice option
   | Collisions of collision
-  | Urg of vertice array
+  | Urg of urg_id * vertice array
   | Urg_lines of (vertice*vertice) array
   | Beacon_raw of (int * int * int * int * int * int
       * int * int * int * int * int)
@@ -92,6 +94,11 @@ let string_of_option f v =
       "Some " ^ (f x)
     | None ->
       "None"
+
+let string_of_urg_id (id:urg_id) =
+  match id with
+  | Down -> "down"
+  | Up -> "up"
 
 let string_of_message = function
   | CAN(source, frame) ->
@@ -173,8 +180,8 @@ let string_of_message = function
                     | Some (v, r) ->
                       sprintf "Some (%s, %f)" (string_of_vertice v) r))
               l))
-  | Urg distances ->
-      sprintf "Urg (many_points...)"
+  | Urg (id, distances) ->
+      sprintf "Urg %s (many_points...)" (string_of_urg_id id)
   | Urg_lines lines ->
       sprintf "Urg_lines (many_lines...)"
   | Beacon_raw _ ->

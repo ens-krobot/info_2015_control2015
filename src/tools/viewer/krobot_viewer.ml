@@ -750,7 +750,7 @@ let handle_message viewer (timestamp, message) =
       viewer.collisions <- Some col;
       queue_draw viewer
 
-    | Urg dist ->
+    | Urg (id, dist) ->
       viewer.urg <- project_urg viewer dist;
       queue_draw viewer
 

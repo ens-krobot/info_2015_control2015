@@ -573,7 +573,7 @@ let gen_data robot =
 let loop_urg sim bus =
   let rec aux () =
     let time = Unix.gettimeofday () in
-    let msg = Urg (gen_data sim.state) in
+    let msg = Urg (Krobot_bus.Down, gen_data sim.state) in
     lwt () = Krobot_bus.send bus (time, msg) in
     lwt () = Lwt_unix.sleep 0.1 in
     aux () in

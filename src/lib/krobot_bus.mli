@@ -24,6 +24,8 @@ val logger : t -> Lwt_log.logger
 type frame_source = Elec | Info
     (** The source of CAN frames. *)
 
+type urg_id = Up | Down
+
 type obstacle =
   | Rectangle of vertice * vertice
 
@@ -89,7 +91,7 @@ type message =
   (** A curve and a list of collision. *)
 
   (** distances mesured by the URG (in millimeters) *)
-  | Urg of vertice array
+  | Urg of urg_id * vertice array
   | Urg_lines of (vertice*vertice) array
 
   | Beacon_raw of (int * int * int * int * int * int
