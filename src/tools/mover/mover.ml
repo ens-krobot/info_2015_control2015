@@ -380,7 +380,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         in
         match first_intersection with
         | None ->
-          Lwt_log.ign_warning_f "No collision";
+          (* Lwt_log.ign_warning_f "No collision"; *)
           Moving_to { first_obstacle; next = dest_theta; rest },
           [Bus (First_obstacle None)]
         | Some { Krobot_rectangle_path.distance; collision } ->

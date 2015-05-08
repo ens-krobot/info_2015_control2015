@@ -25,12 +25,12 @@ val goto_object : src : vertice -> dst : vertice -> beacon : vertice option * ve
     move to to reach an object in a position to take it. *)
 *)
 
-val find_with_real_center :
-  pos:vertice ->
-  orientation:float ->
-  ?turn_radius:float ->
-  ?dst_orient:float * vector ->
-  dst : vertice ->
-  beacon : vertice option * vertice option ->
-  rect_obj list ->
-  vertice list option
+(* val find_with_real_center : *)
+(*   pos:vertice -> *)
+(*   orientation:float -> *)
+(*   ?turn_radius:float -> *)
+(*   ?dst_orient:float * vector -> *)
+(*   dst : vertice -> *)
+(*   beacon : vertice option * vertice option -> *)
+(*   rect_obj list -> *)
+(*   vertice list option *)

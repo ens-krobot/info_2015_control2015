@@ -67,31 +67,31 @@ let find ?src_orient ?dst_orient ~src ~dst ~beacon objects =
 
 let sq x = x *. x
 
-let find_with_real_center ~pos:robot_pos ~orientation:robot_angle ?turn_radius ?dst_orient ~dst ~beacon objects =
-  let dist_real_center_wheel_center = (robot_length/.2.) -. wheels_position in
-  let diff_center = vector_of_polar ~norm:dist_real_center_wheel_center
-      ~angle:robot_angle in
-  let center = translate robot_pos diff_center in
-  let radius = sqrt ((sq (robot_length/.2.)) +. (sq (robot_width/.2.))) in
-  let src = center in
+(* let find_with_real_center ~pos:robot_pos ~orientation:robot_angle ?turn_radius ?dst_orient ~dst ~beacon objects = *)
+(*   let dist_real_center_wheel_center = (robot_length/.2.) -. wheels_position in *)
+(*   let diff_center = vector_of_polar ~norm:dist_real_center_wheel_center *)
+(*       ~angle:robot_angle in *)
+(*   let center = translate robot_pos diff_center in *)
+(*   let radius = sqrt ((sq (robot_length/.2.)) +. (sq (robot_width/.2.))) in *)
+(*   let src = center in *)
 
-  let l = object_list ~beacon objects in
-  let l = List.map (fun (v,s) -> (v, min s (distance v src -. 0.1))) l in
-  let min_distance = radius +. safety_margin in
+(*   let l = object_list ~beacon objects in *)
+(*   let l = List.map (fun (v,s) -> (v, min s (distance v src -. 0.1))) l in *)
+(*   let min_distance = radius +. safety_margin in *)
 
-  let src_orient = match turn_radius with
-    | None -> None
-    | Some r ->
-      let vect = { vx = cos robot_angle;
-                   vy = sin robot_angle } in
-      Some (r, vect) in
+(*   let src_orient = match turn_radius with *)
+(*     | None -> None *)
+(*     | Some r -> *)
+(*       let vect = { vx = cos robot_angle; *)
+(*                    vy = sin robot_angle } in *)
+(*       Some (r, vect) in *)
 
-  Krobot_pathfinding.find_path ?src_orient ?dst_orient ~src ~dst
-    ({ x = min_distance;
-       y = min_distance},
-     { x = world_width -. min_distance;
-       y = world_height -. min_distance})
-    l
+(*   Krobot_pathfinding.find_path ?src_orient ?dst_orient ~src ~dst *)
+(*     ({ x = min_distance; *)
+(*        y = min_distance}, *)
+(*      { x = world_width -. min_distance; *)
+(*        y = world_height -. min_distance}) *)
+(*     l *)
 
 (*
 let goto_object ~src ~dst ~beacon =
