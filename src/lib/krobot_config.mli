@@ -62,9 +62,9 @@ val fixed_obstacles : Krobot_geom.rect_obj list
 
 val test_obstacles : Krobot_geom.rect_obj list
 
-val initial_fires : (Krobot_geom.vertice * float) list
+(* val initial_fires : (Krobot_geom.vertice * float) list *)
 
-val initial_torches : Krobot_geom.vertice list
+(* val initial_torches : Krobot_geom.vertice list *)
 
 val urg_up_position : Krobot_geom.vertice
 val urg_down_position : Krobot_geom.vertice
@@ -82,3 +82,22 @@ val urg_down_angles : float array
 val urg_up_filter : bool array
 val urg_down_filter : bool array
 (* filterd points *)
+
+
+(** Motor limits *)
+
+(* on normal moves *)
+
+type motor_limits = {
+  v_lin_max : float; (* m/s *)
+  v_rot_max : float; (* rad/s *)
+  a_lin_max : float; (* m/s^2 *)
+  a_rot_max : float; (* rad/s^2 *)
+  torque_limit : int; (* in [0, 3600] arbitrary unit *)
+}
+
+val normal_limits : motor_limits
+
+val constrained_limits : motor_limits
+(* Limits when the robot is moving in a situation where
+   collisions are expected *)

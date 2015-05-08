@@ -93,23 +93,50 @@ let fixed_obstacles = [
 let test_obstacles =
   [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
 
-let initial_fires = []
-  (*List.map (fun (x, y, a) -> ({x;y},a))
-  [ 0.4, 0.9, 0.;
-    2.6, 0.9, 0.;
-    0.9, 1.4, (pi/.2.);
-    0.9, 0.4, (pi/.2.);
-    2.1, 1.4, (pi/.2.);
-    2.1, 0.4, (pi/.2.);
-    0.018, 1.2, (pi/.2.);
-    2.982, 1.2, (pi/.2.);
-    1.3, 0.018, 0.;
-    1.7, 0.018, 0.; ]*)
+(* let initial_fires = [] *)
+(*   (\*List.map (fun (x, y, a) -> ({x;y},a)) *)
+(*   [ 0.4, 0.9, 0.; *)
+(*     2.6, 0.9, 0.; *)
+(*     0.9, 1.4, (pi/.2.); *)
+(*     0.9, 0.4, (pi/.2.); *)
+(*     2.1, 1.4, (pi/.2.); *)
+(*     2.1, 0.4, (pi/.2.); *)
+(*     0.018, 1.2, (pi/.2.); *)
+(*     2.982, 1.2, (pi/.2.); *)
+(*     1.3, 0.018, 0.; *)
+(*     1.7, 0.018, 0.; ]*\) *)
 
-let initial_torches = []
-  (*List.map (fun (x, y) -> {x;y})
-  [ 0.9, 0.9;
-    2.1, 0.9; ]*)
+(* let initial_torches = [] *)
+(*   (\*List.map (fun (x, y) -> {x;y}) *)
+(*   [ 0.9, 0.9; *)
+(*     2.1, 0.9; ]*\) *)
+
+type motor_limits = {
+  v_lin_max : float; (* m/s *)
+  v_rot_max : float; (* rad/s *)
+  a_lin_max : float; (* m/s^2 *)
+  a_rot_max : float; (* rad/s^2 *)
+  torque_limit : int; (* in [0, 3600] arbitrary unit *)
+}
+
+(* TODO: find the right one *)
+let normal_limits = {
+  v_lin_max = 0.5;
+  v_rot_max = (2. *. pi) /. 2.;
+  a_lin_max = 0.5;
+  a_rot_max = (2. *. pi) /. 2.;
+  torque_limit = 3600;
+}
+
+let constrained_limits =
+  let coef = 0.25 in
+  {
+    v_lin_max = normal_limits.v_lin_max *. coef;
+    v_rot_max = normal_limits.v_rot_max *. coef;
+    a_lin_max = normal_limits.a_lin_max *. coef;
+    a_rot_max = normal_limits.a_rot_max *. coef;
+    torque_limit = 100;
+  }
 
 (* TODO: calibrate *)
 let urg_up_position = { x = 0.095; y = 0. }

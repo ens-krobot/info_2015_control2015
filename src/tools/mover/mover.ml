@@ -309,8 +309,19 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %.02f" dest.x dest.y theta date;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
+      let command_of_limits { Krobot_config.v_lin_max; v_rot_max; a_lin_max; a_rot_max } =
+        [CAN (Motor_omni_limits (v_lin_max, v_rot_max, a_lin_max, a_rot_max));
+         CAN (Drive_torque_limit 100)]
+      in
+      let limit_command =
+        if constrained_move
+        then command_of_limits Krobot_config.constrained_limits
+        else command_of_limits Krobot_config.normal_limits
+      in
       { timeout = 0.1;
-        messages = [CAN goto; Msg (Trajectory_path (generate_path_display world ((dest, theta)::rest)))];
+        messages =
+          limit_command @
+          [CAN goto; Msg (Trajectory_path (generate_path_display world ((dest, theta)::rest)))];
         world;
         state =
           Start_moving_to
@@ -326,36 +337,43 @@ let rec general_step (input:input) (world:world) (state:state) : output =
   | Start_moving_to { original_position; start_motor_stopped; moving_to } -> begin
       let date = (Unix.gettimeofday ()) -. start_date in
       let nothing = { timeout = 0.1; messages = []; world; state } in
+      let constrained = if moving_to.constrained_move then "constrained" else "" in
       match input with
       | World_updated Position_updated ->
         if Krobot_geom.distance original_position world.robot.position >= started_distance
         then begin
           let (dest, theta) = moving_to.next in
-          Lwt_log.ign_info_f "Moving_to (%f, %f, %f) %.02f" dest.x dest.y theta date;
+          Lwt_log.ign_info_f "Moving_to %s (%f, %f, %f) %.02f"
+            constrained
+            dest.x dest.y theta date;
           general_step input world (Moving_to moving_to)
         end
         else
           nothing
       | World_updated Motor_stopped ->
         if start_motor_stopped then begin
-          Lwt_log.ign_info_f "Moving_to: Motor stopped %.02f" date;
+          Lwt_log.ign_info_f "Moving_to %s: Motor stopped %.02f"
+            constrained date;
           general_step input world (Moving_to moving_to)
         end
         else
           nothing
       | World_updated Motor_started -> begin
-          Lwt_log.ign_info_f "Moving_to: Motor started %.02f" date;
+          Lwt_log.ign_info_f "Moving_to %s: Motor started %.02f"
+            constrained date;
           general_step input world (Moving_to moving_to)
         end
       | Timeout ->
         if Krobot_geom.distance world.robot.position (fst moving_to.next)
            <= close_distance_from_destination
         then begin
-          Lwt_log.ign_info_f "Already arrived %.02f" date;
+          Lwt_log.ign_info_f "Already arrived %s %.02f"
+            constrained date;
           general_step input world (Moving_to moving_to)
         end
         else begin
-          Lwt_log.ign_info_f "Still starting %.02f" date;
+          Lwt_log.ign_info_f "Still starting %s %.02f"
+            constrained date;
           nothing
         end
       | _ ->
@@ -378,12 +396,17 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       in
       let date = (Unix.gettimeofday ()) -. start_date in
       let handle_collision () =
-        Lwt_log.ign_warning_f "Collision handling";
+        (* Lwt_log.ign_warning_f "Collision handling"; *)
         let first_intersection =
-          Krobot_rectangle_path.first_collision
-            ~src:world.robot.position
-            ~path:(List.map fst (dest_theta :: rest))
-            ~obstacles:(obstacles world)
+          if constrained_move then
+            (* In constrained_move we ignore the collisions.
+               We limited the torque to avoid having too much problems *)
+            None
+          else
+            Krobot_rectangle_path.first_collision
+              ~src:world.robot.position
+              ~path:(List.map fst (dest_theta :: rest))
+              ~obstacles:(obstacles world)
         in
         match first_intersection with
         | None ->
