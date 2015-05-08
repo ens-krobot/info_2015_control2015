@@ -317,6 +317,11 @@ let colliding_pathfinding ~src ~dst ~obstacles =
       | None ->
         No_path "nowhere to go away"
       | Some start ->
+
+        (* Hackish: we extend this a bit to avoid floating point problems *)
+        let v = vector src start in
+        let start = translate src (normalize v *| (norm v +. 0.0001)) in
+
         match find_path ~src:start ~dst ~obstacles with
         | [] -> No_path "no path after escaping"
         | h::t -> Escaping_path {escape_point = start;
