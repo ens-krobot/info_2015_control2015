@@ -62,7 +62,8 @@ type viewer = {
   mutable collisions : Krobot_bus.collision option;
   (* A curve and a list of: [(curve_parameter, (center, radius))] *)
 
-  mutable urg : vertice array;
+  mutable urg_up : vertice array;
+  mutable urg_down : vertice array;
   mutable urg_lines : (vertice*vertice) array;
 
   mutable obstacles : Krobot_bus.obstacle list;
@@ -436,14 +437,15 @@ let draw viewer =
   draw_beacon b1;
   draw_beacon b2;
 
-  let draw_urg a =
-    Cairo.set_source_rgba ctx 0.5 0.5 0.5 0.5;
+  let draw_urg (r, g, b) a =
+    Cairo.set_source_rgba ctx r g b 0.5;
     let aux {x;y} =
       Cairo.arc ctx x y 0.01 0. (2. *. pi);
       Cairo.fill ctx
     in
     Array.iter aux a in
-  draw_urg viewer.urg;
+  draw_urg (0.5, 0.3, 0.7) viewer.urg_up;
+  draw_urg (0.5, 0.7, 0.3) viewer.urg_down;
 
   let draw_urg_lines a =
     Cairo.set_source_rgba ctx 1. 0.5 1. 0.5;
@@ -751,7 +753,10 @@ let handle_message viewer (timestamp, message) =
       queue_draw viewer
 
     | Urg (id, dist) ->
-      viewer.urg <- project_urg viewer dist;
+      let data = project_urg viewer dist in
+      begin match id with
+        | Up -> viewer.urg_up <- data
+        | Down -> viewer.urg_down <- data end;
       queue_draw viewer
 
     | Urg_lines lines ->
@@ -832,7 +837,8 @@ lwt () =
     motor_status = (false, false, false, false);
     target_position = None;
     collisions = None;
-    urg = [||];
+    urg_up = [||];
+    urg_down = [||];
     urg_lines = [||];
     obstacles = [];
     first_obstacle = None;
