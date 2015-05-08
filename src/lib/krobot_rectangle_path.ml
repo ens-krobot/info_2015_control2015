@@ -300,22 +300,35 @@ type pathfinding_result =
   | Simple_path of Krobot_geom.vertice * Krobot_geom.vertice list
   | Escaping_path of escaping_path
 
-let colliding_pathfinding ~src ~dst ~obstacles =
-  if not (has_collision ~obstacles src)
-  then match find_path ~src ~dst ~obstacles with
-    | [] -> No_path "no path"
-    | h::t -> Simple_path (h,t)
-  else
-    let dir = escaping_directions ~obstacles ~src in
-    match AngleSet.some_bisect dir with
-    | None ->
-      No_path "cannot go away from obstacles"
-    | Some bisect ->
-      (* Printf.printf "bisect: %f\n%!" bisect; *)
+let filter_directions (l:AngleSet.t) =
+  match (l:>AngleSet.a list) with
+  | [] -> []
+  | h :: t ->
+    let close_angle { AngleSet.bisect = a1 } { AngleSet.bisect = a2 } =
+      (* assumes a1 and a2 are between - pi and pi *)
+      let threshold = 0.1 in
+      (a1 -. a2 < threshold) ||
+      (a1 -. a2 > 2. *. pi -. threshold)
+    in
+    let rec aux v acc rem =
+      let rem = List.filter (fun r -> not (close_angle v r)) rem in
+      let acc = v :: acc in
+      match rem with
+      | [] -> acc
+      | h :: t -> aux h acc t
+    in
+    aux h [] t
+
+let find_path_for_directions ~src ~dst ~obstacles sectors =
+  let rec aux err = function
+    | [] -> No_path err
+    | sector :: rest ->
+
+      let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
       match first_position_non_colliding ~obstacles ~src dir with
       | None ->
-        No_path "nowhere to go away"
+        aux "nowhere to go away" rest
       | Some start ->
 
         (* Hackish: we extend this a bit to avoid floating point problems *)
@@ -323,6 +336,18 @@ let colliding_pathfinding ~src ~dst ~obstacles =
         let start = translate src (normalize v *| (norm v +. 0.0001)) in
 
         match find_path ~src:start ~dst ~obstacles with
-        | [] -> No_path "no path after escaping"
-        | h::t -> Escaping_path {escape_point = start;
-                                 path = (h,t)}
+        | [] -> aux "no path after escaping" rest
+        | h::t ->
+          Escaping_path {escape_point = start;
+                         path = (h,t)}
+  in
+  aux "cannot go away from obstacles" sectors
+
+let colliding_pathfinding ~src ~dst ~obstacles =
+  if not (has_collision ~obstacles src)
+  then match find_path ~src ~dst ~obstacles with
+    | [] -> No_path "no path"
+    | h::t -> Simple_path (h,t)
+  else
+    let dir = filter_directions (escaping_directions ~obstacles ~src) in
+    find_path_for_directions ~src ~dst ~obstacles dir
