@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: c4679b374d84d2faec69a02b55438611)
+# DO NOT EDIT (digest: d4bf67b6dc1a1b4d18c48114ad838709)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -107,6 +107,15 @@ true: annot, bin_annot
 <src/tools/mover/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/mover/*.ml{,i,y}>: pkg_lwt.unix
 <src/tools/mover/*.ml{,i,y}>: use_krobot
+# Executable krobot-control
+<src/tools/control/control.{native,byte}>: pkg_lwt.react
+<src/tools/control/control.{native,byte}>: pkg_lwt.syntax
+<src/tools/control/control.{native,byte}>: pkg_lwt.unix
+<src/tools/control/control.{native,byte}>: use_krobot
+<src/tools/control/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/control/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/control/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/control/*.ml{,i,y}>: use_krobot
 # Executable krobot-fake-beacons
 <src/tools/fake_beacons/krobot_fake_beacons.{native,byte}>: pkg_lwt.react
 <src/tools/fake_beacons/krobot_fake_beacons.{native,byte}>: pkg_lwt.syntax

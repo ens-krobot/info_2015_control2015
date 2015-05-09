@@ -145,12 +145,12 @@ Executable "krobot-mover"
 # | High level controler                                              |
 # +-------------------------------------------------------------------+
 
-# Executable "krobot-control"
-#   Path: src/tools/control/
-#   Install: true
-#   CompiledObject: best
-#   MainIs: control.ml
-#   BuildDepends: krobot, lwt.syntax
+Executable "krobot-control"
+  Path: src/tools/control/
+  Install: true
+  CompiledObject: best
+  MainIs: control.ml
+  BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | Fake beacon emulator                                              |
