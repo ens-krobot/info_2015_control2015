@@ -105,7 +105,7 @@ let add value box t =
   else
     t
 
-let empty ?(max_depth=5) world_box =
+let empty ?(max_depth=10) world_box =
   { world_box;
     tree = Leaf [];
     max_depth }
