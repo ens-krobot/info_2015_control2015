@@ -90,7 +90,7 @@ lwt () =
               else Lwt.return_unit
             | (Trajectory_add_vertice _
               | Trajectory_set_vertices _
-              | Trajectory_go) as msg ->
+              | Trajectory_go _) as msg ->
               Lwt_io.printf "bus| %s\n" (string_of_message msg)
             | _ -> return ())
        (Krobot_bus.recv bus));

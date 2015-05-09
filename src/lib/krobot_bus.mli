@@ -40,6 +40,11 @@ type mover_message =
   | Collision
   | First_obstacle of vertice option
 
+type move_kind =
+  | Normal
+  | Constrained (* Move assuming potential collisions *)
+  | Direct (* Move ignoring the fixed world *)
+
 (** Type of message exchanged over the bus. *)
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -61,7 +66,7 @@ type message =
       (** Add a vertice to the trajectory. *)
   | Trajectory_simplify of float
       (** Simplify the trajectory with the given tolerance. *)
-  | Trajectory_go
+  | Trajectory_go of move_kind
       (** Follow currently registered trajectory. *)
   | Goto of vertice
       (** Find a trajectory to that point and go. *)

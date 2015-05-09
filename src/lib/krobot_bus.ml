@@ -36,6 +36,11 @@ type mover_message =
   | Collision
   | First_obstacle of vertice option
 
+type move_kind =
+  | Normal
+  | Constrained
+  | Direct
+
 type message =
   | CAN of frame_source * Krobot_can.frame
   | Log of string
@@ -45,7 +50,7 @@ type message =
   | Trajectory_set_vertices of vertice list
   | Trajectory_add_vertice of vertice * vector option
   | Trajectory_simplify of float
-  | Trajectory_go
+  | Trajectory_go of move_kind
   | Goto of vertice
   | Trajectory_find_path
   | Mover_message of mover_message
@@ -132,8 +137,13 @@ let string_of_message = function
       sprintf
         "Trajectory_simplify %f"
         tolerance
-  | Trajectory_go ->
-      "Trajectory_go"
+  | Trajectory_go kind ->
+    let kind = match kind with
+      | Normal -> "Normal"
+      | Constrained -> "Constrained"
+      | Direct -> "Direct"
+    in
+    Printf.sprintf "Trajectory_go %s" kind
   | Goto v ->
     sprintf
       "Goto %s" (string_of_vertice v)
