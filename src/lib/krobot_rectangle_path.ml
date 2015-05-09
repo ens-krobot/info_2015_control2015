@@ -125,12 +125,18 @@ let first_intersections graph ~src ~dst =
         (distance src h, h) t in
     Some intersection
 
+(* let exists_intersection graph segment = *)
+(*   let blocking = Krobot_spatial_search.segment_collisions segment graph.blocking_tree in *)
+(*   (\* let blocking = List.map (fun v -> (v, v)) graph.blocking in *\) *)
+(*   List.exists (fun (s,_) -> *)
+(*     incr count_intersect; *)
+(*     segment_intersect s segment <> None) blocking *)
+
 let exists_intersection graph segment =
-  let blocking = Krobot_spatial_search.segment_collisions segment graph.blocking_tree in
-  (* let blocking = List.map (fun v -> (v, v)) graph.blocking in *)
-  List.exists (fun (s,_) ->
+  let test s1 s2 =
     incr count_intersect;
-    segment_intersect s segment <> None) blocking
+    segment_intersect s1 s2 <> None in
+  Krobot_spatial_search.find_segment_collision ~test segment graph.blocking_tree
 
 (** Les voisins du sommet src: l'ensemble des sommets [s] de [graph] pour
     lesquels il n'y a pas d'intersection entre le segment [src, s] et un
