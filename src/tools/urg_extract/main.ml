@@ -80,6 +80,11 @@ let mark_circles diameter data =
 let obstacles transform diameter data =
   let sets = mark_circles diameter data in
   let diam_vect = { vx = (diameter *. 0.5) /. (sqrt 2.); vy = (diameter *. 0.5) /. (sqrt 2.) } in
+  let sets =
+    List.filter (fun l ->
+      List.length l >=
+      Krobot_config.extract_number_of_pointneeded_for_obstacle) sets
+  in
   List.map (fun l ->
     let center = transform_vertice transform (baricenter l) in
     Rectangle (translate center diam_vect,

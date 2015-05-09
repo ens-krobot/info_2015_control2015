@@ -101,3 +101,6 @@ val normal_limits : motor_limits
 val constrained_limits : motor_limits
 (* Limits when the robot is moving in a situation where
    collisions are expected *)
+
+val extract_number_of_pointneeded_for_obstacle : int
+(** number of points needed for the extractor to consider an obstacle *)

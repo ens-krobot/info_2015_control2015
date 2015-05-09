@@ -650,3 +650,4 @@ let urg_up_filter =
     false; false; false; false; false; false; false; false; false; false; false;
     false; false; |]
 
+let extract_number_of_pointneeded_for_obstacle = 1
