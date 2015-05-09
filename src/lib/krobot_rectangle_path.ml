@@ -140,9 +140,10 @@ let print_vert ppf { x; y } =
 
 let exists_intersection graph segment =
   let test s1 s2 =
-    Format.printf "intersect (%a - %a) (%a - %a)@."
-      print_vert (fst s1) print_vert (snd s1)
-      print_vert (fst s2) print_vert (snd s2);
+    if debug then
+      Format.printf "intersect (%a - %a) (%a - %a)@."
+        print_vert (fst s1) print_vert (snd s1)
+        print_vert (fst s2) print_vert (snd s2);
     incr count_intersect;
     segment_intersect s1 s2 <> None in
   Krobot_spatial_search.find_segment_collision ~test segment graph.blocking_tree
