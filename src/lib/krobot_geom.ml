@@ -296,9 +296,8 @@ module BB_intersect = struct
     let p = (p1 lor p2) in
     let both_middle_column = (left_sector lor right_sector) land p in
     let both_middle_line = (bottom_sector lor top_sector) land p in
-    both_middle_column lor both_middle_line != 0
+    both_middle_column = 0 || both_middle_line = 0
 
-  (* TO TEST !!! *)
   let is_segment_and_bounding_box_intersecting (v1, v2) bb =
     let sector1 = bb_sector v1 bb in
     let sector2 = bb_sector v2 bb in
@@ -312,17 +311,31 @@ module BB_intersect = struct
       let dx = v2.x -. v1.x in
       let dy = v2.y -. v1.y in
       let y_slope = dy /. dx in
-      if (sector1 lor sector2) land left_sector != 0 then
-        (* Some on the left *)
-        let dmin_x = bb.min_x -. v1.x in
-        let y = dmin_x *. y_slope +. v1.y in
-        y >= bb.min_y && y <= bb.max_y
-      else
-        (* Some on the right *)
-        let dmax_x = bb.max_x -. v1.x in
-        let y = dmax_x *. y_slope +. v1.y in
-        y >= bb.min_y && y <= bb.max_y
+      let x_slope = dx /. dy in
 
+      (((sector1 lor sector2) land left_sector != 0) (* in left sector *)
+       &&
+       (let dmin_x = bb.min_x -. v1.x in (* collision in left sector *)
+        let y = dmin_x *. y_slope +. v1.y in
+        y >= bb.min_y && y <= bb.max_y))
+      ||
+      ((sector1 lor sector2) land right_sector != 0 (* in right sector *)
+       &&
+       (let dmax_x = bb.max_x -. v1.x in (* collision in right sector *)
+        let y = dmax_x *. y_slope +. v1.y in
+        y >= bb.min_y && y <= bb.max_y))
+      ||
+      ((sector1 lor sector2) land top_sector != 0 (* in top sector *)
+       &&
+       (let dmax_y = bb.max_y -. v1.y in (* collision in top sector *)
+        let x = dmax_y *. x_slope +. v1.x in
+        x >= bb.min_x && x <= bb.max_x))
+      ||
+      ((sector1 lor sector2) land bottom_sector != 0 (* in bottom sector *)
+       &&
+       (let dmin_y = bb.min_y -. v1.y in (* collision in bottom sector *)
+        let x = dmin_y *. x_slope +. v1.x in
+        x >= bb.min_x && x <= bb.max_x))
 end
 
 let is_segment_and_bounding_box_intersecting =
