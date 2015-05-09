@@ -39,6 +39,7 @@ Library krobot
   Install: true
   Modules:
     Krobot_utils,
+    Krobot_date,
     Krobot_can,
     Krobot_bus,
     Krobot_daemon,
@@ -139,6 +140,17 @@ Executable "krobot-mover"
   CompiledObject: best
   MainIs: mover.ml
   BuildDepends: krobot, lwt.syntax
+
+# +-------------------------------------------------------------------+
+# | High level controler                                              |
+# +-------------------------------------------------------------------+
+
+# Executable "krobot-control"
+#   Path: src/tools/control/
+#   Install: true
+#   CompiledObject: best
+#   MainIs: control.ml
+#   BuildDepends: krobot, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | Fake beacon emulator                                              |

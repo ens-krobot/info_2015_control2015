@@ -2,8 +2,6 @@ open Krobot_bus
 open Krobot_message
 open Krobot_geom
 
-let start_date = Unix.gettimeofday ()
-
 type world_update =
   | Position_updated
   | Beacons_updated
@@ -87,25 +85,9 @@ let init_world = {
 
 let init_state = Transition_to_Idle
 
-let time_zero = Unix.gettimeofday ()
-let current_time () = Unix.gettimeofday () -. time_zero
-
 let distance_before_stop = 0.6 (* stop if half a metter before collision *)
 let distance_before_handling_obstacle = distance_before_stop +. 0.1
 let close_distance_from_destination = 0.01
-
-module Date : sig
-  type t
-  val add : t -> float -> t
-  val now : unit -> t
-  val time_to_wait : t -> float
-end = struct
-  type t = float
-  let add t d = t +. d
-  let now () = current_time ()
-  let time_to_wait dest =
-    max 0. (dest -. now ())
-end
 
 let generate_path_display world waypoints =
   let _, curves = List.fold_left (fun (prev_vert,curves) (vert,_) ->
@@ -171,10 +153,16 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
             let update =
               if r
               then
-                let () = Lwt_log.ign_info_f "motor start %f" (current_time ()) in
+                let () =
+                  Lwt_log.ign_info_f "motor start %a"
+                    Krobot_date.pr (Krobot_date.now ())
+                in
                 Motor_started
               else
-                let () = Lwt_log.ign_info_f "motor stop %f" (current_time ()) in
+                let () =
+                  Lwt_log.ign_info_f "motor stop %a"
+                    Krobot_date.pr (Krobot_date.now ())
+                in
                 Motor_stopped
             in
             Some ({ world with
@@ -305,8 +293,9 @@ let rec general_step (input:input) (world:world) (state:state) : output =
   end
   | Transition_to_Moving_to ((dest, theta, constrained_move), rest) -> begin
       let open Krobot_geom in
-      let date = (Unix.gettimeofday ()) -. start_date in
-      Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %.02f" dest.x dest.y theta date;
+      let date = Krobot_date.now () in
+      Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %a" dest.x dest.y theta
+        Krobot_date.pr date;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
       let command_of_limits { Krobot_config.v_lin_max; v_rot_max; a_lin_max; a_rot_max } =
@@ -335,7 +324,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
                   constrained_move; } } }
     end
   | Start_moving_to { original_position; start_motor_stopped; moving_to } -> begin
-      let date = (Unix.gettimeofday ()) -. start_date in
+      let date = Krobot_date.now () in
       let nothing = { timeout = 0.1; messages = []; world; state } in
       let constrained = if moving_to.constrained_move then "constrained" else "" in
       match input with
@@ -343,37 +332,38 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         if Krobot_geom.distance original_position world.robot.position >= started_distance
         then begin
           let (dest, theta) = moving_to.next in
-          Lwt_log.ign_info_f "Moving_to %s (%f, %f, %f) %.02f"
+          Lwt_log.ign_info_f "Moving_to %s (%f, %f, %f) %a"
             constrained
-            dest.x dest.y theta date;
+            dest.x dest.y theta
+            Krobot_date.pr date;
           general_step input world (Moving_to moving_to)
         end
         else
           nothing
       | World_updated Motor_stopped ->
         if start_motor_stopped then begin
-          Lwt_log.ign_info_f "Moving_to %s: Motor stopped %.02f"
-            constrained date;
+          Lwt_log.ign_info_f "Moving_to %s: Motor stopped %a"
+            constrained Krobot_date.pr date;
           general_step input world (Moving_to moving_to)
         end
         else
           nothing
       | World_updated Motor_started -> begin
-          Lwt_log.ign_info_f "Moving_to %s: Motor started %.02f"
-            constrained date;
+          Lwt_log.ign_info_f "Moving_to %s: Motor started %a"
+            constrained Krobot_date.pr date;
           general_step input world (Moving_to moving_to)
         end
       | Timeout ->
         if Krobot_geom.distance world.robot.position (fst moving_to.next)
            <= close_distance_from_destination
         then begin
-          Lwt_log.ign_info_f "Already arrived %s %.02f"
-            constrained date;
+          Lwt_log.ign_info_f "Already arrived %s %a"
+            constrained Krobot_date.pr date;
           general_step input world (Moving_to moving_to)
         end
         else begin
-          Lwt_log.ign_info_f "Still starting %s %.02f"
-            constrained date;
+          Lwt_log.ign_info_f "Still starting %s %a"
+            constrained Krobot_date.pr date;
           nothing
         end
       | _ ->
@@ -394,7 +384,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           Krobot_geom.distance world.robot.position first_obstacle
           <= distance_before_handling_obstacle
       in
-      let date = (Unix.gettimeofday ()) -. start_date in
+      let date = Krobot_date.now () in
       let handle_collision () =
         (* Lwt_log.ign_warning_f "Collision handling"; *)
         let first_intersection =
@@ -437,13 +427,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             handle_collision ()
           end
         | World_updated Motor_stopped ->
-          Lwt_log.ign_info_f "Motor_stopped %.02f" date;
+          Lwt_log.ign_info_f "Motor_stopped %a" Krobot_date.pr date;
           next_step rest
         | Timeout when world.robot.motors_moving ->
           (* Lwt_log.ign_info_f "still moving..."; *)
           Moving_to moving_to, []
         | Timeout ->
-          Lwt_log.ign_info_f "Timeout with motor stopped %.02f" date;
+          Lwt_log.ign_info_f "Timeout with motor stopped %a" Krobot_date.pr date;
           next_step rest
         | World_updated (Position_updated | Motor_started |
                          Target_lock_updated | New_vertice )
@@ -542,7 +532,7 @@ let send_msg bus time = function
 
 let main_loop bus iter =
   let rec aux world state timeout =
-    lwt msg = Krobot_entry_point.next ~timeout:Date.(time_to_wait timeout) iter  in
+    lwt msg = Krobot_entry_point.next ~timeout:Krobot_date.(time_to_wait timeout) iter  in
     let update, update_messages =
       match msg with
       | Krobot_entry_point.Timeout ->
@@ -557,9 +547,9 @@ let main_loop bus iter =
       let time = Unix.gettimeofday () in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) update_messages in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) output.messages in
-      let timeout_date = Date.(add (now ()) output.timeout) in
+      let timeout_date = Krobot_date.(add (now ()) output.timeout) in
       aux output.world output.state timeout_date in
-  aux init_world init_state (Date.now ())
+  aux init_world init_state (Krobot_date.now ())
 
 module S : Krobot_entry_point.S = struct
   let name = "mover"

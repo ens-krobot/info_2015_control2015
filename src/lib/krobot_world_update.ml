@@ -20,6 +20,14 @@ type world = {
   robot : robot;
 }
 
+let init_world = {
+  robot = {
+    position = { x = 0.; y = 0. };
+    orientation = 0.;
+    motors_moving = false;
+  };
+}
+
 let update_world : world -> Krobot_bus.message -> (world * world_update) option =
   fun world message ->
     match message with

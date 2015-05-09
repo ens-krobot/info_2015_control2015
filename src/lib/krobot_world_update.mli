@@ -17,4 +17,6 @@ type world = {
   robot : robot;
 }
 
+val init_world : world
+
 val update_world : world -> Krobot_bus.message -> (world * world_update) option
