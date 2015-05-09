@@ -38,3 +38,9 @@ let text s =
     ~l3:(sub s 40 20)
     ~l4:(sub s 60 20)
     ()
+
+let send_text bus s =
+  Lwt_list.iter_s (fun c ->
+    lwt () = Krobot_message.send bus (Unix.gettimeofday (), c) in
+    Lwt_unix.sleep 0.1)
+    (text s)

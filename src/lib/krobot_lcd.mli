@@ -18,3 +18,5 @@ val display :
     lcd screen. Each line must be shorter that 20 characters *)
 
 val text : string -> Krobot_message.t list
+
+val send_text : Krobot_bus.t -> string -> unit Lwt.t
