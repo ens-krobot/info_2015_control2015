@@ -135,7 +135,7 @@ let constrained_limits =
     v_rot_max = normal_limits.v_rot_max *. coef;
     a_lin_max = normal_limits.a_lin_max *. coef;
     a_rot_max = normal_limits.a_rot_max *. coef;
-    torque_limit = 100;
+    torque_limit = 3600;
   }
 
 (* TODO: calibrate *)
@@ -520,7 +520,7 @@ let urg_angles =
 let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) urg_angles
 let urg_down_angles =
   Array.map (fun a -> a +. urg_down_rotation)
-    Krobot_utils.array_rev urg_angles
+    (Krobot_utils.array_rev urg_angles)
 
 let urg_down_filter =
   [|true; true; true; true; true; true; true; true; true; true; true; true;
