@@ -379,6 +379,10 @@ let colliding_pathfinding ~src ~dst ~inflate ~obstacles =
   then match find_path ~src ~dst ~inflate ~obstacles with
     | [] -> No_path "no path"
     | h::t -> Simple_path (h,t)
+  else if not (has_collision ~inflate:0. ~obstacles src)
+  then match find_path ~src ~dst ~inflate ~obstacles with
+    | [] -> No_path "no path"
+    | h::t -> Simple_path (h,t)
   else
-    let dir = filter_directions (escaping_directions ~inflate ~obstacles ~src) in
-    find_path_for_directions ~src ~dst ~inflate ~obstacles dir
+    let dir = filter_directions (escaping_directions ~inflate:0. ~obstacles ~src) in
+    find_path_for_directions ~src ~dst ~inflate:0. ~obstacles dir
