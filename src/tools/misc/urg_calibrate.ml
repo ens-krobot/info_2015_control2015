@@ -85,7 +85,7 @@ lwt () =
     let mean = mean_pos (List.flatten l) in
     let vect = vector { x = 0.; y = 0. } mean in
     let dist = norm vect in
-    Printf.printf "pos: { x: %.03f; y: %.03f }\nangle : %.03f (rad) %.03f\ndistance: %.03f\n%!"
-      mean.x mean.y (angle vect) (pi /. 2. +. (angle vect))
+    Printf.printf "pos: { x: %.03f; y: %.03f }\nangle : %.03f (rad) %.03f %.03f\ndistance: %.03f\n%!"
+      mean.x mean.y (angle vect) (pi /. 2. +. (angle vect)) (pi /. 2. -. (angle vect))
       dist;
     Lwt.return ()
