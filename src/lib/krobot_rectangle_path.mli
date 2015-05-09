@@ -4,6 +4,7 @@ type obstacle = Krobot_geom.rect_obj
 val find_path :
   src:Krobot_geom.vertice ->
   dst:Krobot_geom.vertice ->
+  inflate:float ->
   obstacles:obstacle list ->
   Krobot_geom.vertice list
 (** Find a trajectory between [src] and [dst] avoiding the [obstacles].
@@ -43,6 +44,7 @@ type pathfinding_result =
 val colliding_pathfinding :
   src:Krobot_geom.vertice ->
   dst:Krobot_geom.vertice ->
+  inflate:float ->
   obstacles:obstacle list ->
   pathfinding_result
 (** Find a trajectory between [src] and [dst] avoiding the [obstacles].

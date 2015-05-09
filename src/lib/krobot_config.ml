@@ -25,6 +25,8 @@ let beacon_radius = 0.2
 
 let fire_radius = 0.07
 
+let pathfinding_width_inflate = 0.1
+
 open Krobot_geom
 
 let pi = 4. *. atan 1.

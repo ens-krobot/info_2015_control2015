@@ -1,6 +1,8 @@
 (* #use "topfind";;
    #require "krobot";; *)
 
+let debug = false
+
 open Krobot_geom
 
 type obstacle = rect_obj
@@ -59,10 +61,10 @@ let add_segment_to_tree tree ((v1, v2) as s) =
   let box = rect_bounding_box (v1, v2) in
   Krobot_spatial_search.add s box tree
 
-let add_vertices_and_blocking ( vertices, blocking ) (v1,v2) =
+let add_vertices_and_blocking inflate ( vertices, blocking ) (v1,v2) =
   let {x = x1; y = y1} = v1 in
   let {x = x2; y = y2} = v2 in
-  let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin) in
+  let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin +. inflate) in
   let min_x = min x1 x2 -. radius in
   let max_x = max x1 x2 +. radius in
   let min_y = min y1 y2 -. radius in
@@ -88,9 +90,10 @@ let add_vertices_and_blocking ( vertices, blocking ) (v1,v2) =
 
 (** list graph vertices: points where it is allowed to go.
     i.e. les sommets des rectangles étendus par le rayon du robot *)
-let graph_vertices : dst:vertice -> obstacle list -> graph = fun ~dst obstacles ->
+let graph_vertices : dst:vertice -> inflate:float -> obstacle list -> graph =
+  fun ~dst ~inflate obstacles ->
   let (vertices, blocking) =
-    List.fold_left add_vertices_and_blocking
+    List.fold_left (add_vertices_and_blocking inflate)
     ( VerticeSet.singleton dst, [] )
     obstacles
   in
@@ -132,8 +135,14 @@ let first_intersections graph ~src ~dst =
 (*     incr count_intersect; *)
 (*     segment_intersect s segment <> None) blocking *)
 
+let print_vert ppf { x; y } =
+  Format.fprintf ppf "{ %f, %f }" x y
+
 let exists_intersection graph segment =
   let test s1 s2 =
+    Format.printf "intersect (%a - %a) (%a - %a)@."
+      print_vert (fst s1) print_vert (snd s1)
+      print_vert (fst s2) print_vert (snd s2);
     incr count_intersect;
     segment_intersect s1 s2 <> None in
   Krobot_spatial_search.find_segment_collision ~test segment graph.blocking_tree
@@ -189,17 +198,32 @@ let rec loop ~dst state graph =
   | Continue state ->
     loop ~dst state graph
 
-let find_path ~src ~dst ~obstacles =
+let find_path ~src ~dst ~inflate ~obstacles =
   count_intersect := 0;
   count_steps := 0;
 
-  let graph = graph_vertices ~dst obstacles in
+  let t1 = Unix.gettimeofday () in
+
+  let graph = graph_vertices ~dst ~inflate obstacles in
+
+  let t2 = Unix.gettimeofday () in
+
   let state = init_state ~src ~dst graph.vertices in
+
+  let t3 = Unix.gettimeofday () in
+
   let r = loop ~dst state graph in
 
-  (* Printf.printf "steps %i\nintersect %i\n%!" *)
-  (*   !count_steps *)
-  (*   !count_intersect; *)
+  let t4 = Unix.gettimeofday () in
+
+  if debug then
+    Format.printf "steps %i\nintersect %i\nt graph: %f init %f loop %f\ndepths %a\n@."
+      !count_steps
+      !count_intersect
+      (t2 -. t1)
+      (t3 -. t2)
+      (t4 -. t3)
+      Krobot_spatial_search.print_depths graph.blocking_tree;
 
   r
 
@@ -211,7 +235,7 @@ type collision = {
 }
 
 let first_collision ~src ~path ~obstacles =
-  let graph = graph_vertices ~dst:src obstacles in
+  let graph = graph_vertices ~dst:src ~inflate:0. obstacles in
   let rec loop src path = match path with
     | [] -> None
     | h :: t ->
@@ -247,7 +271,7 @@ let first_position_non_colliding ~obstacles ~src direction =
     List.partition (fun obj -> is_colliding_object obj src) obstacles in
   let max_distance = 10. in
   let dst = translate src (normalize direction *| max_distance) in
-  let graph = graph_vertices ~dst not_colliding in
+  let graph = graph_vertices ~dst ~inflate:0. not_colliding in
   let bound =
     match first_intersections graph ~src ~dst with
     | None -> dst
@@ -257,7 +281,7 @@ let first_position_non_colliding ~obstacles ~src direction =
        from an original object, we consider that we can't escape *)
     None
   else
-    let co_graph = graph_vertices ~dst:bound colliding in
+    let co_graph = graph_vertices ~dst:bound ~inflate:0. colliding in
     let first_acceptable =
       match first_intersections co_graph ~src:bound ~dst:src with
       | None -> src
@@ -325,7 +349,7 @@ let filter_directions (l:AngleSet.t) =
     in
     aux h [] t
 
-let find_path_for_directions ~src ~dst ~obstacles sectors =
+let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
   let rec aux err = function
     | [] -> No_path err
     | sector :: rest ->
@@ -341,7 +365,7 @@ let find_path_for_directions ~src ~dst ~obstacles sectors =
         let v = vector src start in
         let start = translate src (normalize v *| (norm v +. 0.0001)) in
 
-        match find_path ~src:start ~dst ~obstacles with
+        match find_path ~src:start ~inflate ~dst ~obstacles with
         | [] -> aux "no path after escaping" rest
         | h::t ->
           Escaping_path {escape_point = start;
@@ -349,11 +373,11 @@ let find_path_for_directions ~src ~dst ~obstacles sectors =
   in
   aux "cannot go away from obstacles" sectors
 
-let colliding_pathfinding ~src ~dst ~obstacles =
+let colliding_pathfinding ~src ~dst ~inflate ~obstacles =
   if not (has_collision ~obstacles src)
-  then match find_path ~src ~dst ~obstacles with
+  then match find_path ~src ~dst ~inflate ~obstacles with
     | [] -> No_path "no path"
     | h::t -> Simple_path (h,t)
   else
     let dir = filter_directions (escaping_directions ~obstacles ~src) in
-    find_path_for_directions ~src ~dst ~obstacles dir
+    find_path_for_directions ~src ~dst ~inflate ~obstacles dir

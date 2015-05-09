@@ -488,6 +488,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         Krobot_rectangle_path.colliding_pathfinding
           ~src:world.robot.position
           ~dst:dest
+          ~inflate:Krobot_config.pathfinding_width_inflate
           ~obstacles:(obstacles world) in
       let go world h t ~constrained_move =
         let theta = world.robot.orientation in

@@ -51,6 +51,8 @@ val beacon_radius : float
 val fire_radius : float
   (** Bounding box radius of fires. *)
 
+val pathfinding_width_inflate : float
+
 val green_initial_position : Krobot_geom.vertice * float
   (** position and angle of the robot as green *)
 
@@ -104,3 +106,4 @@ val constrained_limits : motor_limits
 
 val extract_number_of_pointneeded_for_obstacle : int
 (** number of points needed for the extractor to consider an obstacle *)
+
