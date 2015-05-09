@@ -22,3 +22,7 @@ val find_segment_collision :
   vertice * vertice ->
   'a t ->
   bool
+
+val depths : 'a t -> int list
+
+val print_depths : Format.formatter -> 'a t -> unit

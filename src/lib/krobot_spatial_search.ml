@@ -105,7 +105,7 @@ let add value box t =
   else
     t
 
-let empty ?(max_depth=10) world_box =
+let empty ?(max_depth=5) world_box =
   { world_box;
     tree = Leaf [];
     max_depth }
@@ -194,3 +194,36 @@ let rec find_collision ~test line tree world_box =
 
 let find_segment_collision ~test line t =
   find_collision ~test line t.tree t.world_box
+
+
+let depths t =
+  let add n = function
+    | [] -> [n]
+    | h :: t -> (n+h) :: t
+  in
+  let rec aux t acc = match t with
+    | Leaf l ->
+      add (List.length l) acc
+    | Node
+        { elements;
+          low_x_low_y;
+          low_x_high_y;
+          high_x_low_y;
+          high_x_high_y; } ->
+      let acc = add (List.length elements) acc in
+      let top, rest = match acc with
+        | [] -> 0, []
+        | h :: t -> h, t in
+      let rest =
+        aux low_x_low_y rest
+        |> aux low_x_high_y
+        |> aux high_x_low_y
+        |> aux high_x_high_y
+      in
+      top :: rest
+  in
+  aux t.tree []
+
+let print_depths ppf t =
+  let depths = depths t in
+  List.iter (fun i -> Format.fprintf ppf "%i " i) depths
