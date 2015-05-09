@@ -25,7 +25,7 @@ let beacon_radius = 0.2
 
 let fire_radius = 0.07
 
-let pathfinding_width_inflate = 0.1
+let pathfinding_width_inflate = 0.05
 
 open Krobot_geom
 
