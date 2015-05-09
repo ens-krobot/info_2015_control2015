@@ -76,6 +76,10 @@ type t =
   | Req_motor_status
   | Motor_omni_limits of float * float * float * float
   | Motor_omni_goto of float * float * float
+  | LCD_clear
+  | LCD_backlight of bool
+  | LCD_refresh_line of int
+  | LCD_message_part of int * string
   | Unknown of Krobot_can.frame
 
 (* +-----------------------------------------------------------------+
@@ -321,6 +325,15 @@ let to_string = function
   | Motor_omni_goto (x_end, y_end, theta_end) ->
     Printf.sprintf "Motor_omni_goto(x_end=%f, y_end=%f, theta_end=%f)"
       x_end y_end theta_end
+  | LCD_clear ->
+    "LCD_clear"
+  | LCD_refresh_line line ->
+    Printf.sprintf "LCD_refresh_line %i" line
+  | LCD_message_part (part, s) ->
+    Printf.sprintf "LCD_message_part(%i,%s)" part s
+  | LCD_backlight b ->
+    Printf.sprintf "LCD_backlight %b" b
+
   | Unknown frame ->
       sprintf "Unknown%s" (Krobot_can.string_of_frame frame)
 
@@ -953,6 +966,42 @@ let encode = function
         ~remote:false
         ~format:F29bits
         ~data
+  | LCD_clear ->
+    frame
+      ~identifier:351
+      ~kind:Data
+      ~remote:false
+      ~format:F29bits
+      ~data:""
+  | LCD_backlight enabled ->
+    let data = Bytes.create 1 in
+    put_uint8 data 0 (if enabled then 1 else 0);
+    frame
+      ~identifier:352
+      ~kind:Data
+      ~remote:false
+      ~format:F29bits
+      ~data
+  | LCD_refresh_line line ->
+    let data = Bytes.create 1 in
+    let line = if line < 1 then 1 else if line > 4 then 4 else line in
+    put_uint8 data 0 line;
+    frame
+      ~identifier:353
+      ~kind:Data
+      ~remote:false
+      ~format:F29bits
+      ~data
+  | LCD_message_part (part, txt) ->
+    let data = Bytes.create 8 in
+    put_uint8 data 0 part;
+    Bytes.blit_string txt 0 data 1 (min 7 (String.length txt));
+    frame
+      ~identifier:354
+      ~kind:Data
+      ~remote:false
+      ~format:F29bits
+      ~data
 
   | Unknown frame ->
       frame
@@ -1257,6 +1306,18 @@ let decode frame =
             Ax12_Set_Torque_Enable
               ((get_uint8 frame.data 0),
               (if (get_uint8 frame.data 1) == 0 then false else true))
+        | 351 ->
+          LCD_clear
+        | 352 ->
+          LCD_backlight
+            (if (get_uint8 frame.data 0) == 0 then false else true)
+        | 353 ->
+          LCD_refresh_line (get_uint8 frame.data 0)
+        | 354 ->
+          LCD_message_part
+            (get_uint8 frame.data 0,
+             Bytes.sub_string frame.data 1 7)
+
         | _ ->
             Unknown frame
   with Invalid_argument _ ->

@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: 8eeba4ee325697c4b60d52c960556e32)
+# DO NOT EDIT (digest: 2b76551a4f87f84da76f79a674f674f5)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -131,6 +131,29 @@ true: annot, bin_annot
 <src/tools/urg/*.ml{,i,y}>: pkg_threads
 <src/tools/urg/*.ml{,i,y}>: pkg_urg
 <src/tools/urg/*.ml{,i,y}>: use_krobot
+# Executable krobot-urg-filter-generator
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.preemptive
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.react
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.syntax
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.unix
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_threads
+<src/tools/misc/urg_filter_generator.{native,byte}>: pkg_urg
+<src/tools/misc/urg_filter_generator.{native,byte}>: use_krobot
+# Executable krobot-text
+<src/tools/misc/text.{native,byte}>: pkg_lwt.preemptive
+<src/tools/misc/text.{native,byte}>: pkg_lwt.react
+<src/tools/misc/text.{native,byte}>: pkg_lwt.syntax
+<src/tools/misc/text.{native,byte}>: pkg_lwt.unix
+<src/tools/misc/text.{native,byte}>: pkg_threads
+<src/tools/misc/text.{native,byte}>: pkg_urg
+<src/tools/misc/text.{native,byte}>: use_krobot
+<src/tools/misc/*.ml{,i,y}>: pkg_lwt.preemptive
+<src/tools/misc/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/misc/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/misc/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/misc/*.ml{,i,y}>: pkg_threads
+<src/tools/misc/*.ml{,i,y}>: pkg_urg
+<src/tools/misc/*.ml{,i,y}>: use_krobot
 # Executable krobot-urg-extract
 <src/tools/urg_extract/main.{native,byte}>: pkg_lwt.preemptive
 <src/tools/urg_extract/main.{native,byte}>: pkg_lwt.react

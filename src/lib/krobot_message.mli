@@ -186,6 +186,23 @@ type t =
   | Motor_omni_goto of float * float * float
       (** [Motor_omni(x_end, y_end, theta_end)] *)
 
+  | LCD_clear
+      (** Clear the lcd screen *)
+  | LCD_backlight of bool
+  | LCD_refresh_line of int
+      (** [LCD_refresh_line line] line is in [1, 4]
+          Flush the line data to the lcd screen *)
+  | LCD_message_part of int * string
+      (** [LCD_message_send (part, message)]
+          part is in [0, 11]
+          message is of length 7
+          Write the selected part to the LCD screen buffer.
+          part position:
+          line1: 0 1  2
+          line2: 3 4  5
+          line3: 6 7  8
+          line4: 9 10 11
+      *)
 
   | Unknown of Krobot_can.frame
       (** An unknown can frame. *)

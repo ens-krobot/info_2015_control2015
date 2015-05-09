@@ -53,6 +53,7 @@ Library krobot
     Krobot_rectangle_path,
     Krobot_world_update,
     Krobot_ax12_format,
+    Krobot_lcd,
     Krobot_entry_point
   CSources:
     krobot_message_stubs.c
@@ -160,6 +161,30 @@ Executable "krobot-urg"
   Install$: flag(urg)
   CompiledObject: best
   MainIs: main.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
+# | Generate urg filtering tables                                     |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-urg-filter-generator"
+  Path: src/tools/misc/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: urg_filter_generator.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
+# | Display text on the lcd                                           |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-text"
+  Path: src/tools/misc/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: text.ml
   BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
 
 # +-------------------------------------------------------------------+
