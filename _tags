@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: 2b76551a4f87f84da76f79a674f674f5)
+# DO NOT EDIT (digest: c4679b374d84d2faec69a02b55438611)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -139,6 +139,14 @@ true: annot, bin_annot
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_threads
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_urg
 <src/tools/misc/urg_filter_generator.{native,byte}>: use_krobot
+# Executable krobot-urg-calibrate
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_lwt.preemptive
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_lwt.react
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_lwt.syntax
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_lwt.unix
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_threads
+<src/tools/misc/urg_calibrate.{native,byte}>: pkg_urg
+<src/tools/misc/urg_calibrate.{native,byte}>: use_krobot
 # Executable krobot-text
 <src/tools/misc/text.{native,byte}>: pkg_lwt.preemptive
 <src/tools/misc/text.{native,byte}>: pkg_lwt.react

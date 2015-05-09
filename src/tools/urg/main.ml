@@ -153,8 +153,8 @@ let run_listener bus =
 
 lwt () =
   Arg.parse options ignore usage;
-  begin match !tty with
-    | [] ->
+  begin match !tty, !listen with
+    | [], false ->
       Printf.printf "No urg tty provided\n%!";
       exit 1;
     | _ -> () end;

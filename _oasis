@@ -187,6 +187,14 @@ Executable "krobot-urg-filter-generator"
   MainIs: urg_filter_generator.ml
   BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
 
+Executable "krobot-urg-calibrate"
+  Path: src/tools/misc/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: urg_calibrate.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
 # +-------------------------------------------------------------------+
 # | Display text on the lcd                                           |
 # +-------------------------------------------------------------------+
