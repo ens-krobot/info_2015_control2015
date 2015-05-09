@@ -298,9 +298,10 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         Krobot_date.pr date;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
-      let command_of_limits { Krobot_config.v_lin_max; v_rot_max; a_lin_max; a_rot_max } =
+      let command_of_limits { Krobot_config.v_lin_max; v_rot_max;
+                              a_lin_max; a_rot_max; torque_limit } =
         [CAN (Motor_omni_limits (v_lin_max, v_rot_max, a_lin_max, a_rot_max));
-         CAN (Drive_torque_limit 100)]
+         CAN (Drive_torque_limit torque_limit)]
       in
       let limit_command =
         if constrained_move
