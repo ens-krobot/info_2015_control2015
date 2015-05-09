@@ -1,8 +1,14 @@
 
+let filter_dist = ref 1
 let distance = ref 1.
 let tty = ref None
+let captures = ref 10
+let keep = ref 1
 
 let options = Arg.align [
+  "-k", Arg.Set_int keep, " number of mesures for keeping";
+  "-c", Arg.Set_int captures, " number of captures";
+  "-w", Arg.Set_int filter_dist, " number of additionnal points to filter";
   "-d", Arg.Set_float distance, " Filter distance (default 1 meter)";
   "-tty", Arg.String (fun s -> tty := Some s), " urg tty";
 ]
@@ -16,9 +22,9 @@ options are:"
 let () = Arg.parse options ignore usage
 let urg = Urg_simple.init ?tty:!tty ()
 
-let captures = 10
-let keep = 3
-let filter_dist = 1
+let captures = !captures
+let keep = !keep
+let filter_dist = !filter_dist
 
 let copy_data ba =
   let open Bigarray in
