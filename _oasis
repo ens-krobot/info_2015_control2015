@@ -55,7 +55,8 @@ Library krobot
     Krobot_world_update,
     Krobot_ax12_format,
     Krobot_lcd,
-    Krobot_entry_point
+    Krobot_entry_point,
+    Krobot_serial
   CSources:
     krobot_message_stubs.c
 
