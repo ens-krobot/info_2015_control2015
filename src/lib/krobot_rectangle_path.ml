@@ -257,19 +257,19 @@ let first_collision ~src ~path ~obstacles =
 
 let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
 
-let is_colliding_object obstacle point =
+let is_colliding_object ~inflate obstacle point =
   is_inside_bounding_box point
-    (expand_bounding_box (rect_bounding_box obstacle) radius)
+    (expand_bounding_box (rect_bounding_box obstacle) (radius +. inflate))
 
-let colliding ~obstacles point =
-  List.filter (fun obj -> is_colliding_object obj point) obstacles
+let colliding ~inflate ~obstacles point =
+  List.filter (fun obj -> is_colliding_object ~inflate obj point) obstacles
 
-let has_collision ~obstacles point =
-  List.exists (fun obj -> is_colliding_object obj point) obstacles
+let has_collision ~inflate ~obstacles point =
+  List.exists (fun obj -> is_colliding_object ~inflate obj point) obstacles
 
-let first_position_non_colliding ~obstacles ~src direction =
+let first_position_non_colliding ~inflate ~obstacles ~src direction =
   let colliding, not_colliding =
-    List.partition (fun obj -> is_colliding_object obj src) obstacles in
+    List.partition (fun obj -> is_colliding_object ~inflate obj src) obstacles in
   let max_distance = 10. in
   let dst = translate src (normalize direction *| max_distance) in
   let graph = graph_vertices ~dst ~inflate:0. not_colliding in
@@ -277,7 +277,7 @@ let first_position_non_colliding ~obstacles ~src direction =
     match first_intersections graph ~src ~dst with
     | None -> dst
     | Some bound -> bound in
-  if has_collision ~obstacles:colliding bound then
+  if has_collision ~inflate ~obstacles:colliding bound then
     (* If the first intersection with the world is still too close
        from an original object, we consider that we can't escape *)
     None
@@ -289,8 +289,8 @@ let first_position_non_colliding ~obstacles ~src direction =
       | Some bound -> bound in
     Some first_acceptable
 
-let escaping_directions ~obstacles ~src:origin =
-  let colliding_obstacles = colliding ~obstacles origin in
+let escaping_directions ~inflate ~obstacles ~src:origin =
+  let colliding_obstacles = colliding ~inflate ~obstacles origin in
   (* the closest points of each obstacle too close *)
   let closest_points = List.map (fun obstacle ->
     let bb = rect_bounding_box obstacle in
@@ -357,7 +357,7 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
 
       let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
-      match first_position_non_colliding ~obstacles ~src dir with
+      match first_position_non_colliding ~inflate ~obstacles ~src dir with
       | None ->
         aux "nowhere to go away" rest
       | Some start ->
@@ -375,10 +375,10 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
   aux "cannot go away from obstacles" sectors
 
 let colliding_pathfinding ~src ~dst ~inflate ~obstacles =
-  if not (has_collision ~obstacles src)
+  if not (has_collision ~inflate ~obstacles src)
   then match find_path ~src ~dst ~inflate ~obstacles with
     | [] -> No_path "no path"
     | h::t -> Simple_path (h,t)
   else
-    let dir = filter_directions (escaping_directions ~obstacles ~src) in
+    let dir = filter_directions (escaping_directions ~inflate ~obstacles ~src) in
     find_path_for_directions ~src ~dst ~inflate ~obstacles dir

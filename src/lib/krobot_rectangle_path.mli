@@ -26,6 +26,7 @@ val first_collision :
     the prefix without collision and the first collision *)
 
 val escaping_directions :
+  inflate:float ->
   obstacles:obstacle list ->
   src:Krobot_geom.vertice ->
   Krobot_geom.AngleSet.t
