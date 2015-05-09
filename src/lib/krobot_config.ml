@@ -138,17 +138,13 @@ let constrained_limits =
     torque_limit = 3600;
   }
 
-(* TODO: calibrate *)
-let urg_up_position = { x = 0.095; y = 0. }
-let urg_up_rotation = pi /. 2.
-let urg_down_position = { x = 0.095; y = 0. }
-let urg_down_rotation = pi /. 2.
+let urg_up_position = { x = 0.0; y = -.0.117 }
+let urg_up_rotation = pi /. 2. -. 0.042
+let urg_down_position = { x = 0.0; y = 0. }
+let urg_down_rotation = pi /. 2. +. 0.298 +. 0.023
 
 let urg_min_distance = 0.04
 
-type urg_angle =
-  | Normal
-  | Inverser
 let urg_up_id = "H1111961"
 let urg_down_id = "H1111964"
 
