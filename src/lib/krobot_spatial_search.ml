@@ -5,12 +5,7 @@ let min (x:float) (y:float) =
 let max (x:float) (y:float) =
   if x < y then y else x
 
-type world_box = {
-  min_x : float;
-  min_y : float;
-  max_x : float;
-  max_y : float;
-}
+type world_box = bounding_box
 
 type world_boxes = {
   low_x_low_y : world_box;
@@ -144,19 +139,22 @@ let inside_world_box vert (box:world_box) =
   vert.y >= box.min_y &&
   vert.y <= box.max_y
 
-let line_world_box_collision ((v1, v2) as line) (box:world_box) =
-  inside_world_box v1 box ||
-  inside_world_box v2 box ||
-  begin
-    let box_vert_ll = { x = box.min_x; y = box.min_y } in
-    let box_vert_lh = { x = box.min_x; y = box.max_y } in
-    let box_vert_hl = { x = box.max_x; y = box.min_y } in
-    let box_vert_hh = { x = box.max_x; y = box.max_y } in
-    segment_intersect line (box_vert_ll, box_vert_lh) <> None ||
-    segment_intersect line (box_vert_lh, box_vert_hh) <> None ||
-    segment_intersect line (box_vert_hh, box_vert_hl) <> None ||
-    segment_intersect line (box_vert_hl, box_vert_ll) <> None
-  end
+(* let line_world_box_collision ((v1, v2) as line) (box:world_box) = *)
+(*   inside_world_box v1 box || *)
+(*   inside_world_box v2 box || *)
+(*   begin *)
+(*     let box_vert_ll = { x = box.min_x; y = box.min_y } in *)
+(*     let box_vert_lh = { x = box.min_x; y = box.max_y } in *)
+(*     let box_vert_hl = { x = box.max_x; y = box.min_y } in *)
+(*     let box_vert_hh = { x = box.max_x; y = box.max_y } in *)
+(*     segment_intersect line (box_vert_ll, box_vert_lh) <> None || *)
+(*     segment_intersect line (box_vert_lh, box_vert_hh) <> None || *)
+(*     segment_intersect line (box_vert_hh, box_vert_hl) <> None || *)
+(*     segment_intersect line (box_vert_hl, box_vert_ll) <> None *)
+(*   end *)
+
+let line_world_box_collision =
+  Krobot_geom.is_segment_and_bounding_box_intersecting
 
 let rec add_collisions line tree world_box acc =
   if line_world_box_collision line world_box
@@ -177,3 +175,22 @@ let rec add_collisions line tree world_box acc =
 
 let segment_collisions line t =
   add_collisions line t.tree t.world_box []
+
+let rec find_collision ~test line tree world_box =
+  if line_world_box_collision line world_box
+  then
+    match tree with
+    | Leaf l ->
+      List.exists (fun (v, box) -> line_box_collision line box && test line v) l
+    | Node node ->
+      let wboxes = cut_world_box ~x:node.x_split ~y:node.y_split world_box in
+      List.exists (fun (v, box) -> line_box_collision line box && test line v) node.elements
+      || find_collision ~test line node.low_x_low_y   wboxes.low_x_low_y
+      || find_collision ~test line node.low_x_high_y  wboxes.low_x_high_y
+      || find_collision ~test line node.high_x_low_y  wboxes.high_x_low_y
+      || find_collision ~test line node.high_x_high_y wboxes.high_x_high_y
+  else
+    false
+
+let find_segment_collision ~test line t =
+  find_collision ~test line t.tree t.world_box
