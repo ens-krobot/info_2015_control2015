@@ -121,19 +121,22 @@ let inside_box vert (box:bounding_box) =
   vert.y >= box.min_y &&
   vert.y <= box.max_y
 
-let line_box_collision ((v1, v2) as line) (box:bounding_box) =
-  inside_box v1 box ||
-  inside_box v2 box ||
-  begin
-    let box_vert_ll = { x = box.min_x; y = box.min_y } in
-    let box_vert_lh = { x = box.min_x; y = box.max_y } in
-    let box_vert_hl = { x = box.max_x; y = box.min_y } in
-    let box_vert_hh = { x = box.max_x; y = box.max_y } in
-    segment_intersect line (box_vert_ll, box_vert_lh) <> None ||
-    segment_intersect line (box_vert_lh, box_vert_hh) <> None ||
-    segment_intersect line (box_vert_hh, box_vert_hl) <> None ||
-    segment_intersect line (box_vert_hl, box_vert_ll) <> None
-  end
+(* let line_box_collision ((v1, v2) as line) (box:bounding_box) = *)
+(*   inside_box v1 box || *)
+(*   inside_box v2 box || *)
+(*   begin *)
+(*     let box_vert_ll = { x = box.min_x; y = box.min_y } in *)
+(*     let box_vert_lh = { x = box.min_x; y = box.max_y } in *)
+(*     let box_vert_hl = { x = box.max_x; y = box.min_y } in *)
+(*     let box_vert_hh = { x = box.max_x; y = box.max_y } in *)
+(*     segment_intersect line (box_vert_ll, box_vert_lh) <> None || *)
+(*     segment_intersect line (box_vert_lh, box_vert_hh) <> None || *)
+(*     segment_intersect line (box_vert_hh, box_vert_hl) <> None || *)
+(*     segment_intersect line (box_vert_hl, box_vert_ll) <> None *)
+(*   end *)
+
+let line_box_collision =
+  Krobot_geom.is_segment_and_bounding_box_intersecting
 
 let inside_world_box vert (box:world_box) =
   vert.x >= box.min_x &&
