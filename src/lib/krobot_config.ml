@@ -140,7 +140,9 @@ let constrained_limits =
 
 (* TODO: calibrate *)
 let urg_up_position = { x = 0.095; y = 0. }
+let urg_up_rotation = pi /. 2.
 let urg_down_position = { x = 0.095; y = 0. }
+let urg_down_rotation = pi /. 2.
 
 let urg_min_distance = 0.04
 
@@ -515,9 +517,10 @@ let urg_angles =
     2.073942025221386931121969610103; 2.080077948372929252940366495750;
     2.086213871524472018847973231459; 2.092349794676014340666370117106; |]
 
-let urg_up_angles = urg_angles
-let urg_down_angles = Krobot_utils.array_rev urg_angles
-
+let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) urg_angles
+let urg_down_angles =
+  Array.map (fun a -> a +. urg_down_rotation)
+    Krobot_utils.array_rev urg_angles
 
 let urg_down_filter =
   [|true; true; true; true; true; true; true; true; true; true; true; true;
