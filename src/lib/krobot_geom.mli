@@ -100,6 +100,8 @@ val bounding_box_vertices : bounding_box ->
 
 val distance_bounding_box : vertice -> bounding_box -> float * vertice
 
+val is_segment_and_bounding_box_intersecting : segment -> bounding_box -> bool
+
 (** {6 set of angle manipulation} *)
 
 (* module AngleSet : sig *)

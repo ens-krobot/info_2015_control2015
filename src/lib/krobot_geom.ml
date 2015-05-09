@@ -249,6 +249,85 @@ let distance_bounding_box v bb =
   let dmin, vmin = if dmin < d4 then dmin, vmin else d4, v4 in
   dmin, vmin
 
+module BB_intersect = struct
+  (* Bounding box sectors
+
+     1001 | 1000 | 1010
+     ------------------
+     0001 | 0000 | 0010
+     ------------------
+     0101 | 0100 | 0110
+
+     A line from a sector a to sector b
+     * cannot cross the sector 0000 if a && b != 0: both on a side of the sector
+     * must cross the sector 0000 if a = 0 or b = 0
+     * then if both are in the middle column or in the middle line (upper bits = 0)
+       or (lower bits = 0) then must cross
+  *)
+
+  let left_sector   = 0b0001
+  let right_sector  = 0b0010
+  let bottom_sector = 0b0100
+  let top_sector    = 0b1000
+
+  let bb_sector v bb =
+    let middle = 0 in
+
+    let sect =
+      if v.x < bb.min_x then
+        left_sector
+      else if v.x > bb.max_x then
+        right_sector
+      else
+        middle
+    in
+    let sect =
+      if v.y < bb.min_y then
+        sect lor bottom_sector
+      else
+      if v.y > bb.max_y then
+        sect lor top_sector
+      else
+        sect
+    in
+    sect
+
+  let both_middle p1 p2 =
+    let p = (p1 lor p2) in
+    let both_middle_column = (left_sector lor right_sector) land p in
+    let both_middle_line = (bottom_sector lor top_sector) land p in
+    both_middle_column lor both_middle_line != 0
+
+  (* TO TEST !!! *)
+  let is_segment_and_bounding_box_intersecting (v1, v2) bb =
+    let sector1 = bb_sector v1 bb in
+    let sector2 = bb_sector v2 bb in
+    if sector1 land sector2 != 0 then
+      false
+    else if sector1 = 0 || sector2 = 0 then
+      true
+    else if both_middle sector1 sector2 then
+      true
+    else
+      let dx = v2.x -. v1.x in
+      let dy = v2.y -. v1.y in
+      let y_slope = dy /. dx in
+      if (sector1 lor sector2) land left_sector != 0 then
+        (* Some on the left *)
+        let dmin_x = bb.min_x -. v1.x in
+        let y = dmin_x *. y_slope +. v1.y in
+        y >= bb.min_y && y <= bb.max_y
+      else
+        (* Some on the right *)
+        let dmax_x = bb.max_x -. v1.x in
+        let y = dmax_x *. y_slope +. v1.y in
+        y >= bb.min_y && y <= bb.max_y
+
+end
+
+let is_segment_and_bounding_box_intersecting =
+  BB_intersect.is_segment_and_bounding_box_intersecting
+
 (* +-----------------------------------------------------------------+
    | Angle set                                                       |
    +-----------------------------------------------------------------+ *)
