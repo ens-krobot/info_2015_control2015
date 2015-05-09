@@ -52,6 +52,11 @@ let filtered =
 open Format
 
 let () =
+  if urg.id = Krobot_config.urg_up_id then
+    printf "let urg_up_filter =@."
+  else if urg.id = Krobot_config.urg_down_id then
+    printf "let urg_down_filter =@."
+  else printf "urg id: %s@." urg.id;
   printf "@[<1>[|";
   Array.iter (fun b -> printf "%b;@ " b) filtered;
   printf "@]|]@."
