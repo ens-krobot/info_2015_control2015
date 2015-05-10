@@ -148,10 +148,15 @@ let prefixed_files prefix =
 
 let start tty bus =
   Lwt_log.ign_info_f "start urg %s" tty;
-  let urg = Urg_simple.init ~tty () in
-  urgs := urg :: !urgs;
-  managed_devices := tty :: !managed_devices;
-  loop bus urg
+  let urg = try Some (Urg_simple.init ~tty ()) with _ -> None in
+  match urg with
+  | None ->
+    Lwt_log.ign_info_f "failed connection to urg %s" tty;
+    Lwt.return ()
+  | Some urg ->
+    urgs := urg :: !urgs;
+    managed_devices := tty :: !managed_devices;
+    loop bus urg
 
 let rec find_loop bus prefix =
   let files = prefixed_files prefix in
