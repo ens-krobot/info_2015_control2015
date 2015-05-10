@@ -130,6 +130,7 @@ Usage: krobot-urg [options]
 options are:"
 
 let is_prefix ~prefix s =
+  (String.length s >= String.length prefix) &&
   String.sub s 0 (String.length prefix) = prefix
 
 let prefixed_files prefix =
