@@ -36,10 +36,10 @@ type collision =
 type request_id = int
 
 type mover_message =
-  | Planning_error
-  | Planning_done
+  | Planning_error of request_id
+  | Planning_done of request_id
   | Idle
-  | Collision
+  | Collision of request_id
   | First_obstacle of vertice option
   | Request_completed of request_id
 

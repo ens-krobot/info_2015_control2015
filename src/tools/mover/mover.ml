@@ -444,7 +444,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           end
           else begin
             Lwt_log.ign_warning_f "Collision";
-            Transition_to_Stop, [Bus Collision]
+            Transition_to_Stop, [Bus (Collision request_id)]
           end
       in
       let state, messages =
@@ -493,7 +493,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     then begin
       Lwt_log.ign_warning_f "Pathfinding error: destination out of game area";
       { timeout = 0.01;
-        messages = [Bus Planning_error];
+        messages = [Bus (Planning_error request_id)];
         world = {world with prepared_vertices = []};
         state = Transition_to_Idle }
     end
@@ -510,12 +510,12 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         let next_move = { position = h; orientation = theta; move_kind = constrained_move } in
         if move then
           { timeout = 0.01;
-            messages = [Bus Planning_done];
+            messages = [Bus (Planning_done request_id)];
             world = {world with prepared_vertices = []};
             state = Transition_to_Moving_to (request_id, next_move, rest) }
         else
           { timeout = 0.01;
-            messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
+            messages = [Bus (Planning_done request_id); Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
             world = {world with prepared_vertices = List.rev ((h,theta)::drop_kind rest)};
             state = Transition_to_Idle }
       in
@@ -523,7 +523,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | No_path msg ->
           Lwt_log.ign_warning msg;
           { timeout = 0.01;
-            messages = [Bus Planning_error];
+            messages = [Bus (Planning_error request_id)];
             world = {world with prepared_vertices = []};
             state = Transition_to_Idle }
         | Simple_path (h,t) -> go world h t ~constrained_move:Normal
