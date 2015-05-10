@@ -14,9 +14,9 @@ let line line_number = function
   | Some s ->
     let b = Bytes.make 20 ' ' in
     Bytes.blit_string s 0 b 0 (min 20 (String.length s));
-    [LCD_message_part (3*line_number + 0, Bytes.sub_string b 0 7);
-     LCD_message_part (3*line_number + 1, Bytes.sub_string b 7 7);
-     LCD_message_part (3*line_number + 2, Bytes.sub_string b 14 6);
+    [LCD_message_part (3*(line_number-1) + 0, Bytes.sub_string b 0 7);
+     LCD_message_part (3*(line_number-1) + 1, Bytes.sub_string b 7 7);
+     LCD_message_part (3*(line_number-1) + 2, Bytes.sub_string b 14 6);
      LCD_refresh_line line_number]
 
 let display ?l1 ?l2 ?l3 ?l4 () =
@@ -42,5 +42,14 @@ let text s =
 let send_text bus s =
   Lwt_list.iter_s (fun c ->
     lwt () = Krobot_message.send bus (Unix.gettimeofday (), c) in
-    Lwt_unix.sleep 0.1)
+    Lwt_unix.sleep 0.02)
     (text s)
+
+let send_line bus l s =
+  Lwt_list.iter_s (fun c ->
+    lwt () = Krobot_message.send bus (Unix.gettimeofday (), c) in
+    Lwt_unix.sleep 0.010)
+    (line l (Some s))
+
+let clear bus =
+  Krobot_message.send bus (Unix.gettimeofday (), LCD_clear)

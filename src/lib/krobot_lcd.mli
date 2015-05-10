@@ -7,6 +7,8 @@
  * This file is a part of [kro]bot.
  *)
 
+val line : int -> string option -> Krobot_message.t list
+
 val display :
   ?l1 : string ->
   ?l2 : string ->
@@ -20,3 +22,7 @@ val display :
 val text : string -> Krobot_message.t list
 
 val send_text : Krobot_bus.t -> string -> unit Lwt.t
+
+val send_line : Krobot_bus.t -> int -> string -> unit Lwt.t
+
+val clear : Krobot_bus.t -> unit Lwt.t
