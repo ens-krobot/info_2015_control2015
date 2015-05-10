@@ -45,6 +45,8 @@ type move_kind =
   | Constrained (* Move assuming potential collisions *)
   | Direct (* Move ignoring the fixed world *)
 
+type request_id = int
+
 (** Type of message exchanged over the bus. *)
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -66,9 +68,9 @@ type message =
       (** Add a vertice to the trajectory. *)
   | Trajectory_simplify of float
       (** Simplify the trajectory with the given tolerance. *)
-  | Trajectory_go of move_kind
+  | Trajectory_go of request_id * move_kind
       (** Follow currently registered trajectory. *)
-  | Goto of int * vertice
+  | Goto of request_id * vertice
       (** Find a trajectory to that point and go.
           The integer is the request id *)
   | Trajectory_find_path

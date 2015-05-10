@@ -945,7 +945,7 @@ lwt () =
        (fun ev ->
           if GdkEvent.Button.button ev = 1 then
             clear_button_1_state ();
-            ignore (Krobot_bus.send bus (Unix.gettimeofday (), Trajectory_go Direct));
+            ignore (Krobot_bus.send bus (Unix.gettimeofday (), Trajectory_go (0, Direct)));
           false));
 
   ignore

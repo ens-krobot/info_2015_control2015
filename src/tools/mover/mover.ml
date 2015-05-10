@@ -44,6 +44,7 @@ type move_vertice = {
 }
 
 type moving_to = {
+  request_id : request_id;
   first_obstacle : vertice option;
   move : move_vertice;
   rest : move_vertice list;
@@ -56,7 +57,7 @@ type start_moving_to = {
 }
 
 type state =
-  | Transition_to_Moving_to of move_vertice * (move_vertice list)
+  | Transition_to_Moving_to of request_id * move_vertice * (move_vertice list)
   | Start_moving_to of start_moving_to
   | Moving_to of moving_to
   | Idle
@@ -286,7 +287,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             world = { world with prepared_vertices = [] };
             state = Transition_to_Goto (0, dest, false) }
       end
-    | Message (Trajectory_go kind) -> begin
+    | Message (Trajectory_go (request_id, kind)) -> begin
         match List.rev world.prepared_vertices with
         | [] ->
           Lwt_log.ign_warning_f "nowhere to go";
@@ -299,7 +300,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             messages = [];
             world = { world with prepared_vertices = [] };
             state = Transition_to_Moving_to
-                ({ position = dest; orientation = theta; move_kind = kind}, rest)
+                (request_id,
+                 { position = dest; orientation = theta; move_kind = kind}, rest)
           }
       end
     | Timeout ->
@@ -308,7 +310,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     | _ ->
       idle ~notify:false world
   end
-  | Transition_to_Moving_to ({ position = dest; orientation = theta; move_kind }, rest) -> begin
+  | Transition_to_Moving_to (request_id, { position = dest; orientation = theta; move_kind }, rest) -> begin
       let open Krobot_geom in
       let date = Krobot_date.now () in
       Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %a" dest.x dest.y theta
@@ -337,7 +339,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             { original_position = world.robot.position;
               start_motor_stopped = world.robot.motors_moving;
               moving_to =
-                { first_obstacle = Some world.robot.position;
+                { request_id;
+                  first_obstacle = Some world.robot.position;
                   (* force testing for intersections *)
                   move = { position = dest; orientation = theta; move_kind };
                   rest; } } }
@@ -393,11 +396,11 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       | _ ->
         nothing
     end
-  | Moving_to ({ first_obstacle; move; rest } as moving_to) -> begin
+  | Moving_to ({ first_obstacle; move; rest; request_id } as moving_to) -> begin
       let next_step : move_vertice list -> 'a = function
         | [] -> Idle, [Msg (Trajectory_path [])]
         | move :: rest ->
-          Transition_to_Moving_to (move, rest), [] in
+          Transition_to_Moving_to (request_id, move, rest), [] in
       let close_to_first_obstacle = match first_obstacle with
         | None -> false
         | Some first_obstacle ->
@@ -479,8 +482,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       messages = [CAN motor_stop];
       world;
       state = Stop t }
-  | Transition_to_Goto (req_id, dest, move) ->
-    Lwt_log.ign_info_f "Goto %i %b" req_id move;
+  | Transition_to_Goto (request_id, dest, move) ->
+    Lwt_log.ign_info_f "Goto %i %b" request_id move;
     if dest.x < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
        dest.x > Krobot_config.world_width -. Krobot_config.robot_radius -. Krobot_config.safety_margin ||
        dest.y < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
@@ -507,7 +510,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           { timeout = 0.01;
             messages = [Bus Planning_done];
             world = {world with prepared_vertices = []};
-            state = Transition_to_Moving_to (next_move, rest) }
+            state = Transition_to_Moving_to (request_id, next_move, rest) }
         else
           { timeout = 0.01;
             messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
