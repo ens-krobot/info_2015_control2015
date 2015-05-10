@@ -154,6 +154,7 @@ let start tty bus =
     Lwt_log.ign_info_f "failed connection to urg %s" tty;
     Lwt.return ()
   | Some urg ->
+    Lwt_log.ign_info_f "urg %s really started" tty;
     urgs := urg :: !urgs;
     managed_devices := tty :: !managed_devices;
     loop bus urg
