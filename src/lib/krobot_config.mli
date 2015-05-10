@@ -59,6 +59,17 @@ val green_initial_position : Krobot_geom.vertice * float
 val yellow_initial_position : Krobot_geom.vertice * float
   (** position and angle of the robot as yellow *)
 
+val right_arm_idx : int
+  (** index of AX12 actionning the right arm *)
+
+val right_arm_positions : int * int * int * int
+  (** positions of the servo for the right arm : (in, ready, perpendicular, parallel) *)
+
+val left_arm_idx : int
+  (** index of AX12 actionning the left arm *)
+
+val left_arm_positions : int * int * int * int
+  (** positions of the servo for the left arm : (in, ready, perpendicular, parallel) *)
 
 val fixed_obstacles : Krobot_geom.rect_obj list
 

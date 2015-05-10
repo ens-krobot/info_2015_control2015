@@ -41,6 +41,14 @@ let yellow_initial_position =
     y = world_height /. 2.; },
   (pi)
 
+let right_arm_idx = 3
+
+let right_arm_positions = (700, 640, 440, 160)
+
+let left_arm_idx = 5
+
+let left_arm_positions = (437, 513, 600, 900)
+
 let green_fixed_beacons = [
   { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };
