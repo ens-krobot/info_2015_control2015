@@ -191,7 +191,7 @@ let rec find_loop bus prefix =
     lwt () = Lwt_unix.sleep 2. in
     find_loop bus prefix
   | _ ->
-    lwt () = Lwt_list.iter_p (fun tty -> start tty bus) new_devices in
+    let _ : unit Lwt.t = Lwt_list.iter_p (fun tty -> start tty bus) new_devices in
     lwt () = Lwt_unix.sleep 2. in
     find_loop bus prefix
 
