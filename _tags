@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: d4bf67b6dc1a1b4d18c48114ad838709)
+# DO NOT EDIT (digest: afbe6a6e2bd09715b9a41005d9501e1e)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -140,6 +140,21 @@ true: annot, bin_annot
 <src/tools/urg/*.ml{,i,y}>: pkg_threads
 <src/tools/urg/*.ml{,i,y}>: pkg_urg
 <src/tools/urg/*.ml{,i,y}>: use_krobot
+# Executable krobot-arduino
+<src/tools/arduino/arduino.{native,byte}>: pkg_lwt.preemptive
+<src/tools/arduino/arduino.{native,byte}>: pkg_lwt.react
+<src/tools/arduino/arduino.{native,byte}>: pkg_lwt.syntax
+<src/tools/arduino/arduino.{native,byte}>: pkg_lwt.unix
+<src/tools/arduino/arduino.{native,byte}>: pkg_threads
+<src/tools/arduino/arduino.{native,byte}>: pkg_urg
+<src/tools/arduino/arduino.{native,byte}>: use_krobot
+<src/tools/arduino/*.ml{,i,y}>: pkg_lwt.preemptive
+<src/tools/arduino/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/arduino/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/arduino/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/arduino/*.ml{,i,y}>: pkg_threads
+<src/tools/arduino/*.ml{,i,y}>: pkg_urg
+<src/tools/arduino/*.ml{,i,y}>: use_krobot
 # Executable krobot-urg-filter-generator
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.preemptive
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.react

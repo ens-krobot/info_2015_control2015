@@ -177,6 +177,18 @@ Executable "krobot-urg"
   BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
 
 # +-------------------------------------------------------------------+
+# | Arduino controler (serial stuff)                                  |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-arduino"
+  Path: src/tools/arduino/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: arduino.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
 # | Generate urg filtering tables                                     |
 # +-------------------------------------------------------------------+
 
