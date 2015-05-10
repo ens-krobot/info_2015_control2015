@@ -189,6 +189,18 @@ Executable "krobot-arduino"
   BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
 
 # +-------------------------------------------------------------------+
+# | AX12 stuff                                                        |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-ax12-dump"
+  Path: src/tools/ax12/
+  Build$: flag(urg)
+  Install$: flag(urg)
+  CompiledObject: best
+  MainIs: dump_ax12.ml
+  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
 # | Generate urg filtering tables                                     |
 # +-------------------------------------------------------------------+
 

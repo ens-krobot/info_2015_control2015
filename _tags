@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: afbe6a6e2bd09715b9a41005d9501e1e)
+# DO NOT EDIT (digest: b0ee1a0f8fa213bfc552b5a9eb807b00)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -155,6 +155,21 @@ true: annot, bin_annot
 <src/tools/arduino/*.ml{,i,y}>: pkg_threads
 <src/tools/arduino/*.ml{,i,y}>: pkg_urg
 <src/tools/arduino/*.ml{,i,y}>: use_krobot
+# Executable krobot-ax12-dump
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.preemptive
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.react
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.syntax
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.unix
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_threads
+<src/tools/ax12/dump_ax12.{native,byte}>: pkg_urg
+<src/tools/ax12/dump_ax12.{native,byte}>: use_krobot
+<src/tools/ax12/*.ml{,i,y}>: pkg_lwt.preemptive
+<src/tools/ax12/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/ax12/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/ax12/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/ax12/*.ml{,i,y}>: pkg_threads
+<src/tools/ax12/*.ml{,i,y}>: pkg_urg
+<src/tools/ax12/*.ml{,i,y}>: use_krobot
 # Executable krobot-urg-filter-generator
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.preemptive
 <src/tools/misc/urg_filter_generator.{native,byte}>: pkg_lwt.react

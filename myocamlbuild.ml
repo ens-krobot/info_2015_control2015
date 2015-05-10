@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: f14c02b98d5a51921dfb655b77afbddd) *)
+(* DO NOT EDIT (digest: 9707104b4b60ab350850fe7d01eecf6a) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -623,6 +623,7 @@ let package_default =
           ("src/tools/dump", ["src/lib"]);
           ("src/tools/driver", ["src/can"; "src/lib"]);
           ("src/tools/control", ["src/lib"]);
+          ("src/tools/ax12", ["src/lib"]);
           ("src/tools/arduino", ["src/lib"]);
           ("src/can", ["src/lib"])
        ]
@@ -633,7 +634,7 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 637 "myocamlbuild.ml"
+# 638 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let () = mark_tag_used "tests";;
 
