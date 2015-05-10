@@ -955,7 +955,7 @@ lwt () =
             match !button_1_state with
             | Some point ->
               clear_button_1_state ();
-              ignore (Krobot_bus.send bus (Unix.gettimeofday (), Goto point));
+              ignore (Krobot_bus.send bus (Unix.gettimeofday (), Goto (0, point)));
               Lwt_log.ign_warning_f ~section "goto"
             | None ->
               Lwt_log.ign_warning_f ~section "nowhere to goto"

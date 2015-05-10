@@ -40,7 +40,8 @@ type goto_result =
   | Goto_failure
 
 let goto ~state ~destination =
-  lwt () = send state (Goto destination) in
+  (* TODO: id *)
+  lwt () = send state (Goto (0, destination)) in
   lwt (state, msg) = consume_until_mover_message state in
   match msg with
   | Idle ->

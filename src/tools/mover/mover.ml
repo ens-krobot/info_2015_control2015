@@ -25,6 +25,8 @@ type robot = {
   (* Are motors moving ? *)
 }
 
+type request_id = int
+
 type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
@@ -35,11 +37,16 @@ type world = {
 
 type first_obstacle = Krobot_geom.vertice option
 
-type moving_to = {
+type move_vertice = {
+  position : Krobot_geom.vertice;
+  orientation : float;
   move_kind : move_kind;
+}
+
+type moving_to = {
   first_obstacle : vertice option;
-  next : Krobot_geom.vertice * float;
-  rest : (Krobot_geom.vertice * float * move_kind) list;
+  move : move_vertice;
+  rest : move_vertice list;
 }
 
 type start_moving_to = {
@@ -49,13 +56,13 @@ type start_moving_to = {
 }
 
 type state =
-  | Transition_to_Moving_to of (Krobot_geom.vertice * float * move_kind) * ((Krobot_geom.vertice * float * move_kind) list)
+  | Transition_to_Moving_to of move_vertice * (move_vertice list)
   | Start_moving_to of start_moving_to
   | Moving_to of moving_to
   | Idle
   | Transition_to_Idle
   | Transition_to_Stop
-  | Transition_to_Goto of Krobot_geom.vertice * bool
+  | Transition_to_Goto of request_id * Krobot_geom.vertice * bool
   | Stop of float
 
 type message =
@@ -253,7 +260,8 @@ let motor_stop = Motor_stop(0.4, 0.4)
 let safe_stop_time = 0.1 (* second *)
 let started_distance = 0.005
 
-let drop_kind l = List.map (fun (d,t,_) -> (d,t)) l
+let drop_kind l = List.map (fun {position; orientation} -> (position,orientation)) l
+let posisions l = List.map (fun {position} -> position) l
 
 let rec general_step (input:input) (world:world) (state:state) : output =
   match state with
@@ -261,11 +269,11 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     Lwt_log.ign_info_f "Idle";
     idle ~notify:true world
   | Idle -> begin match input with
-    | Message (Goto dest) ->
+    | Message (Goto (req_id, dest)) ->
       { timeout = 0.01;
         messages = [];
         world;
-        state = Transition_to_Goto (dest, true) }
+        state = Transition_to_Goto (req_id, dest, true) }
     | Message Trajectory_find_path -> begin
         match world.prepared_vertices with
         | [] ->
@@ -276,7 +284,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           { timeout = 0.01;
             messages = [];
             world = { world with prepared_vertices = [] };
-            state = Transition_to_Goto (dest, false) }
+            state = Transition_to_Goto (0, dest, false) }
       end
     | Message (Trajectory_go kind) -> begin
         match List.rev world.prepared_vertices with
@@ -284,12 +292,15 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           Lwt_log.ign_warning_f "nowhere to go";
           idle ~notify:true world
         | (dest, theta) :: rest ->
-          let rest = List.map (fun (d, t) -> (d, t, kind)) rest in
+          let rest = List.map (fun (d, t) ->
+            { position = d; orientation = t; move_kind = kind }) rest in
           Lwt_log.ign_warning_f "Run Go";
           { timeout = 0.1;
             messages = [];
             world = { world with prepared_vertices = [] };
-            state = Transition_to_Moving_to ((dest, theta, kind), rest) }
+            state = Transition_to_Moving_to
+                ({ position = dest; orientation = theta; move_kind = kind}, rest)
+          }
       end
     | Timeout ->
       Lwt_log.ign_info_f "still idle...";
@@ -297,7 +308,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     | _ ->
       idle ~notify:false world
   end
-  | Transition_to_Moving_to ((dest, theta, move_kind), rest) -> begin
+  | Transition_to_Moving_to ({ position = dest; orientation = theta; move_kind }, rest) -> begin
       let open Krobot_geom in
       let date = Krobot_date.now () in
       Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %a" dest.x dest.y theta
@@ -328,15 +339,14 @@ let rec general_step (input:input) (world:world) (state:state) : output =
               moving_to =
                 { first_obstacle = Some world.robot.position;
                   (* force testing for intersections *)
-                  next = (dest, theta);
-                  rest;
-                  move_kind; } } }
+                  move = { position = dest; orientation = theta; move_kind };
+                  rest; } } }
     end
   | Start_moving_to { original_position; start_motor_stopped; moving_to } -> begin
       let date = Krobot_date.now () in
       let nothing = { timeout = 0.1; messages = []; world; state } in
       let move_kind =
-        match moving_to.move_kind with
+        match moving_to.move.move_kind with
         | Constrained -> "constrained"
         | Normal -> ""
         | Direct -> "direct"
@@ -345,7 +355,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       | World_updated Position_updated ->
         if Krobot_geom.distance original_position world.robot.position >= started_distance
         then begin
-          let (dest, theta) = moving_to.next in
+          let { position = dest; orientation = theta } = moving_to.move in
           Lwt_log.ign_info_f "Moving_to %s (%f, %f, %f) %a"
             move_kind
             dest.x dest.y theta
@@ -368,7 +378,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           general_step input world (Moving_to moving_to)
         end
       | Timeout ->
-        if Krobot_geom.distance world.robot.position (fst moving_to.next)
+        if Krobot_geom.distance world.robot.position moving_to.move.position
            <= close_distance_from_destination
         then begin
           Lwt_log.ign_info_f "Already arrived %s %a"
@@ -383,12 +393,11 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       | _ ->
         nothing
     end
-  | Moving_to ({ first_obstacle; next = dest_theta; rest;
-                 move_kind } as moving_to) -> begin
-      let next_step = function
+  | Moving_to ({ first_obstacle; move; rest } as moving_to) -> begin
+      let next_step : move_vertice list -> 'a = function
         | [] -> Idle, [Msg (Trajectory_path [])]
-        | (dest, theta, move_kind) :: rest ->
-          Transition_to_Moving_to ((dest, theta, move_kind), rest), [] in
+        | move :: rest ->
+          Transition_to_Moving_to (move, rest), [] in
       let close_to_first_obstacle = match first_obstacle with
         | None -> false
         | Some first_obstacle ->
@@ -399,7 +408,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       let handle_collision () =
         (* Lwt_log.ign_warning_f "Collision handling"; *)
         let first_intersection =
-          match move_kind with
+          match move.move_kind with
           | Constrained ->
             (* In constrained_move we ignore the collisions.
                We limited the torque to avoid having too much problems *)
@@ -407,13 +416,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           | Normal ->
             Krobot_rectangle_path.first_collision
               ~src:world.robot.position
-              ~path:(List.map fst (dest_theta :: drop_kind rest))
+              ~path:(posisions (move :: rest))
               ~obstacles:(obstacles world)
           | Direct ->
             (* Direct move ignore fixed obstacles *)
             Krobot_rectangle_path.first_collision
               ~src:world.robot.position
-              ~path:(List.map fst (dest_theta :: drop_kind rest))
+              ~path:(posisions (move :: rest))
               ~obstacles:(not_fixed_obstacles world)
         in
         match first_intersection with
@@ -470,8 +479,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       messages = [CAN motor_stop];
       world;
       state = Stop t }
-  | Transition_to_Goto (dest, move) ->
-    Lwt_log.ign_info_f "Goto %b" move;
+  | Transition_to_Goto (req_id, dest, move) ->
+    Lwt_log.ign_info_f "Goto %i %b" req_id move;
     if dest.x < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
        dest.x > Krobot_config.world_width -. Krobot_config.robot_radius -. Krobot_config.safety_margin ||
        dest.y < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
@@ -492,12 +501,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           ~obstacles:(obstacles world) in
       let go world h t ~constrained_move =
         let theta = world.robot.orientation in
-        let rest = List.map (fun v -> v, theta, Normal) t in
+        let rest = List.map (fun v -> { position = v; orientation = theta; move_kind = Normal}) t in
+        let next_move = { position = h; orientation = theta; move_kind = constrained_move } in
         if move then
           { timeout = 0.01;
             messages = [Bus Planning_done];
             world = {world with prepared_vertices = []};
-            state = Transition_to_Moving_to ((h, theta, constrained_move), rest) }
+            state = Transition_to_Moving_to (next_move, rest) }
         else
           { timeout = 0.01;
             messages = [Bus Planning_done; Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];

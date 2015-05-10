@@ -68,8 +68,9 @@ type message =
       (** Simplify the trajectory with the given tolerance. *)
   | Trajectory_go of move_kind
       (** Follow currently registered trajectory. *)
-  | Goto of vertice
-      (** Find a trajectory to that point and go. *)
+  | Goto of int * vertice
+      (** Find a trajectory to that point and go.
+          The integer is the request id *)
   | Trajectory_find_path
       (** Find a path avoiding objects. *)
 

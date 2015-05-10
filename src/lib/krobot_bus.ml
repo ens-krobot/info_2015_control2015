@@ -51,7 +51,7 @@ type message =
   | Trajectory_add_vertice of vertice * vector option
   | Trajectory_simplify of float
   | Trajectory_go of move_kind
-  | Goto of vertice
+  | Goto of int * vertice
   | Trajectory_find_path
   | Mover_message of mover_message
   | Obstacles of obstacle list
@@ -144,9 +144,9 @@ let string_of_message = function
       | Direct -> "Direct"
     in
     Printf.sprintf "Trajectory_go %s" kind
-  | Goto v ->
+  | Goto (id, v) ->
     sprintf
-      "Goto %s" (string_of_vertice v)
+      "Goto (%i, %s)" id (string_of_vertice v)
   | Trajectory_find_path ->
     "Trajectory_find_path"
   | Mover_message mover_message ->
