@@ -56,7 +56,8 @@ Library krobot
     Krobot_ax12_format,
     Krobot_lcd,
     Krobot_entry_point,
-    Krobot_serial
+    Krobot_serial,
+    Krobot_mover_control
   CSources:
     krobot_message_stubs.c
 
