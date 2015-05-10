@@ -113,22 +113,33 @@ let handle_listener (timestamp, message) =
 let fork = ref true
 let listen = ref false
 let tty = ref []
+let tty_prefix = ref []
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
   "-listen", Arg.Set listen, " listen results";
   "-tty", Arg.String (fun s -> tty := s :: !tty), " add tty";
+  "-tty-prefix", Arg.String (fun s -> tty_prefix := s :: !tty_prefix), " add tty with prefix";
 ]
 
 let usage = "\
 Usage: krobot-urg [options]
 options are:"
 
+let is_prefix ~prefix s =
+  String.sub s 0 (String.length prefix) = prefix
+
+let prefixed_files prefix =
+  let files = Sys.readdir "/dev" in
+  List.filter
+    (fun filename -> is_prefix ~prefix filename)
+    (Array.to_list files)
+
 (* +-----------------------------------------------------------------+
    | Entry point                                                     |
    +-----------------------------------------------------------------+ *)
 
-let run_sender bus =
+let run_sender ttys bus =
   (* Fork if not prevented. *)
   if !fork then Krobot_daemon.daemonize bus;
 
@@ -141,7 +152,7 @@ let run_sender bus =
   (* Wait a bit to let the other handler release the connection *)
   lwt () = Lwt_unix.sleep 0.4 in
 
-  urgs := List.map (fun tty -> Urg_simple.init ~tty ()) !tty;
+  urgs := List.map (fun tty -> Urg_simple.init ~tty ()) ttys;
 
   (* Loop forever. *)
   Lwt_list.iter_p (fun urg -> loop bus urg) !urgs
@@ -153,7 +164,10 @@ let run_listener bus =
 
 lwt () =
   Arg.parse options ignore usage;
-  begin match !tty, !listen with
+  let prefixed_ttys =
+    List.map prefixed_files !tty_prefix in
+  let ttys = !tty @ List.flatten prefixed_ttys in
+  begin match ttys, !listen with
     | [], false ->
       Printf.printf "No urg tty provided\n%!";
       exit 1;
@@ -167,4 +181,4 @@ lwt () =
 
   if !listen
   then run_listener bus
-  else run_sender bus
+  else run_sender ttys bus
