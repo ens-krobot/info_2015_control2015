@@ -17,15 +17,13 @@ open Krobot_bus
 let text =
   let l = Array.to_list (Array.sub Sys.argv 1 (Array.length Sys.argv - 1)) in
   String.concat " " l
-let msg = Krobot_lcd.text text
 
 let t =
   (* Open the krobot bus. *)
+  Printf.printf "input text is: %s\n%!" text;
   lwt bus = Krobot_bus.get () in
-  Lwt_list.iter_s
-    (fun c ->
-       Krobot_bus.send bus (Unix.gettimeofday (),
-                            CAN (Info,Krobot_message.encode c)))
-    msg
+  lwt () = Krobot_lcd.clear bus in
+  lwt () = Lwt_unix.sleep 0.05 in
+  Krobot_lcd.send_text bus text
 
 let () = Lwt_main.run t
