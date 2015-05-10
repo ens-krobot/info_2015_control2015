@@ -4,19 +4,30 @@ open Krobot_bus
 type state =
   { world : Krobot_world_update.world;
     bus : Krobot_bus.t;
-    stream : (float * Krobot_bus.message) Lwt_stream.t; }
+    stream : (float * Krobot_bus.message) Lwt_stream.t;
+    next_request_id : request_id }
 
 let make () : state Lwt.t =
   lwt bus = Krobot_bus.get () in
   let ev = Krobot_bus.recv bus in
   let stream = Lwt_react.E.to_stream ev in
   let world = Krobot_world_update.init_world in
-  Lwt.return { world; bus; stream }
+  Random.self_init ();
+  let next_request_id = Random.int 10000000 in
+  Lwt.return { world; bus; stream; next_request_id }
 
 let send state msg =
   Krobot_bus.send state.bus (Unix.gettimeofday (), msg)
 
-let consume_until_mover_message state : (state * mover_message) Lwt.t =
+let mover_message_id = function
+  | First_obstacle _
+  | Idle -> None
+  | Planning_error id
+  | Planning_done id
+  | Collision id
+  | Request_completed id -> Some id
+
+let consume_until_mover_message (id:request_id) state : (state * mover_message) Lwt.t =
   let rec loop world stream : (world * mover_message) Lwt.t =
     match_lwt Lwt_stream.get stream with
     | None -> raise_lwt (Failure "connection closed")
@@ -28,7 +39,11 @@ let consume_until_mover_message state : (state * mover_message) Lwt.t =
       in
       match msg with
       | Mover_message mover_message ->
-        Lwt.return (world, mover_message)
+        begin match mover_message_id mover_message with
+          | Some id' when id' = id ->
+            Lwt.return (world, mover_message)
+          | None -> loop world stream
+        end
       | _ ->
         loop world stream
   in
@@ -39,13 +54,16 @@ type goto_result =
   | Goto_success
   | Goto_failure
 
+let new_request_id state =
+  state.next_request_id,
+  { state with next_request_id = state.next_request_id + 1 }
+
 let goto ~state ~destination =
-  (* TODO: id *)
-  lwt () = send state (Goto (0, destination)) in
+  let request_id, state = new_request_id state in
+  lwt () = send state (Goto (request_id, destination)) in
   lwt (state, msg) = consume_until_mover_message state in
   match msg with
-  | Idle ->
-    (* TODO: better announcing *)
+  | Request_completed _ ->
     Lwt.return (state, Goto_success)
   | _ ->
     Lwt.return (state, Goto_failure)
