@@ -20,7 +20,6 @@ let text =
 
 let t =
   (* Open the krobot bus. *)
-  Printf.printf "input text is: %s\n%!" text;
   lwt bus = Krobot_bus.get () in
   lwt () = Krobot_lcd.clear bus in
   lwt () = Lwt_unix.sleep 0.05 in
