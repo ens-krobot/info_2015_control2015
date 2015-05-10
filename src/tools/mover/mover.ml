@@ -398,7 +398,9 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     end
   | Moving_to ({ first_obstacle; move; rest; request_id } as moving_to) -> begin
       let next_step : move_vertice list -> 'a = function
-        | [] -> Idle, [Msg (Trajectory_path [])]
+        | [] -> Transition_to_Idle,
+                [Bus (Request_completed request_id);
+                 Msg (Trajectory_path [])]
         | move :: rest ->
           Transition_to_Moving_to (request_id, move, rest), [] in
       let close_to_first_obstacle = match first_obstacle with

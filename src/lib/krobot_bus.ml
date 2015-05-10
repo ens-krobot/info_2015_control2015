@@ -29,19 +29,20 @@ type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
 
+type request_id = int
+
 type mover_message =
   | Planning_error
   | Planning_done
   | Idle
   | Collision
   | First_obstacle of vertice option
+  | Request_completed of request_id
 
 type move_kind =
   | Normal
   | Constrained
   | Direct
-
-type request_id = int
 
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -159,6 +160,8 @@ let string_of_message = function
       | Collision -> "Mover: Collision"
       | First_obstacle v ->
         Printf.sprintf "Mover: First_obstacle %s" (string_of_option string_of_vertice v)
+      | Request_completed id ->
+        Printf.sprintf "Mover: Request_completed %X" id
     end
   | Obstacles obstacles ->
       sprintf
