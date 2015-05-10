@@ -116,6 +116,7 @@ let tty = ref []
 let tty_prefix = ref None
 let refind = ref false
 let managed_devices = ref []
+let managed_ids = ref (false, false)
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
@@ -142,9 +143,21 @@ let prefixed_files prefix =
   in
   List.map (fun name -> Filename.concat "/dev/" name) l
 
+let message_of_managed (up, down) =
+  match up, down with
+  | false, false -> "no urg started"
+  | true, false -> "urg up started"
+  | false, true -> "urg down started"
+  | true, true -> "both urgs started"
+
+
+
 (* +-----------------------------------------------------------------+
    | Entry point                                                     |
    +-----------------------------------------------------------------+ *)
+
+let send_status_line bus = Krobot_lcd.send_line bus 3 (message_of_managed !managed_ids)
+
 
 let start tty bus =
   Lwt_log.ign_info_f "start urg %s" tty;
@@ -154,10 +167,21 @@ let start tty bus =
     Lwt_log.ign_info_f "failed connection to urg %s" tty;
     Lwt.return ()
   | Some urg ->
-    Lwt_log.ign_info_f "urg %s really started" tty;
-    urgs := urg :: !urgs;
-    managed_devices := tty :: !managed_devices;
-    loop bus urg
+    let id = urg.Urg_simple.id in
+    let id = if id = Krobot_config.urg_up_id then Some Up
+      else if id = Krobot_config.urg_down_id then Some Down
+      else (Lwt_log.ign_error_f "unknown urg %s" id; None) in
+    match id with
+    | None -> Lwt.return ()
+    | Some id ->
+      Lwt_log.ign_info_f "urg %s really started: %s" tty (string_of_urg_id id);
+      (managed_ids := match id with
+         | Up -> (true, snd !managed_ids)
+         | Down -> (fst !managed_ids, true));
+      lwt () = send_status_line bus in
+      urgs := urg :: !urgs;
+      managed_devices := tty :: !managed_devices;
+      loop bus urg
 
 let rec find_loop bus prefix =
   let files = prefixed_files prefix in
@@ -220,7 +244,7 @@ lwt () =
     | Some prefix, true -> Some prefix
     | _ -> None
   in
-
+  lwt () = send_status_line bus in
   if !listen
   then run_listener bus
   else run_sender prefix ttys bus
