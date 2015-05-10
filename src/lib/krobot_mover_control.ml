@@ -42,7 +42,7 @@ let consume_until_mover_message (id:request_id) state : (state * mover_message) 
         begin match mover_message_id mover_message with
           | Some id' when id' = id ->
             Lwt.return (world, mover_message)
-          | None -> loop world stream
+          | _ -> loop world stream
         end
       | _ ->
         loop world stream
@@ -61,7 +61,7 @@ let new_request_id state =
 let goto ~state ~destination =
   let request_id, state = new_request_id state in
   lwt () = send state (Goto (request_id, destination)) in
-  lwt (state, msg) = consume_until_mover_message state in
+  lwt (state, msg) = consume_until_mover_message request_id state in
   match msg with
   | Request_completed _ ->
     Lwt.return (state, Goto_success)
