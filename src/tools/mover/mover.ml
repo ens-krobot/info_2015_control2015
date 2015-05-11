@@ -636,7 +636,7 @@ let main_loop bus iter =
     | None ->
       aux world state timeout
     | Some (world, input) ->
-      Printf.printf "state: %s\n%!" (string_of_state state);
+      (* Printf.printf "state: %s\n%!" (string_of_state state); *)
       let output = step input world state in
       let time = Unix.gettimeofday () in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) update_messages in

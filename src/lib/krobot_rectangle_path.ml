@@ -61,10 +61,13 @@ let add_segment_to_tree tree ((v1, v2) as s) =
   let box = rect_bounding_box (v1, v2) in
   Krobot_spatial_search.add s box tree
 
+let min_radius_to_consider = 0.05
+
 let add_vertices_and_blocking inflate ( vertices, blocking ) (v1,v2) =
   let {x = x1; y = y1} = v1 in
   let {x = x2; y = y2} = v2 in
-  let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin +. inflate) in
+  let radius = (max min_radius_to_consider
+                  (Krobot_config.robot_radius +. Krobot_config.safety_margin +. inflate)) in
   let min_x = min x1 x2 -. radius in
   let max_x = max x1 x2 +. radius in
   let min_y = min y1 y2 -. radius in
@@ -259,7 +262,9 @@ let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
 
 let is_colliding_object ~inflate obstacle point =
   is_inside_bounding_box point
-    (expand_bounding_box (rect_bounding_box obstacle) (radius +. inflate))
+    (expand_bounding_box (rect_bounding_box obstacle)
+       (max min_radius_to_consider
+          (radius +. inflate)))
 
 let colliding ~inflate ~obstacles point =
   List.filter (fun obj -> is_colliding_object ~inflate obj point) obstacles
@@ -357,7 +362,7 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
 
       let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
-      match first_position_non_colliding ~inflate ~obstacles ~src dir with
+      match first_position_non_colliding ~inflate:0. ~obstacles ~src dir with
       | None ->
         aux "nowhere to go away" rest
       | Some start ->
@@ -374,19 +379,41 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
   in
   aux "cannot go away from obstacles" sectors
 
-let colliding_pathfinding ~src ~dst ~inflate ~obstacles =
-  if not (has_collision ~inflate ~obstacles src)
-  then match find_path ~src ~dst ~inflate ~obstacles with
-    | [] ->
-      begin match find_path ~src ~dst ~inflate:0. ~obstacles with
-        | [] -> No_path "no path"
-        | h::t -> Simple_path (h,t)
-      end
-    | h::t -> Simple_path (h,t)
-  else if not (has_collision ~inflate:0. ~obstacles src)
-  then match find_path ~src ~dst ~inflate ~obstacles with
-    | [] -> No_path "no path"
-    | h::t -> Simple_path (h,t)
-  else
+(* let colliding_pathfinding ~src ~dst ~inflate ~obstacles = *)
+(*   if not (has_collision ~inflate ~obstacles src) *)
+(*   then match find_path ~src ~dst ~inflate ~obstacles with *)
+(*     | [] -> *)
+(*       begin match find_path ~src ~dst ~inflate:0. ~obstacles with *)
+(*         | [] -> No_path "no path" *)
+(*         | h::t -> Simple_path (h,t) *)
+(*       end *)
+(*     | h::t -> Simple_path (h,t) *)
+(*   else if not (has_collision ~inflate:0. ~obstacles src) *)
+(*   then match find_path ~src ~dst ~inflate ~obstacles with *)
+(*     | [] -> No_path "no path" *)
+(*     | h::t -> Simple_path (h,t) *)
+(*   else *)
+(*     let dir = filter_directions (escaping_directions ~inflate:0. ~obstacles ~src) in *)
+(*     find_path_for_directions ~src ~dst ~inflate:0. ~obstacles dir *)
+
+let inflate_step = 0.02
+
+let rec colliding_pathfinding ~src ~dst ~inflate ~obstacles =
+  Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate);
+  if (radius +. inflate) < min_radius_to_consider
+  then No_path "no path"
+  else if has_collision ~inflate:0. ~obstacles src then
+    (* escaping must be done with real sizes: so inflate = 0 *)
     let dir = filter_directions (escaping_directions ~inflate:0. ~obstacles ~src) in
-    find_path_for_directions ~src ~dst ~inflate:0. ~obstacles dir
+    match find_path_for_directions ~src ~dst ~inflate ~obstacles dir with
+    | No_path _ ->
+      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+    | r -> r
+  else if has_collision ~inflate ~obstacles src then
+    (* here inflate must be positive (otherwise the first branch would
+       have been taken *)
+    colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+  else match find_path ~src ~dst ~inflate ~obstacles with
+    | [] ->
+      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+    | h::t -> Simple_path (h,t)
