@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 9707104b4b60ab350850fe7d01eecf6a) *)
+(* DO NOT EDIT (digest: 13d06bf7aac68561d33aa965426a72ae) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -613,6 +613,7 @@ let package_default =
      flags = [];
      includes =
        [
+          ("src/tools/xbee", ["src/lib"]);
           ("src/tools/viewer", ["src/lib"]);
           ("src/tools/urg_extract", ["src/lib"]);
           ("src/tools/urg", ["src/lib"]);
@@ -634,7 +635,7 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 638 "myocamlbuild.ml"
+# 639 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let () = mark_tag_used "tests";;
 

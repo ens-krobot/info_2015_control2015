@@ -183,11 +183,19 @@ Executable "krobot-urg"
 
 Executable "krobot-arduino"
   Path: src/tools/arduino/
-  Build$: flag(urg)
-  Install$: flag(urg)
   CompiledObject: best
   MainIs: arduino.ml
-  BuildDepends: krobot, urg, lwt.syntax, lwt.preemptive, threads
+  BuildDepends: krobot, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
+# | Xbee interface (serial stuff)                                     |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-xbee"
+  Path: src/tools/xbee/
+  CompiledObject: best
+  MainIs: xbee.ml
+  BuildDepends: krobot, lwt.syntax, lwt.preemptive, threads, str
 
 # +-------------------------------------------------------------------+
 # | AX12 stuff                                                        |
