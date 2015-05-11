@@ -35,6 +35,7 @@ type mover_message =
   | Planning_error of request_id
   | Planning_done of request_id
   | Idle
+  | Not_idle of string
   | Collision of request_id
   | First_obstacle of vertice option
   | Request_completed of request_id
@@ -56,6 +57,7 @@ type message =
   | Trajectory_go of request_id * move_kind
   | Goto of request_id * vertice
   | Trajectory_find_path
+  | Request_mover_state
   | Mover_message of mover_message
   | Obstacles of obstacle list
   | Sharps of float array
@@ -152,11 +154,14 @@ let string_of_message = function
       "Goto (%X, %s)" req_id (string_of_vertice v)
   | Trajectory_find_path ->
     "Trajectory_find_path"
+  | Request_mover_state ->
+    "Request_mover_state"
   | Mover_message mover_message ->
     begin match mover_message with
       | Planning_error id -> Printf.sprintf "Mover: Planning_error %X" id
       | Planning_done id ->  Printf.sprintf "Mover: Planning_done %X" id
       | Idle -> "Mover: Idle"
+      | Not_idle s -> Printf.sprintf "Mover: Not_idle %s" s
       | Collision id ->  Printf.sprintf "Mover: Collision %X" id
       | First_obstacle v ->
         Printf.sprintf "Mover: First_obstacle %s" (string_of_option string_of_vertice v)

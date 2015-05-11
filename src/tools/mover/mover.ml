@@ -601,12 +601,22 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       state }
 
 let step (input:input) (world:world) (state:state) : output =
-  let state =
-    match input with
-    | Message Stop ->
-      Transition_to_Stop (state_request_id state)
-    | _ -> state in
-  general_step input world state
+  match input with
+  | Message Request_mover_state -> begin
+      match state with
+      | Idle ->
+        idle ~notify:true world
+      | _ ->
+        { timeout = 0.1;
+          messages = [Bus (Not_idle (string_of_state state))];
+          world;
+          state }
+    end
+  | Message Stop ->
+    let state = Transition_to_Stop (state_request_id state) in
+    general_step input world state
+  | _ ->
+    general_step input world state
 
 let send_msg bus time = function
   | Bus m -> Krobot_bus.send bus (time, Mover_message m)

@@ -21,13 +21,18 @@ let send state msg =
 
 let mover_message_id = function
   | First_obstacle _
+  | Not_idle _
   | Idle -> None
   | Planning_error id
   | Planning_done id
   | Collision id
   | Request_completed id -> Some id
 
-let consume_until_mover_message (id:request_id) state : (state * mover_message) Lwt.t =
+type request_until =
+  | Idle
+  | Id of request_id
+
+let consume_until_mover_message (until:request_until) state : (state * mover_message) Lwt.t =
   let rec loop world stream : (world * mover_message) Lwt.t =
     match_lwt Lwt_stream.get stream with
     | None -> raise_lwt (Failure "connection closed")
@@ -37,8 +42,13 @@ let consume_until_mover_message (id:request_id) state : (state * mover_message) 
         | None -> world
         | Some (world, _world_update) -> world
       in
-      match msg with
-      | Mover_message mover_message ->
+      match msg, until with
+      | Mover_message Idle, Idle ->
+        Lwt.return (world, (Idle:mover_message))
+      | Mover_message (Not_idle _), Idle ->
+        lwt () = send state Request_mover_state in
+        loop world stream
+      | Mover_message mover_message, Id id ->
         begin match mover_message_id mover_message with
           | Some id' when id' = id ->
             Lwt.return (world, mover_message)
@@ -59,11 +69,19 @@ let new_request_id state =
   state.next_request_id,
   { state with next_request_id = state.next_request_id + 1 }
 
+let wait_idle state =
+  let _ : _ list = Lwt_stream.get_available state.stream in
+  lwt () = send state Request_mover_state in
+  lwt (state, _) = consume_until_mover_message Idle state in
+  Lwt.return state
+
 let goto ~state ~destination =
+  lwt state = wait_idle state in
   let request_id, state = new_request_id state in
+  let _ : _ list = Lwt_stream.get_available state.stream in
   lwt () = send state (Goto (request_id, destination)) in
   let rec loop () =
-    lwt (state, msg) = consume_until_mover_message request_id state in
+    lwt (state, msg) = consume_until_mover_message (Id request_id) state in
     Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
     match msg with
     | Planning_done _ ->

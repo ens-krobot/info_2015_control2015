@@ -39,6 +39,7 @@ type mover_message =
   | Planning_error of request_id
   | Planning_done of request_id
   | Idle
+  | Not_idle of string
   | Collision of request_id
   | First_obstacle of vertice option
   | Request_completed of request_id
@@ -77,6 +78,7 @@ type message =
   | Trajectory_find_path
       (** Find a path avoiding objects. *)
 
+  | Request_mover_state
   | Mover_message of mover_message
 
   (** Obstacles *)
