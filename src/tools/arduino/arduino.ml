@@ -24,7 +24,7 @@ type info = {
 let name = "arduino-lift"
 
 let lift_up = "u"
-let lift_down = "d"
+let lift_down = "i"
 let lift_grip_close = "g"
 let lift_grip_open = "h"
 let lift_door_close = "d"
