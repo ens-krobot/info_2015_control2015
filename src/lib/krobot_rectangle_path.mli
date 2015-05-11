@@ -5,6 +5,7 @@ val find_path :
   src:Krobot_geom.vertice ->
   dst:Krobot_geom.vertice ->
   inflate:float ->
+  fixed_obstacles:obstacle list ->
   obstacles:obstacle list ->
   Krobot_geom.vertice list
 (** Find a trajectory between [src] and [dst] avoiding the [obstacles].
@@ -26,8 +27,7 @@ val first_collision :
     the prefix without collision and the first collision *)
 
 val escaping_directions :
-  inflate:float ->
-  obstacles:obstacle list ->
+  all_obstacles:obstacle list ->
   src:Krobot_geom.vertice ->
   Krobot_geom.AngleSet.t
 (** The escaping directions are the directions where we are going away of
@@ -46,6 +46,7 @@ val colliding_pathfinding :
   src:Krobot_geom.vertice ->
   dst:Krobot_geom.vertice ->
   inflate:float ->
+  fixed_obstacles:obstacle list ->
   obstacles:obstacle list ->
   pathfinding_result
 (** Find a trajectory between [src] and [dst] avoiding the [obstacles].

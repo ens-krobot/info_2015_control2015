@@ -90,13 +90,20 @@ let add_vertices_and_blocking inflate ( vertices, blocking ) (v1,v2) =
   ( vertices, blocking )
 
 (** list graph vertices: points where it is allowed to go.
-    i.e. les sommets des rectangles étendus par le rayon du robot *)
-let graph_vertices : dst:vertice -> inflate:float -> obstacle list -> graph =
-  fun ~dst ~inflate obstacles ->
+    i.e. les sommets des rectangles étendus par le rayon du robot
+    les obstacles fixes ne sont pas impactés par inflate *)
+let graph_vertices : dst:vertice -> inflate:float -> fixed_obstacles:obstacle list ->
+  obstacles:obstacle list -> graph =
+  fun ~dst ~inflate ~fixed_obstacles ~obstacles ->
+  let (vertices, blocking) =
+    List.fold_left (add_vertices_and_blocking 0.)
+      ( VerticeSet.singleton dst, [] )
+      fixed_obstacles
+  in
   let (vertices, blocking) =
     List.fold_left (add_vertices_and_blocking inflate)
-    ( VerticeSet.singleton dst, [] )
-    obstacles
+      (vertices, blocking)
+      obstacles
   in
   let min_x = VerticeSet.fold (fun { x } min_x -> min min_x x) vertices min_float in
   let max_x = VerticeSet.fold (fun { x } max_x -> max max_x x) vertices max_float in
@@ -200,13 +207,13 @@ let rec loop ~dst state graph =
   | Continue state ->
     loop ~dst state graph
 
-let find_path ~src ~dst ~inflate ~obstacles =
+let find_path ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
   count_intersect := 0;
   count_steps := 0;
 
   let t1 = Unix.gettimeofday () in
 
-  let graph = graph_vertices ~dst ~inflate obstacles in
+  let graph = graph_vertices ~dst ~inflate ~fixed_obstacles ~obstacles in
 
   let t2 = Unix.gettimeofday () in
 
@@ -237,12 +244,15 @@ type collision = {
 }
 
 let first_collision ~src ~path ~obstacles =
-  let graph = graph_vertices ~dst:src ~inflate:0. obstacles in
+  let graph = graph_vertices ~dst:src ~inflate:0. ~fixed_obstacles:obstacles ~obstacles:[] in
   let rec loop src path = match path with
     | [] -> None
     | h :: t ->
       match first_intersections graph ~src ~dst:h with
       | Some collision ->
+        (* Printf.printf "collision (%.02f,%.02f) (%.02f,%.02f) (%.02f,%.02f),%f\n%!" *)
+        (*   src.x src.y h.x h.y collision.x collision.y *)
+        (*   (distance src collision); *)
         Some { collision;
                prefix_without_collision = [];
                distance = distance src collision }
@@ -250,6 +260,8 @@ let first_collision ~src ~path ~obstacles =
         match loop h t with
         | None -> None
         | Some collision_info ->
+          (* Printf.printf "acc collision %f\n%!" *)
+          (*   (distance src h +. collision_info.distance); *)
           Some { collision_info with
                  prefix_without_collision = h :: collision_info.prefix_without_collision;
                  distance = distance src h +. collision_info.distance }
@@ -264,36 +276,38 @@ let is_colliding_object ~inflate obstacle point =
        (max Krobot_config.pathfinding_min_radius_to_consider
           (radius +. inflate)))
 
-let colliding ~inflate ~obstacles point =
+let colliding ~inflate ~obstacles ~fixed_obstacles point =
+  List.filter (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles @
   List.filter (fun obj -> is_colliding_object ~inflate obj point) obstacles
 
-let has_collision ~inflate ~obstacles point =
+let has_collision ~inflate ~obstacles ~fixed_obstacles point =
+  List.exists (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles ||
   List.exists (fun obj -> is_colliding_object ~inflate obj point) obstacles
 
-let first_position_non_colliding ~inflate ~obstacles ~src direction =
+let first_position_non_colliding ~inflate ~all_obstacles ~src direction =
   let colliding, not_colliding =
-    List.partition (fun obj -> is_colliding_object ~inflate obj src) obstacles in
+    List.partition (fun obj -> is_colliding_object ~inflate obj src) all_obstacles in
   let max_distance = 10. in
   let dst = translate src (normalize direction *| max_distance) in
-  let graph = graph_vertices ~dst ~inflate:0. not_colliding in
+  let graph = graph_vertices ~dst ~inflate:0. ~fixed_obstacles:not_colliding ~obstacles:[] in
   let bound =
     match first_intersections graph ~src ~dst with
     | None -> dst
     | Some bound -> bound in
-  if has_collision ~inflate ~obstacles:colliding bound then
+  if has_collision ~inflate ~obstacles:[] ~fixed_obstacles:colliding bound then
     (* If the first intersection with the world is still too close
        from an original object, we consider that we can't escape *)
     None
   else
-    let co_graph = graph_vertices ~dst:bound ~inflate:0. colliding in
+    let co_graph = graph_vertices ~dst:bound ~inflate:0. ~fixed_obstacles:colliding ~obstacles:[] in
     let first_acceptable =
       match first_intersections co_graph ~src:bound ~dst:src with
       | None -> src
       | Some bound -> bound in
     Some first_acceptable
 
-let escaping_directions ~inflate ~obstacles ~src:origin =
-  let colliding_obstacles = colliding ~inflate ~obstacles origin in
+let escaping_directions ~all_obstacles ~src:origin =
+  let colliding_obstacles = colliding ~inflate:0. ~fixed_obstacles:all_obstacles ~obstacles:[] origin in
   (* the closest points of each obstacle too close *)
   let closest_points = List.map (fun obstacle ->
     let bb = rect_bounding_box obstacle in
@@ -353,14 +367,15 @@ let filter_directions (l:AngleSet.t) =
     in
     aux h [] t
 
-let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
+let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles sectors =
+  let all_obstacles = fixed_obstacles @ obstacles in
   let rec aux err = function
     | [] -> No_path err
     | sector :: rest ->
 
       let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
-      match first_position_non_colliding ~inflate:0. ~obstacles ~src dir with
+      match first_position_non_colliding ~inflate:0. ~all_obstacles ~src dir with
       | None ->
         aux "nowhere to go away" rest
       | Some start ->
@@ -369,7 +384,7 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
         let v = vector src start in
         let start = translate src (normalize v *| (norm v +. 0.0001)) in
 
-        match find_path ~src:start ~inflate ~dst ~obstacles with
+        match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
         | [] -> aux "no path after escaping" rest
         | h::t ->
           Escaping_path {escape_point = start;
@@ -396,28 +411,29 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
 
 let inflate_step = 0.02
 
-let escape_and_pathfind ~src ~dst ~inflate ~obstacles =
+let escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles =
   (* escaping must be done with real sizes: so inflate = 0 *)
-  let dir = filter_directions (escaping_directions ~inflate:0. ~obstacles ~src) in
-  find_path_for_directions ~src ~dst ~inflate ~obstacles dir
+  let all_obstacles = fixed_obstacles @ obstacles in
+  let dir = filter_directions (escaping_directions ~all_obstacles ~src) in
+  find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles dir
 
-let rec colliding_pathfinding ~src ~dst ~inflate ~obstacles =
+let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
   Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate);
   if (radius +. inflate) < Krobot_config.pathfinding_min_radius_to_consider
   then No_path "no path"
-  else if has_collision ~inflate:0. ~obstacles src then
-    match escape_and_pathfind ~src ~dst ~inflate ~obstacles with
+  else if has_collision ~inflate:0. ~obstacles ~fixed_obstacles src then
+    match escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles with
     | No_path _ ->
-      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | r -> r
-  else if has_collision ~inflate ~obstacles src then
+  else if has_collision ~inflate ~obstacles ~fixed_obstacles src then
     (* here inflate must be positive (otherwise the first branch would
        have been taken *)
-    match escape_and_pathfind ~src ~dst ~inflate ~obstacles with
+    match escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles with
     | No_path _ ->
-      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | r -> r
-  else match find_path ~src ~dst ~inflate ~obstacles with
+  else match find_path ~src ~dst ~inflate ~obstacles ~fixed_obstacles with
     | [] ->
-      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles
+      colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | h::t -> Simple_path (h,t)

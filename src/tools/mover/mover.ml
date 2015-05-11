@@ -561,7 +561,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           ~src:world.robot.position
           ~dst:dest
           ~inflate:Krobot_config.pathfinding_width_inflate
-          ~obstacles:(obstacles world) in
+          ~fixed_obstacles:Krobot_config.fixed_obstacles
+          ~obstacles:(not_fixed_obstacles world) in
       let go world h t ~constrained_move =
         let theta = world.robot.orientation in
         let rest = List.map (fun v -> { position = v; orientation = theta; move_kind = Normal}) t in
