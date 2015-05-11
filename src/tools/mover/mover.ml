@@ -44,6 +44,7 @@ type move_vertice = {
 }
 
 type moving_to = {
+  start_date : Krobot_date.t;
   request_id : request_id;
   first_obstacle : vertice option;
   move : move_vertice;
@@ -62,9 +63,9 @@ type state =
   | Moving_to of moving_to
   | Idle
   | Transition_to_Idle
-  | Transition_to_Stop
+  | Transition_to_Stop of request_id option
   | Transition_to_Goto of request_id * Krobot_geom.vertice * bool
-  | Stop of float
+  | Stop of Krobot_date.t
 
 type message =
   | Bus of Krobot_bus.mover_message
@@ -90,6 +91,28 @@ let init_world = {
   beacons = [];
   manage_theta = true;
 }
+
+let state_request_id = function
+  | Transition_to_Moving_to (request_id, _, _)
+  | Start_moving_to { moving_to = { request_id } }
+  | Moving_to { request_id }
+  | Transition_to_Goto (request_id, _, _)
+  | Transition_to_Stop (Some request_id) -> Some request_id
+
+  | Transition_to_Idle
+  | Idle
+  | Transition_to_Stop None
+  | Stop _ -> None
+
+let string_of_state = function
+  | Transition_to_Moving_to _ -> "Transition_to_Moving_to"
+  | Start_moving_to _ -> "Start_moving_to"
+  | Moving_to _ -> "Moving_to"
+  | Idle -> "Idle"
+  | Transition_to_Idle -> "Transition_to_Idle"
+  | Transition_to_Stop _ -> "Transition_to_Stop"
+  | Transition_to_Goto _ -> "Transition_to_Goto"
+  | Stop _ -> "Stop"
 
 let init_state = Transition_to_Idle
 
@@ -260,6 +283,7 @@ let idle ~notify world =
 let motor_stop = Motor_stop(0.4, 0.4)
 let safe_stop_time = 0.1 (* second *)
 let started_distance = 0.005
+let start_move_timeout = 0.1 (* second *)
 
 let drop_kind l = List.map (fun {position; orientation} -> (position,orientation)) l
 let posisions l = List.map (fun {position} -> position) l
@@ -339,7 +363,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             { original_position = world.robot.position;
               start_motor_stopped = world.robot.motors_moving;
               moving_to =
-                { request_id;
+                { start_date = Krobot_date.now ();
+                  request_id;
                   first_obstacle = Some world.robot.position;
                   (* force testing for intersections *)
                   move = { position = dest; orientation = theta; move_kind };
@@ -353,6 +378,20 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | Constrained -> "constrained"
         | Normal -> ""
         | Direct -> "direct"
+      in
+      let timeout () =
+        if Krobot_geom.distance world.robot.position moving_to.move.position
+           <= close_distance_from_destination
+        then begin
+          Lwt_log.ign_info_f "Already arrived %s %a"
+            move_kind Krobot_date.pr date;
+          general_step input world (Moving_to moving_to)
+        end
+        else begin
+          Lwt_log.ign_info_f "Still starting %s %a"
+            move_kind Krobot_date.pr date;
+          nothing
+        end
       in
       match input with
       | World_updated Position_updated ->
@@ -381,22 +420,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           general_step input world (Moving_to moving_to)
         end
       | Timeout ->
-        if Krobot_geom.distance world.robot.position moving_to.move.position
-           <= close_distance_from_destination
-        then begin
-          Lwt_log.ign_info_f "Already arrived %s %a"
-            move_kind Krobot_date.pr date;
-          general_step input world (Moving_to moving_to)
-        end
-        else begin
-          Lwt_log.ign_info_f "Still starting %s %a"
-            move_kind Krobot_date.pr date;
-          nothing
-        end
+        timeout ()
       | _ ->
-        nothing
+        if Krobot_date.(now () <= add moving_to.start_date start_move_timeout)
+        then timeout ()
+        else nothing
     end
-  | Moving_to ({ first_obstacle; move; rest; request_id } as moving_to) -> begin
+  | Moving_to ({ start_date; first_obstacle; move; rest; request_id } as moving_to) -> begin
       let next_step : move_vertice list -> 'a = function
         | [] -> Transition_to_Idle,
                 [Bus (Request_completed request_id);
@@ -444,7 +474,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           end
           else begin
             Lwt_log.ign_warning_f "Collision";
-            Transition_to_Stop, [Bus (Collision request_id)]
+            Transition_to_Stop (Some request_id),
+            [Bus (Collision request_id)]
           end
       in
       let state, messages =
@@ -469,23 +500,33 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           next_step rest
         | World_updated (Position_updated | Motor_started |
                          Target_lock_updated | New_vertice )
-        | Message _
-          -> Moving_to moving_to, []
+        | Message _ ->
+          let date = Krobot_date.now () in
+          if Krobot_date.(date <= add start_date start_move_timeout)
+          then if world.robot.motors_moving then
+              Moving_to { moving_to with start_date = date }, []
+            else
+              next_step rest
+          else
+            Moving_to moving_to, []
       in
       { timeout = safe_stop_time;
         messages = messages;
         world;
         state }
     end
-  | Transition_to_Stop ->
+  | Transition_to_Stop request_id ->
     Lwt_log.ign_info_f "Stop";
-    let t = Unix.gettimeofday () in
+    let completed_msg = match request_id with
+      | None -> []
+      | Some request_id -> [Bus (Request_completed request_id)]
+    in
     { timeout = 0.01;
-      messages = [CAN motor_stop];
+      messages = [CAN motor_stop] @ completed_msg;
       world;
-      state = Stop t }
+      state = Stop (Krobot_date.now ()) }
   | Transition_to_Goto (request_id, dest, move) ->
-    Lwt_log.ign_info_f "Goto %i %b" request_id move;
+    Lwt_log.ign_info_f "Goto %X %b" request_id move;
     if dest.x < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
        dest.x > Krobot_config.world_width -. Krobot_config.robot_radius -. Krobot_config.safety_margin ||
        dest.y < Krobot_config.robot_radius +. Krobot_config.safety_margin ||
@@ -493,7 +534,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
     then begin
       Lwt_log.ign_warning_f "Pathfinding error: destination out of game area";
       { timeout = 0.01;
-        messages = [Bus (Planning_error request_id)];
+        messages = [Bus (Planning_error request_id); Bus (Request_completed request_id)];
         world = {world with prepared_vertices = []};
         state = Transition_to_Idle }
     end
@@ -515,7 +556,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             state = Transition_to_Moving_to (request_id, next_move, rest) }
         else
           { timeout = 0.01;
-            messages = [Bus (Planning_done request_id); Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
+            messages = [Bus (Planning_done request_id); Bus (Request_completed request_id);
+                        Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
             world = {world with prepared_vertices = List.rev ((h,theta)::drop_kind rest)};
             state = Transition_to_Idle }
       in
@@ -523,7 +565,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | No_path msg ->
           Lwt_log.ign_warning msg;
           { timeout = 0.01;
-            messages = [Bus (Planning_error request_id)];
+            messages = [Bus (Planning_error request_id); Bus (Request_completed request_id);];
             world = {world with prepared_vertices = []};
             state = Transition_to_Idle }
         | Simple_path (h,t) -> go world h t ~constrained_move:Normal
@@ -533,18 +575,25 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           Printf.printf "first: %f %f\n%!" h.x h.y;
           go world escape_point (h::t) ~constrained_move:Constrained
       end
-  | Stop stopped ->
+  | Stop stopped_date ->
+    let restop () = Stop (Krobot_date.now ()), [CAN motor_stop] in
     let state, msg =
       match input with
       | Timeout when world.robot.motors_moving ->
         (* If we waited too long: restop *)
-        Stop stopped, [CAN motor_stop]
+        restop ()
       | Timeout ->
         Idle, []
       | World_updated Motor_stopped ->
         Idle, []
       | _ ->
-        Stop stopped, []
+        if Krobot_date.(now () <= add stopped_date safe_stop_time)
+        then if world.robot.motors_moving then
+            restop ()
+          else
+            Idle, [] (* We waited enought, the robot must be stopped for real *)
+        else
+          Stop stopped_date, []
     in
     { timeout = safe_stop_time;
       messages = [];
@@ -555,7 +604,7 @@ let step (input:input) (world:world) (state:state) : output =
   let state =
     match input with
     | Message Stop ->
-      Transition_to_Stop
+      Transition_to_Stop (state_request_id state)
     | _ -> state in
   general_step input world state
 
@@ -577,6 +626,7 @@ let main_loop bus iter =
     | None ->
       aux world state timeout
     | Some (world, input) ->
+      Printf.printf "state: %s\n%!" (string_of_state state);
       let output = step input world state in
       let time = Unix.gettimeofday () in
       lwt () = Lwt_list.iter_s (fun m -> send_msg bus time m) update_messages in

@@ -53,6 +53,7 @@ let consume_until_mover_message (id:request_id) state : (state * mover_message) 
 type goto_result =
   | Goto_success
   | Goto_failure
+  | Goto_unreachable
 
 let new_request_id state =
   state.next_request_id,
@@ -61,9 +62,17 @@ let new_request_id state =
 let goto ~state ~destination =
   let request_id, state = new_request_id state in
   lwt () = send state (Goto (request_id, destination)) in
-  lwt (state, msg) = consume_until_mover_message request_id state in
-  match msg with
-  | Request_completed _ ->
-    Lwt.return (state, Goto_success)
-  | _ ->
-    Lwt.return (state, Goto_failure)
+  let rec loop () =
+    lwt (state, msg) = consume_until_mover_message request_id state in
+    Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
+    match msg with
+    | Planning_done _ ->
+      loop ()
+    | Request_completed _ ->
+      Lwt.return (state, Goto_success)
+    | Planning_error _ ->
+      Lwt.return (state, Goto_unreachable)
+    | _ ->
+      Lwt.return (state, Goto_failure)
+  in
+  loop ()
