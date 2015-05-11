@@ -93,6 +93,12 @@ let left_obstacles = [
 ]
 
 let fixed_obstacles = [
+  (* borders *)
+  { x = 0.; y = 0.}, {x = world_width; y =  0.};
+  { x = 0.; y = 0.}, {x = 0.; y = world_height};
+  { x = 0.; y = world_height}, {x = world_width; y = world_height};
+  { x = world_width; y =  0.}, {x = world_width; y = world_height};
+
   (* Central spot-light zone *)
   { x = 1.2; y =  0.}, {x = 1.8; y =  0.1};
 
