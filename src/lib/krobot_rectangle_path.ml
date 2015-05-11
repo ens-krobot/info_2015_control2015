@@ -392,23 +392,6 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles sect
   in
   aux "cannot go away from obstacles" sectors
 
-(* let colliding_pathfinding ~src ~dst ~inflate ~obstacles = *)
-(*   if not (has_collision ~inflate ~obstacles src) *)
-(*   then match find_path ~src ~dst ~inflate ~obstacles with *)
-(*     | [] -> *)
-(*       begin match find_path ~src ~dst ~inflate:0. ~obstacles with *)
-(*         | [] -> No_path "no path" *)
-(*         | h::t -> Simple_path (h,t) *)
-(*       end *)
-(*     | h::t -> Simple_path (h,t) *)
-(*   else if not (has_collision ~inflate:0. ~obstacles src) *)
-(*   then match find_path ~src ~dst ~inflate ~obstacles with *)
-(*     | [] -> No_path "no path" *)
-(*     | h::t -> Simple_path (h,t) *)
-(*   else *)
-(*     let dir = filter_directions (escaping_directions ~inflate:0. ~obstacles ~src) in *)
-(*     find_path_for_directions ~src ~dst ~inflate:0. ~obstacles dir *)
-
 let inflate_step = 0.02
 
 let escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles =
@@ -418,7 +401,7 @@ let escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles =
   find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles dir
 
 let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
-  Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate);
+  (* Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate); *)
   if (radius +. inflate) < Krobot_config.pathfinding_min_radius_to_consider
   then No_path "no path"
   else if has_collision ~inflate:0. ~obstacles ~fixed_obstacles src then
