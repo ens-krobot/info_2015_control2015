@@ -237,6 +237,22 @@ let find_path ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
   r
 
 
+let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
+
+let is_colliding_object ~inflate obstacle point =
+  is_inside_bounding_box point
+    (expand_bounding_box (rect_bounding_box obstacle)
+       (max Krobot_config.pathfinding_min_radius_to_consider
+          (radius +. inflate)))
+
+let colliding ~inflate ~obstacles ~fixed_obstacles point =
+  List.filter (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles @
+  List.filter (fun obj -> is_colliding_object ~inflate obj point) obstacles
+
+let has_collision ~inflate ~obstacles ~fixed_obstacles point =
+  List.exists (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles ||
+  List.exists (fun obj -> is_colliding_object ~inflate obj point) obstacles
+
 type collision = {
   prefix_without_collision : Krobot_geom.vertice list;
   collision : Krobot_geom.vertice;
@@ -266,23 +282,13 @@ let first_collision ~src ~path ~obstacles =
                  prefix_without_collision = h :: collision_info.prefix_without_collision;
                  distance = distance src h +. collision_info.distance }
   in
-  loop src path
-
-let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
-
-let is_colliding_object ~inflate obstacle point =
-  is_inside_bounding_box point
-    (expand_bounding_box (rect_bounding_box obstacle)
-       (max Krobot_config.pathfinding_min_radius_to_consider
-          (radius +. inflate)))
-
-let colliding ~inflate ~obstacles ~fixed_obstacles point =
-  List.filter (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles @
-  List.filter (fun obj -> is_colliding_object ~inflate obj point) obstacles
-
-let has_collision ~inflate ~obstacles ~fixed_obstacles point =
-  List.exists (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles ||
-  List.exists (fun obj -> is_colliding_object ~inflate obj point) obstacles
+  if has_collision ~inflate:0. ~obstacles:[] ~fixed_obstacles:obstacles src then
+    Some {
+      collision = src;
+      prefix_without_collision = [];
+      distance = 0. }
+  else
+    loop src path
 
 let first_position_non_colliding ~inflate ~all_obstacles ~src direction =
   let colliding, not_colliding =
