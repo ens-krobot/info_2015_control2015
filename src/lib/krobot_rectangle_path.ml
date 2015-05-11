@@ -377,7 +377,11 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles sectors =
 let colliding_pathfinding ~src ~dst ~inflate ~obstacles =
   if not (has_collision ~inflate ~obstacles src)
   then match find_path ~src ~dst ~inflate ~obstacles with
-    | [] -> No_path "no path"
+    | [] ->
+      begin match find_path ~src ~dst ~inflate:0. ~obstacles with
+        | [] -> No_path "no path"
+        | h::t -> Simple_path (h,t)
+      end
     | h::t -> Simple_path (h,t)
   else if not (has_collision ~inflate:0. ~obstacles src)
   then match find_path ~src ~dst ~inflate ~obstacles with
