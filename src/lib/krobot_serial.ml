@@ -1,6 +1,7 @@
 
 type serial =
-  { input : Lwt_io.input_channel;
+  { fd : Lwt_unix.file_descr;
+    input : Lwt_io.input_channel;
     output : Lwt_io.output_channel }
 
 let default_baudrate = 57600
@@ -26,7 +27,34 @@ let open_serial ?(baudrate=default_baudrate) ~path =
   lwt () = Lwt_unix.tcsetattr fd Unix.TCSAFLUSH tio in
   let input = Lwt_io.of_fd ~mode:Lwt_io.input fd in
   let output = Lwt_io.of_fd ~mode:Lwt_io.output fd in
-  Lwt.return { input; output }
+  Lwt.return { fd; input; output }
 
 let read_line s = Lwt_io.read_line s.input
 let write_line s msg = Lwt_io.write_line s.output msg
+
+let rec read_string serial =
+  let {fd} = serial in
+  let s = String.create 20 in
+  lwt c = Lwt_unix.read fd s 0 (String.length s) in
+  if c = 0
+  then
+    lwt () = Lwt_unix.sleep 0.1 in
+    read_string serial
+  else
+    Lwt.return (String.sub s 0 c)
+
+let send_string serial s =
+  let {fd} = serial in
+  let rec iter n =
+    lwt c = Lwt_unix.write fd s n (String.length s - n) in
+    if c + n < String.length s
+    then
+      lwt () =
+        if c = 0
+        then Lwt_unix.sleep 0.1
+        else Lwt.return () in
+      iter (n + c)
+    else Lwt.return ()
+  in
+  lwt () = iter 0 in (* Necessary ? *)
+  Lwt.return ()
