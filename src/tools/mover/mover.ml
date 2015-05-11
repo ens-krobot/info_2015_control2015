@@ -116,7 +116,7 @@ let string_of_state = function
 
 let init_state = Transition_to_Idle
 
-let distance_before_stop = 0.6 (* stop if half a metter before collision *)
+let distance_before_stop = 0.4 (* stop if half a metter before collision *)
 let distance_before_handling_obstacle = distance_before_stop +. 0.1
 let close_distance_from_destination = 0.01
 
@@ -287,6 +287,13 @@ let start_move_timeout = 0.1 (* second *)
 
 let drop_kind l = List.map (fun {position; orientation} -> (position,orientation)) l
 let posisions l = List.map (fun {position} -> position) l
+
+let problematic_position { x; y } theta =
+  match classify_float x, classify_float y, classify_float theta with
+  | (FP_nan | FP_infinite), _, _
+  | _, (FP_nan | FP_infinite), _
+  | _, _, (FP_nan | FP_infinite) -> true
+  | _ -> false
 
 let rec general_step (input:input) (world:world) (state:state) : output =
   match state with
@@ -473,15 +480,17 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           (* Lwt_log.ign_warning_f "No collision"; *)
           Moving_to moving_to,
           [Bus (First_obstacle None)]
-        | Some { Krobot_rectangle_path.distance; collision } ->
+        | Some { Krobot_rectangle_path.distance; collision; prefix_without_collision } ->
           if distance >= distance_before_stop then begin
-            Lwt_log.ign_warning_f "Far collision %f" distance;
+            Lwt_log.ign_warning_f "Far collision %i %.02f"
+              (List.length prefix_without_collision) distance;
             (* If this is too far, just ignore it *)
             Moving_to { moving_to with first_obstacle = Some collision; },
             [Bus (First_obstacle (Some collision))]
           end
           else begin
-            Lwt_log.ign_warning_f "Collision";
+            Lwt_log.ign_warning_f "Collision %i %.02f"
+              (List.length prefix_without_collision) distance;
             Transition_to_Stop (Some request_id),
             [Bus (Collision request_id)]
           end

@@ -51,6 +51,7 @@ val beacon_radius : float
 val fire_radius : float
   (** Bounding box radius of fires. *)
 
+val pathfinding_min_radius_to_consider : float
 val pathfinding_width_inflate : float
 
 val green_initial_position : Krobot_geom.vertice * float
