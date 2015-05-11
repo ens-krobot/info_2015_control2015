@@ -120,6 +120,14 @@ type message =
   | Finished_ax12_sequence of string
   | Stop
 
+  | Lift_up of int (* request id *)
+  | Lift_down of int
+  | Lift_grip_open of int
+  | Lift_grip_close of int
+  | Lift_door_open of int
+  | Lift_door_close of int
+  | Lift_action_done of int
+
 val string_of_message : message -> string
   (** Returns a string representation of the given message. *)
 

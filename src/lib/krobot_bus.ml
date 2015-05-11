@@ -76,6 +76,13 @@ type message =
       (** log * keyframe dictionary * actions *)
   | Finished_ax12_sequence of string
   | Stop
+  | Lift_up of int
+  | Lift_down of int
+  | Lift_grip_open of int
+  | Lift_grip_close of int
+  | Lift_door_open of int
+  | Lift_door_close of int
+  | Lift_action_done of int
 
 type t = {
   oc : Lwt_io.output_channel;
@@ -220,6 +227,20 @@ let string_of_message = function
       sprintf "Finished_ax12_sequence %s" log
   | Stop ->
       "Stop"
+  | Lift_up (id) ->
+      sprintf "Lift_up(%d)" id
+  | Lift_down (id) ->
+      sprintf "Lift_down(%d)" id
+  | Lift_grip_open (id) ->
+      sprintf "Lift_grip_open(%d)" id
+  | Lift_grip_close (id) ->
+      sprintf "Lift_grip_close(%d)" id
+  | Lift_door_open (id) ->
+      sprintf "Lift_door_open(%d)" id
+  | Lift_door_close (id) ->
+      sprintf "Lift_door_close(%d)" id
+  | Lift_action_done (id) ->
+      sprintf "Lift_action_done(%d)" id
 
 (* +-----------------------------------------------------------------+
    | Sending/receiving messages                                      |
