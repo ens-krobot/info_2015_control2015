@@ -352,23 +352,31 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | Normal
         | Direct -> command_of_limits Krobot_config.normal_limits
       in
-      let display_path = (dest, theta) :: drop_kind rest in
-      { timeout = 0.1;
-        messages =
-          limit_command @
-          [CAN goto; Msg (Trajectory_path (generate_path_display world display_path))];
-        world;
-        state =
-          Start_moving_to
-            { original_position = world.robot.position;
-              start_motor_stopped = world.robot.motors_moving;
-              moving_to =
-                { start_date = Krobot_date.now ();
-                  request_id;
-                  first_obstacle = Some world.robot.position;
-                  (* force testing for intersections *)
-                  move = { position = dest; orientation = theta; move_kind };
-                  rest; } } }
+      if problematic_position dest theta then begin
+        Lwt_log.ign_warning_f "Problematic position";
+        { timeout = 0.1;
+          messages = [];
+          world;
+          state = Transition_to_Stop (Some request_id) }
+      end
+      else
+        let display_path = (dest, theta) :: drop_kind rest in
+        { timeout = 0.1;
+          messages =
+            limit_command @
+            [CAN goto; Msg (Trajectory_path (generate_path_display world display_path))];
+          world;
+          state =
+            Start_moving_to
+              { original_position = world.robot.position;
+                start_motor_stopped = world.robot.motors_moving;
+                moving_to =
+                  { start_date = Krobot_date.now ();
+                    request_id;
+                    first_obstacle = Some world.robot.position;
+                    (* force testing for intersections *)
+                    move = { position = dest; orientation = theta; move_kind };
+                    rest; } } }
     end
   | Start_moving_to { original_position; start_motor_stopped; moving_to } -> begin
       let date = Krobot_date.now () in
