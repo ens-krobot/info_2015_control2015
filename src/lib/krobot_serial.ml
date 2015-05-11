@@ -32,21 +32,19 @@ let open_serial ?(baudrate=default_baudrate) ~path =
 let read_line s = Lwt_io.read_line s.input
 let write_line s msg = Lwt_io.write_line s.output msg
 
-let rec read_string serial =
-  let {fd} = serial in
-  let s = String.create 20 in
-  lwt c = Lwt_unix.read fd s 0 (String.length s) in
+let rec read_string ~max_length serial =
+  let s = Bytes.create max_length in
+  lwt c = Lwt_unix.read serial.fd s 0 (Bytes.length s) in
   if c = 0
   then
     lwt () = Lwt_unix.sleep 0.1 in
-    read_string serial
+    read_string ~max_length serial
   else
     Lwt.return (String.sub s 0 c)
 
 let send_string serial s =
-  let {fd} = serial in
   let rec iter n =
-    lwt c = Lwt_unix.write fd s n (String.length s - n) in
+    lwt c = Lwt_unix.write serial.fd s n (String.length s - n) in
     if c + n < String.length s
     then
       lwt () =
@@ -56,5 +54,5 @@ let send_string serial s =
       iter (n + c)
     else Lwt.return ()
   in
-  lwt () = iter 0 in (* Necessary ? *)
+  lwt () = iter 0 in
   Lwt.return ()

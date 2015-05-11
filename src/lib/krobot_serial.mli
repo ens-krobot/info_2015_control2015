@@ -21,7 +21,7 @@ val read_line : serial -> string Lwt.t
 val write_line : serial -> string -> unit Lwt.t
 (** write a string and terminates by a "\n" *)
 
-val read_string : serial -> string Lwt.t
+val read_string : max_length:int -> serial -> string Lwt.t
 (** read a string *)
 
 val send_string : serial -> string -> unit Lwt.t

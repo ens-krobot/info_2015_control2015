@@ -71,7 +71,7 @@ type recv =
 
 let rec read_until_pattern acc serial =
   lwt () = Lwt_log.info_f ~section "wait msg" in
-  lwt s = read_string serial in
+  lwt s = read_string ~max_length:20 serial in
   lwt () = Lwt_log.info_f ~section "recv %s" s in
   let s = acc ^ s in
   match get_string slave_start_matching s with
