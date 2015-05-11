@@ -52,6 +52,15 @@ type t =
       (** Request the state of the AX-12 servo *)
   | Ax12_Goto of int * int * int
       (** Move the AX-12 servo in position at the given speed *)
+  | Ax12_Goto_Reg of int * int * int
+      (** Queue a move on the AX-12 servo in position at the given speed *)
+  | Ax12_Action of int
+      (** Trigger queued action on the AX-12 *)
+  | Ax12_Status_Return_Level of int * int
+      (** Set the status return level of the AX-12:
+          - 0: No return against all commands (Except PING Command)
+          - 1: Return only for the READ command
+          - 2: Return for all commands *)
   | Ax12_Set_Torque_Enable of int * bool
       (** Set the torque status of the AX-12 servo *)
   | Encoder_position_direction_1_2 of int * direction * int * direction

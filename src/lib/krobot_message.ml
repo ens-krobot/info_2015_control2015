@@ -35,6 +35,9 @@ type t =
   | Ax12_State of int * int * int * int
   | Ax12_Request_State of int
   | Ax12_Goto of int * int * int
+  | Ax12_Goto_Reg of int * int * int
+  | Ax12_Action of int
+  | Ax12_Status_Return_Level of int * int
   | Ax12_Set_Torque_Enable of int * bool
   | Encoder_position_direction_1_2 of int * direction * int * direction
   | Encoder_position_direction_3_4 of int * direction * int * direction
@@ -164,6 +167,18 @@ let to_string = function
       sprintf
         "Ax12_Goto(%d, %d, %d)"
         addr position speed
+  | Ax12_Goto_Reg(addr, position, speed) ->
+      sprintf
+        "Ax12_Goto_Reg(%d, %d, %d)"
+        addr position speed
+  | Ax12_Action(addr) ->
+      sprintf
+        "Ax12_Action(%d)"
+        addr
+  | Ax12_Status_Return_Level(addr, level) ->
+      sprintf
+        "Ax12_Status_Return_Level(%d, %d)"
+        addr level
   | Ax12_Set_Torque_Enable(addr, state) ->
       sprintf
         "Ax12_Set_Torque_Enable(%d, %B)"
@@ -766,6 +781,36 @@ let encode = function
         ~remote:false
         ~format:F29bits
         ~data
+  | Ax12_Goto_Reg(address, position, speed) ->
+      let data = Bytes.create 5 in
+      put_uint8 data 0 address;
+      put_uint16 data 1 position;
+      put_uint16 data 3 speed;
+      frame
+        ~identifier:346
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+  | Ax12_Action(address) ->
+      let data = Bytes.create 1 in
+      put_uint8 data 0 address;
+      frame
+        ~identifier:347
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
+  | Ax12_Status_Return_Level(address, level) ->
+      let data = Bytes.create 2 in
+      put_uint8 data 0 address;
+      put_uint8 data 1 level;
+      frame
+        ~identifier:348
+        ~kind:Data
+        ~remote:false
+        ~format:F29bits
+        ~data
   | Ax12_Set_Torque_Enable(address, state) ->
       let data = Bytes.create 2 in
       put_uint8 data 0 address;
@@ -1306,6 +1351,18 @@ let decode frame =
             Ax12_Set_Torque_Enable
               ((get_uint8 frame.data 0),
               (if (get_uint8 frame.data 1) == 0 then false else true))
+        | 346 ->
+            Ax12_Goto_Reg
+              (get_uint8 frame.data 0,
+               get_uint16 frame.data 1,
+               get_uint16 frame.data 3)
+        | 347 ->
+            Ax12_Action
+              (get_uint8 frame.data 0)
+        | 348 ->
+            Ax12_Status_Return_Level
+              (get_uint8 frame.data 0,
+               get_uint8 frame.data 1)
         | 351 ->
           LCD_clear
         | 352 ->
