@@ -99,15 +99,24 @@ let retry_goto ~state ~destination =
 (*   lwt () = Lwt_unix.sleep 2. in *)
 (*   retry_goto ~state ~destination:{ x = 2.1; y = 1. };; *)
 
-let rec loop state =
-  Printf.printf "goto 1\n%!";
-  lwt state = retry_goto ~state ~destination:{ x = 0.44; y = 1.6 } in
-  Printf.printf "goto 2\n%!";
-  lwt state = retry_goto ~state ~destination:{ x = 2.1; y = 1. } in
-  Printf.printf "restart\n%!";
-  loop state
-;;
+(* let rec loop state = *)
+(*   Printf.printf "goto 1\n%!"; *)
+(*   lwt state = retry_goto ~state ~destination:{ x = 0.44; y = 1.6 } in *)
+(*   Printf.printf "goto 2\n%!"; *)
+(*   lwt state = retry_goto ~state ~destination:{ x = 2.1; y = 1. } in *)
+(*   Printf.printf "restart\n%!"; *)
+(*   loop state *)
+(* ;; *)
+
+(* lwt () = *)
+(*   lwt state = make () in *)
+(*   loop state *)
+
+
+let x = float_of_string (Sys.argv.(1))
+let y = float_of_string (Sys.argv.(2))
 
 lwt () =
   lwt state = make () in
-  loop state
+  lwt state = retry_goto ~state ~destination:{ x; y } in
+  Lwt.return ()
