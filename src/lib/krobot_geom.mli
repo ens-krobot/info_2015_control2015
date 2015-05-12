@@ -31,6 +31,10 @@ type bounding_box = {
   max_y : float;
 }
 
+type capsule =
+  { box : bounding_box;
+    radius : float }
+
 val null : vector
 val origin : vertice
 
@@ -94,6 +98,8 @@ val expand_bounding_box : bounding_box -> float -> bounding_box
     every direction of [expand] *)
 
 val is_inside_bounding_box : vertice -> bounding_box -> bool
+
+val is_inside_capsule : vertice -> capsule -> bool
 
 val bounding_box_vertices : bounding_box ->
   (segment * segment * segment * segment)

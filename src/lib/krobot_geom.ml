@@ -165,6 +165,35 @@ let bounding_box_vertices { min_x; min_y; max_x; max_y } =
   (v3, v4),
   (v4, v1)
 
+type capsule =
+  { box : bounding_box;
+    radius : float }
+
+let is_inside_capsule { x; y } { box = bb; radius } =
+  (* short cut *)
+  (x >= bb.min_x -. radius && x <= bb.max_x +. radius &&
+   y >= bb.min_y -. radius && y <= bb.max_y +. radius) &&
+
+  ((x >= bb.min_x -. radius && x <= bb.max_x +. radius &&
+    y >= bb.min_y && y <= bb.max_y)
+   ||
+   (x >= bb.min_x && x <= bb.max_x &&
+    y >= bb.min_y -. radius && y <= bb.max_y +. radius)
+   ||
+   let sq_radius = radius *. radius in
+   let dminx = (x -. bb.min_x) in
+   let dminy = (y -. bb.min_y) in
+   let dmaxx = (x -. bb.max_x) in
+   let dmaxy = (y -. bb.max_y) in
+   let sqdminx = dminx *. dminx in
+   let sqdminy = dminy *. dminy in
+   let sqdmaxx = dmaxx *. dmaxx in
+   let sqdmaxy = dmaxy *. dmaxy in
+   sqdminx +. sqdminy <= sq_radius ||
+   sqdminx +. sqdmaxy <= sq_radius ||
+   sqdmaxx +. sqdminy <= sq_radius ||
+   sqdmaxx +. sqdmaxy <= sq_radius)
+
 type direction = Trigo | Antitrigo
 
 let positive_angle angle =
