@@ -296,7 +296,7 @@ type collision = {
   kind : string;
 }
 
-let first_collision ~src ~path ~obstacles =
+let first_collision ?robot_direction ~src ~path ~obstacles =
   let graph = graph_vertices ~dst:src ~inflate:0. ~fixed_obstacles:obstacles ~obstacles:[] in
   let rec loop src path = match path with
     | [] -> None
@@ -320,13 +320,26 @@ let first_collision ~src ~path ~obstacles =
                  prefix_without_collision = h :: collision_info.prefix_without_collision;
                  distance = distance src h +. collision_info.distance }
   in
-  if has_collision ~inflate:0. ~obstacles:[] ~fixed_obstacles:obstacles src then
+  let collidings = colliding ~inflate:0. ~obstacles:[] ~fixed_obstacles:obstacles src in
+  let collidings = match robot_direction with
+    | None -> collidings
+    | Some robot_direction ->
+      List.filter (fun obstacle ->
+        let bb = rect_bounding_box obstacle in
+        let _, point = distance_bounding_box origin bb in
+        let obj_direction = vector src point in
+        (* Keep the obstacle only if we are going toward it *)
+        Krobot_geom.prod obj_direction robot_direction >= 0.)
+        collidings
+  in
+  match collidings with
+  | _ :: _ ->
     Some {
       collision = src;
       prefix_without_collision = [];
       distance = 0.;
       kind = "static collision" }
-  else
+  | [] ->
     loop src path
 
 let first_position_non_colliding ~inflate ~all_obstacles ~src direction =

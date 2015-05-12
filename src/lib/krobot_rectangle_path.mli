@@ -20,12 +20,15 @@ type collision = {
 }
 
 val first_collision :
+  ?robot_direction:Krobot_geom.vector ->
   src:Krobot_geom.vertice ->
   path:Krobot_geom.vertice list ->
   obstacles:obstacle list ->
   collision option
 (** If there is a collision between the trajectory and an obstacle, returns
-    the prefix without collision and the first collision *)
+    the prefix without collision and the first collision.
+    The robot_direction is used to ignore static collision when are going away.
+ *)
 
 val escaping_directions :
   all_obstacles:obstacle list ->

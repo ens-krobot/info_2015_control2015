@@ -463,6 +463,11 @@ let rec general_step (input:input) (world:world) (state:state) : output =
       let date = Krobot_date.now () in
       let handle_collision () =
         (* Lwt_log.ign_warning_f "Collision handling"; *)
+        let robot_direction =
+          vector
+            world.robot.position
+            move.position
+        in
         let first_intersection =
           match move.move_kind with
           | Constrained ->
@@ -471,12 +476,14 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             None
           | Normal ->
             Krobot_rectangle_path.first_collision
+              ~robot_direction
               ~src:world.robot.position
               ~path:(posisions (move :: rest))
               ~obstacles:(obstacles world)
           | Direct ->
             (* Direct move ignore fixed obstacles *)
             Krobot_rectangle_path.first_collision
+              ~robot_direction
               ~src:world.robot.position
               ~path:(posisions (move :: rest))
               ~obstacles:(not_fixed_obstacles world)
