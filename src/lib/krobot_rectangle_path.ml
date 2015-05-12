@@ -257,6 +257,7 @@ type collision = {
   prefix_without_collision : Krobot_geom.vertice list;
   collision : Krobot_geom.vertice;
   distance : float;
+  kind : string;
 }
 
 let first_collision ~src ~path ~obstacles =
@@ -271,7 +272,8 @@ let first_collision ~src ~path ~obstacles =
         (*   (distance src collision); *)
         Some { collision;
                prefix_without_collision = [];
-               distance = distance src collision }
+               distance = distance src collision;
+               kind = "line intersection"}
       | None ->
         match loop h t with
         | None -> None
@@ -286,7 +288,8 @@ let first_collision ~src ~path ~obstacles =
     Some {
       collision = src;
       prefix_without_collision = [];
-      distance = 0. }
+      distance = 0.;
+      kind = "static collision" }
   else
     loop src path
 

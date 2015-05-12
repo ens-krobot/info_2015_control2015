@@ -16,6 +16,7 @@ type collision = {
   prefix_without_collision : Krobot_geom.vertice list;
   collision : Krobot_geom.vertice;
   distance : float;
+  kind : string;
 }
 
 val first_collision :

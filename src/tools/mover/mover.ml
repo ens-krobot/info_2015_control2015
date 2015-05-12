@@ -480,17 +480,17 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           (* Lwt_log.ign_warning_f "No collision"; *)
           Moving_to moving_to,
           [Bus (First_obstacle None)]
-        | Some { Krobot_rectangle_path.distance; collision; prefix_without_collision } ->
+        | Some { Krobot_rectangle_path.distance; collision; prefix_without_collision; kind } ->
           if distance >= distance_before_stop then begin
-            Lwt_log.ign_warning_f "Far collision %i %.02f"
-              (List.length prefix_without_collision) distance;
+            Lwt_log.ign_warning_f "Far collision %s %i %.02f"
+              kind (List.length prefix_without_collision) distance;
             (* If this is too far, just ignore it *)
             Moving_to { moving_to with first_obstacle = Some collision; },
             [Bus (First_obstacle (Some collision))]
           end
           else begin
-            Lwt_log.ign_warning_f "Collision %i %.02f"
-              (List.length prefix_without_collision) distance;
+            Lwt_log.ign_warning_f "Collision %s %i %.02f"
+              kind (List.length prefix_without_collision) distance;
             Transition_to_Stop (Some request_id),
             [Bus (Collision request_id)]
           end
