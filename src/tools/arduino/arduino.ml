@@ -54,6 +54,7 @@ let rec read_loop info =
       Lwt_log.error_f ~section "Received end of action with no request in progress"
     | s, Some id when s = lift_done ->
       lwt () = Lwt_log.info_f ~section "End of request %x" id in
+      current_id := None;
       Krobot_bus.send info.bus (Unix.gettimeofday (), Lift_action_done id)
     | _ ->
       Lwt_log.error_f ~section "Received unknown response while processing request"
