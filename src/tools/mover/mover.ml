@@ -280,7 +280,7 @@ let idle ~notify world =
     world;
     state = Idle }
 
-let motor_stop = Motor_stop(0.4, 0.4)
+let motor_stop = Motor_stop(1., 0.4)
 let safe_stop_time = 0.1 (* second *)
 let started_distance = 0.005
 let start_move_timeout = 0.1 (* second *)
