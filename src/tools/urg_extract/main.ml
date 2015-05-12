@@ -77,7 +77,7 @@ let mark_circles diameter data =
     sets := !curr_set :: !sets;
     !sets
 
-let obstacles transform diameter data =
+let obstacles transform diameter robot_position data =
   let sets = mark_circles diameter data in
   let diam_vect = { vx = (diameter *. 0.5) /. (sqrt 2.); vy = (diameter *. 0.5) /. (sqrt 2.) } in
   let sets =
@@ -85,17 +85,24 @@ let obstacles transform diameter data =
       List.length l >=
       Krobot_config.extract_number_of_pointneeded_for_obstacle) sets
   in
-  List.map (fun l ->
-    let center = transform_vertice transform (baricenter l) in
+  let centers =
+    List.map (fun l -> transform_vertice transform (baricenter l))
+      sets
+  in
+  let centers =
+    List.filter (fun p -> Krobot_geom.distance p robot_position >= keep_above_dist)
+      centers
+  in
+  List.map (fun center ->
     Rectangle (translate center diam_vect,
                translate center (~| diam_vect)))
-    sets
+    centers
 
 let run_extract info urg =
   let ts = Unix.gettimeofday () in
   let trans = { ax = info.position.x; ay = info.position.y;
                 ath = info.orientation } in
-  let urg_obstacles = obstacles trans default_obstacle_diameter urg in
+  let urg_obstacles = obstacles trans default_obstacle_diameter info.position urg in
   (* let sharp_obstacles = *)
   (*   if info.rear_sharp < Krobot_config.rear_sharp_lower_threshold *)
   (*   || info.rear_sharp > Krobot_config.rear_sharp_upper_threshold then *)
