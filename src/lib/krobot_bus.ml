@@ -61,7 +61,7 @@ type message =
   | Send
   | Kill of string
   | Trajectory_path of Bezier.curve list
-  | Trajectory_set_vertices of vertice list
+  | Trajectory_set_vertices of ( vertice * ( float option ) ) list
   | Trajectory_add_vertice of vertice * vector option
   | Trajectory_simplify of float
   | Trajectory_go of request_id * move_kind
@@ -126,6 +126,9 @@ let string_of_option f v =
     | None ->
       "None"
 
+let string_of_couple f1 f2 (v1, v2) =
+  sprintf "(%s, %s)" (f1 v1) (f2 v2)
+
 let string_of_list f l =
   "[ " ^ String.concat "; " (List.map f l) ^ " ]"
 
@@ -156,8 +159,9 @@ let string_of_message = function
         (String.concat "; " (List.map Bezier.string_of_curve curves))
   | Trajectory_set_vertices l ->
       sprintf
-        "Trajectory_set_vertices [%s]"
-        (String.concat "; " (List.map string_of_vertice l))
+        "Trajectory_set_vertices %s"
+        ((string_of_list (string_of_couple string_of_vertice (string_of_option string_of_float)))
+           l)
   | Trajectory_add_vertice (v, dir) ->
       sprintf
         "Trajectory_add_vertice %s %s"

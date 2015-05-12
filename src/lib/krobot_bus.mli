@@ -74,7 +74,7 @@ type message =
 
   | Trajectory_path of Bezier.curve list
       (** The planned trajectory. *)
-  | Trajectory_set_vertices of vertice list
+  | Trajectory_set_vertices of ( vertice * ( float option ) ) list
       (** Sets the trajectory. *)
   | Trajectory_add_vertice of vertice * vector option
       (** Add a vertice to the trajectory. *)

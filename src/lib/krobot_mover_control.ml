@@ -67,8 +67,10 @@ type goto_result =
   | Goto_unreachable
 
 let new_request_id state =
-  state.next_request_id,
-  { state with next_request_id = state.next_request_id + 1 }
+  let _ : _ list = Lwt_stream.get_available state.stream in
+  Lwt.return
+    (state.next_request_id,
+     { state with next_request_id = state.next_request_id + 1 })
 
 let wait_idle state =
   let _ : _ list = Lwt_stream.get_available state.stream in
@@ -78,8 +80,7 @@ let wait_idle state =
 
 let goto ~state ~destination =
   lwt state = wait_idle state in
-  let request_id, state = new_request_id state in
-  let _ : _ list = Lwt_stream.get_available state.stream in
+  lwt request_id, state = new_request_id state in
   lwt () = send state (Goto (request_id, destination)) in
   let rec loop () =
     lwt (state, msg) = consume_until_mover_message (Id request_id) state in
@@ -93,5 +94,26 @@ let goto ~state ~destination =
       Lwt.return (state, Goto_unreachable)
     | _ ->
       Lwt.return (state, Goto_failure)
+  in
+  loop ()
+
+type turn_result =
+  | Turn_success
+  | Turn_failure
+
+let turn ~state ~orientation =
+  lwt state = wait_idle state in
+  lwt request_id, state = new_request_id state in
+  let order = state.world.robot.position, Some orientation in
+  lwt () = send state (Trajectory_set_vertices [order]) in
+  lwt () = send state (Trajectory_go (request_id, Normal)) in
+  let rec loop () =
+    lwt (state, msg) = consume_until_mover_message (Id request_id) state in
+    Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
+    match msg with
+    | Request_completed _ ->
+      Lwt.return (state, Turn_success)
+    | _ ->
+      Lwt.return (state, Turn_failure)
   in
   loop ()

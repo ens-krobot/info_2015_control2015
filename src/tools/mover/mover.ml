@@ -239,10 +239,13 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
           Some (world, Message message), []
       end
     | Trajectory_set_vertices l ->
-      let s = List.map (fun {Krobot_geom.x;y} -> Printf.sprintf "(%f, %f)" x y) l in
+      let s = List.map (fun ({Krobot_geom.x;y},_) -> Printf.sprintf "(%f, %f)" x y) l in
       let s = String.concat ", " s in
       Lwt_log.ign_info_f "Set vertice [%s]" s;
-      let l = List.map (fun v -> (v, world.robot.orientation)) l in
+      let l = List.map (fun (v, dir) ->
+        match dir with
+        | None -> v, world.robot.orientation
+        | Some dir -> v, dir) l in
       Some ({ world with prepared_vertices = l },
             World_updated New_vertice),
       [Msg (Trajectory_path (generate_path_display world (List.rev l)))]
