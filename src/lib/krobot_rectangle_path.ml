@@ -61,33 +61,62 @@ let add_segment_to_tree tree ((v1, v2) as s) =
   let box = rect_bounding_box (v1, v2) in
   Krobot_spatial_search.add s box tree
 
+let blockings inflate { min_x; min_y; max_x; max_y } =
+  let radius = (max Krobot_config.pathfinding_min_radius_to_consider
+                  (Krobot_config.robot_radius +. Krobot_config.safety_margin +. inflate))
+               (* reduce that by epsilon to avoid numerical problems *)
+               -. epsilon
+  in
+  let corner_radius = radius /. sqrt 2. in
+  (* dodecagone: bounding box biseautée *)
+  let p1 = { x = min_x -. radius; y = min_y } in
+  let p2 = { x = min_x -. radius; y = max_y } in
+  let p3 = { x = min_x -. corner_radius; y = max_y +. corner_radius } in
+  let p4 = { x = min_x; y = max_y +. radius } in
+  let p5 = { x = max_x; y = max_y +. radius } in
+  let p6 = { x = max_x +. corner_radius; y = max_y +. corner_radius } in
+  let p7 = { x = max_x +. radius; y = max_y } in
+  let p8 = { x = max_x +. radius; y = min_y } in
+  let p9 = { x = max_x +. corner_radius; y = min_y -. corner_radius } in
+  let p10 = { x = max_x; y = min_y -. radius } in
+  let p11 = { x = min_x; y = min_y -. radius } in
+  let p12 = { x = min_x -. corner_radius; y = min_y -. corner_radius } in
+  [(p1, p2);
+   (p2, p3);
+   (p3, p4);
+   (p4, p5);
+   (p5, p6);
+   (p6, p7);
+   (p7, p8);
+   (p8, p9);
+   (p9, p10);
+   (p10, p11);
+   (p11, p12);
+   (p12, p1)]
+
+
 let add_vertices_and_blocking inflate ( vertices, blocking ) (v1,v2) =
   let {x = x1; y = y1} = v1 in
   let {x = x2; y = y2} = v2 in
   let radius = (max Krobot_config.pathfinding_min_radius_to_consider
                   (Krobot_config.robot_radius +. Krobot_config.safety_margin +. inflate)) in
-  let min_x = min x1 x2 -. radius in
-  let max_x = max x1 x2 +. radius in
-  let min_y = min y1 y2 -. radius in
-  let max_y = max y1 y2 +. radius in
+  let min_x = min x1 x2 in
+  let max_x = max x1 x2 in
+  let min_y = min y1 y2 in
+  let max_y = max y1 y2 in
+
+  let min_x' = min_x -. radius in
+  let max_x' = max_x +. radius in
+  let min_y' = min_y -. radius in
+  let max_y' = max_y +. radius in
   let vertices =
     vertices
-    |> VerticeSet.add {x = min_x ; y = min_y}
-    |> VerticeSet.add {x = min_x ; y = max_y}
-    |> VerticeSet.add {x = max_x ; y = min_y}
-    |> VerticeSet.add {x = max_x ; y = max_y} in
-  (* reduce that by epsilon to avoid numerical problems *)
-  let min_x = min_x +. epsilon in
-  let max_x = max_x -. epsilon in
-  let min_y = min_y +. epsilon in
-  let max_y = max_y -. epsilon in
-  let s1 = {x = min_x ; y = min_y}, {x = min_x ; y = max_y} in
-  let s2 = {x = min_x ; y = max_y}, {x = max_x ; y = max_y} in
-  let s3 = {x = max_x ; y = max_y}, {x = max_x ; y = min_y} in
-  let s4 = {x = max_x ; y = min_y}, {x = min_x ; y = min_y} in
-  let blocking =
-    s1 :: s2 :: s3 :: s4 :: blocking in
-  ( vertices, blocking )
+    |> VerticeSet.add {x = min_x' ; y = min_y'}
+    |> VerticeSet.add {x = min_x' ; y = max_y'}
+    |> VerticeSet.add {x = max_x' ; y = min_y'}
+    |> VerticeSet.add {x = max_x' ; y = max_y'} in
+  let added_blocking = blockings inflate { min_x; min_y; max_x; max_y } in
+  ( vertices, added_blocking @ blocking )
 
 (** list graph vertices: points where it is allowed to go.
     i.e. les sommets des rectangles étendus par le rayon du robot
@@ -239,11 +268,18 @@ let find_path ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
 
 let radius = (Krobot_config.robot_radius +. Krobot_config.safety_margin)
 
+(* let is_colliding_object ~inflate obstacle point = *)
+(*   is_inside_bounding_box point *)
+(*     (expand_bounding_box (rect_bounding_box obstacle) *)
+(*        (max Krobot_config.pathfinding_min_radius_to_consider *)
+(*           (radius +. inflate))) *)
+
 let is_colliding_object ~inflate obstacle point =
-  is_inside_bounding_box point
-    (expand_bounding_box (rect_bounding_box obstacle)
-       (max Krobot_config.pathfinding_min_radius_to_consider
-          (radius +. inflate)))
+  is_inside_capsule point
+   { box = rect_bounding_box obstacle;
+     radius =
+       max Krobot_config.pathfinding_min_radius_to_consider
+         (radius +. inflate) }
 
 let colliding ~inflate ~obstacles ~fixed_obstacles point =
   List.filter (fun obj -> is_colliding_object ~inflate:0. obj point) fixed_obstacles @
@@ -413,9 +449,16 @@ let escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles =
   find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles dir
 
 let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
-  (* Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate); *)
+  if has_collision ~inflate:0. ~obstacles:[] ~fixed_obstacles dst then begin
+    Printf.printf "no path fixed\n%!";
+    No_path "no path"
+  end
+  else begin
+  Printf.printf "try with inflate: %f (%f)\n%!" inflate (radius +. inflate);
   if (radius +. inflate) < Krobot_config.pathfinding_min_radius_to_consider
-  then No_path "no path"
+  then begin
+    No_path "no path"
+  end
   else if has_collision ~inflate:0. ~obstacles ~fixed_obstacles src then
     match escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles with
     | No_path _ ->
@@ -432,3 +475,4 @@ let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
     | [] ->
       colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | h::t -> Simple_path (h,t)
+  end
