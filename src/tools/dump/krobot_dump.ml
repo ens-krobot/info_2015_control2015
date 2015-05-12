@@ -92,6 +92,14 @@ lwt () =
               | Trajectory_set_vertices _
               | Trajectory_go _) as msg ->
               Lwt_io.printf "bus| %s\n" (string_of_message msg)
+            | (Lift_up _
+              | Lift_down _
+              | Lift_grip_open _
+              | Lift_grip_close _
+              | Lift_door_open _
+              | Lift_door_close _
+              | Lift_action_done _) as msg ->
+              Lwt_io.printf "bus| %s\n" (string_of_message msg)
             | _ -> return ())
        (Krobot_bus.recv bus));
 
