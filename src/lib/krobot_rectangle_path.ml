@@ -96,7 +96,7 @@ let graph_vertices : dst:vertice -> inflate:float -> fixed_obstacles:obstacle li
   obstacles:obstacle list -> graph =
   fun ~dst ~inflate ~fixed_obstacles ~obstacles ->
   let (vertices, blocking) =
-    List.fold_left (add_vertices_and_blocking 0.)
+    List.fold_left (add_vertices_and_blocking 0.001)
       ( VerticeSet.singleton dst, [] )
       fixed_obstacles
   in
