@@ -139,16 +139,28 @@ velocities:
 
 let lock_target sim target_x target_y angle =
   (* Compute orientation to target *)
-  let target_ori = (atan2 (target_y -. sim.state.y) (target_x -. sim.state.x)) in
-  let error = target_ori -. sim.state.theta in
-  (*let error =
-    if error > pi then
-      error -. 2.*.pi
-    else if error < (-.pi) then
-      error +. 2.*.pi
+  let target_ori = (atan2 (target_y -. sim.state.y) (target_x -. sim.state.x)) +. angle in
+  let target_ori =
+    if target_ori > pi then
+      target_ori -. 2. *. pi
+    else if target_ori < (-.pi) then
+      target_ori +. 2.*. pi
     else
-      error
-    in*)
+      target_ori
+  in
+  let error = target_ori -. sim.state.theta in
+  (* let error = *)
+  (*   if (abs_float error) < (abs_float (error -. 2.*.pi)) then *)
+  (*     error *)
+  (*   else *)
+  (*     error -. 2.*.pi *)
+  (* in *)
+  (* let error = *)
+  (*   if (abs_float error) < (abs_float (error +. 2.*.pi)) then *)
+  (*     error *)
+  (*   else *)
+  (*     error +. 2.*.pi *)
+  (* in *)
   let dtheta = time_step *. pi /. 4. in
   sim.lock_error <- error;
   sim.lock_ref <-
