@@ -381,20 +381,23 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles sect
 
       let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
-      match first_position_non_colliding ~inflate:0. ~all_obstacles ~src dir with
+      match first_position_non_colliding ~inflate:0.01 ~all_obstacles ~src dir with
       | None ->
         aux "nowhere to go away" rest
       | Some start ->
-
         (* Hackish: we extend this a bit to avoid floating point problems *)
         let v = vector src start in
-        let start = translate src (normalize v *| (norm v +. 0.0001)) in
-
-        match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
-        | [] -> aux "no path after escaping" rest
-        | h::t ->
-          Escaping_path {escape_point = start;
-                         path = (h,t)}
+        if norm v < 0.00001 then
+          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
+          | [] -> aux "no path after escaping" rest
+          | h::t -> Simple_path (h, t)
+        else
+          let start = translate src (normalize v *| (norm v +. 0.0001)) in
+          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
+          | [] -> aux "no path after escaping" rest
+          | h::t ->
+            Escaping_path {escape_point = start;
+                           path = (h,t)}
   in
   aux "cannot go away from obstacles" sectors
 
