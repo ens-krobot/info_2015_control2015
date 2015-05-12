@@ -160,7 +160,7 @@ let urg_up_rotation = pi /. 2. +. 0.306
 let urg_down_position = { x = 0.0; y = 0. }
 let urg_down_rotation = pi /. 2. -. 0.040
 
-let urg_min_distance = 0.04
+let urg_min_distance = 0.1
 
 let urg_up_id = "H1111961"
 let urg_down_id = "H1111964"
@@ -564,22 +564,7 @@ let urg_down_filter =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; true; true; true; true; true; true; true; true; true; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -588,63 +573,80 @@ let urg_down_filter =
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; false; false;
- false; false; false; false; false; false; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; false; false; false; false; false;
+ false; false; false; true; true; true; true; true; true; true; true; true;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; true; true; true; true; true; true; true; |]
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; |]
 
 let urg_up_filter =
 [|true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; true; true; true; true;
- true; true; true; true; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; true; true; true; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; true; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; false; false;
- false; false; false; false; true; true; true; true; true; true; true; false;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; false; false;
+ true; true; false; false; true; true; true; true; true; true; true; true;
+ true; true; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; true; true; true; true; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; true; true; true; true;
- true; true; true; true; true; true; true; true; false; false; false; false;
+ true; true; true; true; true; true; true; true; true; true; true; false;
  false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; true; true; true; true; true; true; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; false; false; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; false; false; false; true; true;
+ true; true; true; true; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; true; true;
- true; true; true; true; true; false; false; false; true; true; true; false;
+ true; true; true; true; false; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ false; false; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; false; false; false; false; false; false; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; false; false; false; false; false; false; false;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; true; true; true; true; true; true; true;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; true; true; true; true; true; true; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; true; true; true; true; true; true; true; true;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
@@ -661,9 +663,6 @@ let urg_up_filter =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; |]
+ false; false; false; false; false; |]
 
 let extract_number_of_pointneeded_for_obstacle = 2
