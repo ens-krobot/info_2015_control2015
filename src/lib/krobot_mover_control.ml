@@ -20,6 +20,7 @@ let send state msg =
   Krobot_bus.send state.bus (Unix.gettimeofday (), msg)
 
 let mover_message_id = function
+  | Escaping _
   | First_obstacle _
   | Not_idle _
   | Idle -> None

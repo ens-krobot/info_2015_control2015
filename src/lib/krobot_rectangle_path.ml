@@ -334,25 +334,28 @@ let first_position_non_colliding ~inflate ~all_obstacles ~src direction =
     List.partition (fun obj -> is_colliding_object ~inflate obj src) all_obstacles in
   let max_distance = 10. in
   let dst = translate src (normalize direction *| max_distance) in
-  let graph = graph_vertices ~dst ~inflate:0. ~fixed_obstacles:not_colliding ~obstacles:[] in
+  let graph = graph_vertices ~dst ~inflate ~fixed_obstacles:[] ~obstacles:not_colliding in
   let bound =
     match first_intersections graph ~src ~dst with
     | None -> dst
     | Some bound -> bound in
-  if has_collision ~inflate ~obstacles:[] ~fixed_obstacles:colliding bound then
+  if has_collision ~inflate ~obstacles:colliding ~fixed_obstacles:[] bound then
     (* If the first intersection with the world is still too close
        from an original object, we consider that we can't escape *)
     None
   else
-    let co_graph = graph_vertices ~dst:bound ~inflate:0. ~fixed_obstacles:colliding ~obstacles:[] in
+    let co_graph = graph_vertices ~dst:bound ~inflate ~fixed_obstacles:colliding ~obstacles:[] in
     let first_acceptable =
       match first_intersections co_graph ~src:bound ~dst:src with
       | None -> src
       | Some bound -> bound in
     Some first_acceptable
 
+let inflate_for_escape_direction = 0.02
+
 let escaping_directions ~all_obstacles ~src:origin =
-  let colliding_obstacles = colliding ~inflate:0. ~fixed_obstacles:all_obstacles ~obstacles:[] origin in
+  let colliding_obstacles = colliding ~inflate:inflate_for_escape_direction
+      ~fixed_obstacles:[] ~obstacles:all_obstacles origin in
   (* the closest points of each obstacle too close *)
   let closest_points = List.map (fun obstacle ->
     let bb = rect_bounding_box obstacle in
@@ -366,26 +369,33 @@ let escaping_directions ~all_obstacles ~src:origin =
     closest_points
   in
   match forbidden_directions with
-  | [] -> AngleSet.all
+  | [] -> AngleSet.all, []
   | h :: t ->
-    let mk forbidden_direction =
-      let set =
-        AngleSet.(complement
-                    (create ~bisect:forbidden_direction ~width:(pi/.2. -. 0.05))) in
-      (* Format.printf "mk: %a@." AngleSet.print set; *)
-      set
-    in
-    let set =
+    let make_set ~forbidden_width =
+      let mk forbidden_direction =
+        let set =
+          AngleSet.(complement
+                      (create ~bisect:forbidden_direction ~width:forbidden_width)) in
+        (* Format.printf "mk: %a@." AngleSet.print set; *)
+        set
+      in
       List.fold_left (fun set forbidden_direction ->
         let forbidden_set = mk forbidden_direction in
         AngleSet.(intersection set forbidden_set))
         (mk h) t
     in
+    let set = make_set ~forbidden_width:(pi/.2.) in
+    let set =
+      if AngleSet.is_empty set
+      then make_set ~forbidden_width:(pi/.2. -. 0.05)
+      else set
+    in
     (* Format.printf "set: %a@." AngleSet.print set; *)
-    set
+    set, closest_points
 
 type escaping_path =
   { escape_point : Krobot_geom.vertice;
+    escape_from : Krobot_geom.vertice list;
     path : Krobot_geom.vertice * Krobot_geom.vertice list }
 
 type pathfinding_result =
@@ -412,7 +422,7 @@ let filter_directions (l:AngleSet.t) =
     in
     aux h [] t
 
-let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles sectors =
+let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles ~escape_from sectors =
   let all_obstacles = fixed_obstacles @ obstacles in
   let rec aux err = function
     | [] -> No_path err
@@ -420,22 +430,26 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles sect
 
       let bisect = sector.AngleSet.bisect in
       let dir = vector_of_polar ~norm:1. ~angle:bisect in
-      match first_position_non_colliding ~inflate:0.01 ~all_obstacles ~src dir with
+      match first_position_non_colliding ~inflate:inflate_for_escape_direction
+              ~all_obstacles ~src dir with
       | None ->
         aux "nowhere to go away" rest
       | Some start ->
         (* Hackish: we extend this a bit to avoid floating point problems *)
         let v = vector src start in
-        if norm v < 0.00001 then
+        if norm v < 0.00001 then begin
+          Printf.printf "escape vector ~0\n%!";
           match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
           | [] -> aux "no path after escaping" rest
           | h::t -> Simple_path (h, t)
+        end
         else
           let start = translate src (normalize v *| (norm v +. 0.0001)) in
           match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
           | [] -> aux "no path after escaping" rest
           | h::t ->
             Escaping_path {escape_point = start;
+                           escape_from;
                            path = (h,t)}
   in
   aux "cannot go away from obstacles" sectors
@@ -445,8 +459,12 @@ let inflate_step = 0.02
 let escape_and_pathfind ~src ~dst ~inflate ~obstacles ~fixed_obstacles =
   (* escaping must be done with real sizes: so inflate = 0 *)
   let all_obstacles = fixed_obstacles @ obstacles in
-  let dir = filter_directions (escaping_directions ~all_obstacles ~src) in
-  find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles dir
+  let dir', escape_from = escaping_directions ~all_obstacles ~src in
+  let dir = filter_directions dir' in
+  Format.printf "escape dir %a@.filtered %a@."
+    AngleSet.print dir' AngleSet.print' dir;
+  find_path_for_directions ~src ~dst ~inflate ~obstacles
+    ~fixed_obstacles ~escape_from dir
 
 let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
   if has_collision ~inflate:0. ~obstacles:[] ~fixed_obstacles dst then begin

@@ -69,6 +69,7 @@ type viewer = {
   mutable obstacles : Krobot_bus.obstacle list;
 
   mutable first_obstacle : vertice option;
+  mutable escape : Krobot_bus.mover_escaping option;
 }
 
 (* +-----------------------------------------------------------------+
@@ -415,6 +416,18 @@ let draw viewer =
       Cairo.arc ctx vert.x vert.y 0.1 0. (2. *. pi);
       Cairo.set_source_rgba ctx 1. 0.05 0. 1.;
       Cairo.fill ctx
+  in
+
+  let () = match viewer.escape with
+    | None -> ()
+    | Some { escape_to; escape_from } ->
+      Cairo.arc ctx escape_to.x escape_to.y 0.1 0. (2. *. pi);
+      Cairo.set_source_rgba ctx 0.2 0.1 0.3 0.3;
+      Cairo.fill ctx;
+      List.iter (fun vert ->
+        Cairo.arc ctx vert.x vert.y 0.03 0. (2. *. pi);
+        Cairo.set_source_rgba ctx 0.2 0.6 0.4 0.6;
+        Cairo.fill ctx) escape_from
   in
 
   (* Draw the beacon *)
@@ -773,6 +786,13 @@ let handle_message viewer (timestamp, message) =
         queue_draw viewer
       end
 
+    | Mover_message (Escaping escape) ->
+      if (viewer.escape <> Some escape)
+      then begin
+        viewer.escape <- Some escape;
+        queue_draw viewer
+      end
+
     | _ ->
         ()
 
@@ -842,6 +862,7 @@ lwt () =
     urg_lines = [||];
     obstacles = [];
     first_obstacle = None;
+    escape = None;
   } in
 
   (* Handle messages. *)

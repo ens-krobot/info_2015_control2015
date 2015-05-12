@@ -486,6 +486,7 @@ module AngleSet = struct
     List.iter (fun a -> Format.fprintf ppf "%a@ " print_a a) t;
     Format.fprintf ppf "]"
 
+  let print' = print
 end
 
 (* +-----------------------------------------------------------------+

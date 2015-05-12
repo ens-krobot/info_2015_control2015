@@ -360,7 +360,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | Direct -> command_of_limits Krobot_config.normal_limits
       in
       if problematic_position dest theta then begin
-        Lwt_log.ign_warning_f "Problematic position";
+        let kind =
+          match move_kind with
+          | Constrained -> "constrained"
+          | Normal -> ""
+          | Direct -> "direct"
+        in
+        Lwt_log.ign_warning_f "Problematic position %s" kind;
         { timeout = 0.1;
           messages = [];
           world;
@@ -563,18 +569,19 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           ~inflate:Krobot_config.pathfinding_width_inflate
           ~fixed_obstacles:Krobot_config.fixed_obstacles
           ~obstacles:(not_fixed_obstacles world) in
-      let go world h t ~constrained_move =
+      let go ?(msg=[]) world h t ~constrained_move =
         let theta = world.robot.orientation in
         let rest = List.map (fun v -> { position = v; orientation = theta; move_kind = Normal}) t in
         let next_move = { position = h; orientation = theta; move_kind = constrained_move } in
         if move then
           { timeout = 0.01;
-            messages = [Bus (Planning_done request_id)];
+            messages = msg @ [Bus (Planning_done request_id)];
             world = {world with prepared_vertices = []};
             state = Transition_to_Moving_to (request_id, next_move, rest) }
         else
           { timeout = 0.01;
-            messages = [Bus (Planning_done request_id); Bus (Request_completed request_id);
+            messages = msg @
+                       [Bus (Planning_done request_id); Bus (Request_completed request_id);
                         Msg (Trajectory_path (generate_path_display world ((h, theta)::drop_kind rest)))];
             world = {world with prepared_vertices = List.rev ((h,theta)::drop_kind rest)};
             state = Transition_to_Idle }
@@ -587,11 +594,13 @@ let rec general_step (input:input) (world:world) (state:state) : output =
             world = {world with prepared_vertices = []};
             state = Transition_to_Idle }
         | Simple_path (h,t) -> go world h t ~constrained_move:Normal
-        | Escaping_path { escape_point; path = (h, t) } ->
+        | Escaping_path { escape_point; path = (h, t); escape_from } ->
           (* TODO: handle the first one specificaly *)
           Printf.printf "escaping: %f %f\n%!" escape_point.x escape_point.y;
           Printf.printf "first: %f %f\n%!" h.x h.y;
-          go world escape_point (h::t) ~constrained_move:Constrained
+          go world escape_point (h::t)
+            ~msg:[Bus (Escaping {escape_to = escape_point; escape_from = escape_from})]
+            ~constrained_move:Constrained
       end
   | Stop stopped_date ->
     let restop () = Stop (Krobot_date.now ()), [CAN motor_stop] in

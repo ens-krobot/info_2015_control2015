@@ -157,6 +157,7 @@ module AngleSet : sig
   (* val is_all : t -> bool *)
 
   val print : Format.formatter -> t -> unit
+  val print' : Format.formatter -> a list -> unit
 
 end
 

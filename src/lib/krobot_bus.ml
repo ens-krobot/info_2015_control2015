@@ -31,6 +31,11 @@ type collision =
 
 type request_id = int
 
+type mover_escaping = {
+  escape_to : Krobot_geom.vertice;
+  escape_from : Krobot_geom.vertice list;
+}
+
 type mover_message =
   | Planning_error of request_id
   | Planning_done of request_id
@@ -39,6 +44,7 @@ type mover_message =
   | Collision of request_id
   | First_obstacle of vertice option
   | Request_completed of request_id
+  | Escaping of mover_escaping
 
 type move_kind =
   | Normal
@@ -120,6 +126,9 @@ let string_of_option f v =
     | None ->
       "None"
 
+let string_of_list f l =
+  "[ " ^ String.concat "; " (List.map f l) ^ " ]"
+
 let string_of_urg_id (id:urg_id) =
   match id with
   | Down -> "down"
@@ -182,6 +191,10 @@ let string_of_message = function
         Printf.sprintf "Mover: First_obstacle %s" (string_of_option string_of_vertice v)
       | Request_completed id ->
         Printf.sprintf "Mover: Request_completed %X" id
+      | Escaping e ->
+        Printf.sprintf "Mover: Escaping to %s %s"
+          (string_of_vertice e.escape_to)
+          (string_of_list string_of_vertice e.escape_from)
     end
   | Obstacles obstacles ->
       sprintf

@@ -35,6 +35,11 @@ type collision =
 
 type request_id = int
 
+type mover_escaping = {
+  escape_to : Krobot_geom.vertice;
+  escape_from : Krobot_geom.vertice list;
+}
+
 type mover_message =
   | Planning_error of request_id
   | Planning_done of request_id
@@ -43,6 +48,7 @@ type mover_message =
   | Collision of request_id
   | First_obstacle of vertice option
   | Request_completed of request_id
+  | Escaping of mover_escaping
 
 type move_kind =
   | Normal

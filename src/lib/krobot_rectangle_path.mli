@@ -30,13 +30,14 @@ val first_collision :
 val escaping_directions :
   all_obstacles:obstacle list ->
   src:Krobot_geom.vertice ->
-  Krobot_geom.AngleSet.t
+  Krobot_geom.AngleSet.t * Krobot_geom.vertice list
 (** The escaping directions are the directions where we are going away of
     every colliding obstacles *)
 
 type escaping_path =
   { escape_point : Krobot_geom.vertice;
-    path : Krobot_geom.vertice * Krobot_geom.vertice list }
+    escape_from : Krobot_geom.vertice list;
+    path : Krobot_geom.vertice * Krobot_geom.vertice list; }
 
 type pathfinding_result =
   | No_path of string
