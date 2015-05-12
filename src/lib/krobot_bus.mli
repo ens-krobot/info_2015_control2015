@@ -49,6 +49,10 @@ type move_kind =
   | Constrained (* Move assuming potential collisions *)
   | Direct (* Move ignoring the fixed world *)
 
+type team =
+  | Green
+  | Yellow
+
 (** Type of message exchanged over the bus. *)
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -109,6 +113,7 @@ type message =
       * int * int * int * int * int)
 
   | Match_start
+  | Match_end
 
   | Vision_find_target of int * string (* request id, selected camera *)
   | Vision_find_target_response of int * string * ((int * int) list)
@@ -127,6 +132,10 @@ type message =
   | Lift_door_open of int
   | Lift_door_close of int
   | Lift_action_done of int
+
+  | Jack_plugged_in
+  | Jack_plugged_out
+  | Team_select of team
 
 val string_of_message : message -> string
   (** Returns a string representation of the given message. *)

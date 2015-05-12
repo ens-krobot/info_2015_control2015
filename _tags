@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: 784c96d6db12c360dd77c1b64116982e)
+# DO NOT EDIT (digest: 9e67f457c62e3527fa5ccb5760dc7943)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -168,6 +168,19 @@ true: annot, bin_annot
 <src/tools/xbee/*.ml{,i,y}>: pkg_str
 <src/tools/xbee/*.ml{,i,y}>: pkg_threads
 <src/tools/xbee/*.ml{,i,y}>: use_krobot
+# Executable krobot-monitor
+<src/tools/monitor/monitor.{native,byte}>: pkg_lwt.preemptive
+<src/tools/monitor/monitor.{native,byte}>: pkg_lwt.react
+<src/tools/monitor/monitor.{native,byte}>: pkg_lwt.syntax
+<src/tools/monitor/monitor.{native,byte}>: pkg_lwt.unix
+<src/tools/monitor/monitor.{native,byte}>: pkg_threads
+<src/tools/monitor/monitor.{native,byte}>: use_krobot
+<src/tools/monitor/*.ml{,i,y}>: pkg_lwt.preemptive
+<src/tools/monitor/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/monitor/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/monitor/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/monitor/*.ml{,i,y}>: pkg_threads
+<src/tools/monitor/*.ml{,i,y}>: use_krobot
 # Executable krobot-ax12-dump
 <src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.preemptive
 <src/tools/ax12/dump_ax12.{native,byte}>: pkg_lwt.react

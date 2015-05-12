@@ -45,6 +45,10 @@ type move_kind =
   | Constrained
   | Direct
 
+type team =
+  | Green
+  | Yellow
+
 type message =
   | CAN of frame_source * Krobot_can.frame
   | Log of string
@@ -68,6 +72,7 @@ type message =
   | Beacon_raw of (int * int * int * int * int * int
       * int * int * int * int * int)
   | Match_start
+  | Match_end
   | Vision_find_target of int * string
   | Vision_find_target_response of int * string * ((int * int) list)
   | Run_ax12_sequence of (string * Krobot_ax12_format.action list)
@@ -83,6 +88,9 @@ type message =
   | Lift_door_open of int
   | Lift_door_close of int
   | Lift_action_done of int
+  | Jack_plugged_in
+  | Jack_plugged_out
+  | Team_select of team
 
 type t = {
   oc : Lwt_io.output_channel;
@@ -214,7 +222,9 @@ let string_of_message = function
   | Beacon_raw _ ->
       sprintf "Raw beacon packet"
   | Match_start ->
-      sprintf "Match start"
+      "Match start"
+  | Match_end ->
+      "Match end"
   | Vision_find_target (id,camera) ->
       sprintf "Vision find target %i %s" id camera
   | Vision_find_target_response (id,camera,points) ->
@@ -241,6 +251,12 @@ let string_of_message = function
       sprintf "Lift_door_close(%d)" id
   | Lift_action_done (id) ->
       sprintf "Lift_action_done(%d)" id
+  | Jack_plugged_in ->
+      "Jack_plugged_in"
+  | Jack_plugged_out ->
+      "Jack_plugged_out"
+  | Team_select t ->
+      sprintf "Team_select(%s)" (match t with Green -> "Green" | Yellow -> "Yellow")
 
 (* +-----------------------------------------------------------------+
    | Sending/receiving messages                                      |

@@ -6,6 +6,17 @@ type world_update =
   | Motor_started
   | Motor_stopped
   | New_vertice
+  | Jack_changed
+  | Team_changed
+  | Emergency_changed
+
+type jack_state =
+   | In
+   | Out
+
+type emergency_state =
+   | Pressed
+   | OK
 
 type robot = {
   position : Krobot_geom.vertice;
@@ -18,6 +29,9 @@ type robot = {
 
 type world = {
   robot : robot;
+  jack : jack_state;
+  team : Krobot_bus.team;
+  em_stop : emergency_state;
 }
 
 let init_world = {
@@ -26,6 +40,9 @@ let init_world = {
     orientation = 0.;
     motors_moving = false;
   };
+  jack = In;
+  team = Krobot_bus.Yellow;
+  em_stop = Pressed;
 }
 
 let update_world : world -> Krobot_bus.message -> (world * world_update) option =
@@ -65,6 +82,30 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
                   update)
           else
             None
+
+        | Switch1_status(new_jack, new_team, new_em_stop, _, _, _, _, _)  ->
+          (* Did the emergency button changed ? *)
+          let new_em_stop = if new_em_stop then Pressed else OK in
+          if new_em_stop <> world.em_stop then
+            Some ({ world with
+                    em_stop = new_em_stop},
+                  Emergency_changed)
+          else
+            (* Did the jack changed ? *)
+            let new_jack = if new_jack then Out else In in
+            if new_jack <> world.jack then
+              Some ({world with
+                     jack = new_jack},
+                    Jack_changed)
+            else
+              (* Did the team changed ? *)
+              let new_team = if new_team then Yellow else Green in
+              if new_team <> world.team then
+                Some ({world with
+                       team = new_team},
+                      Team_changed)
+              else
+                None
         | _ ->
           None
       end

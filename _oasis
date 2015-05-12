@@ -198,6 +198,16 @@ Executable "krobot-xbee"
   BuildDepends: krobot, lwt.syntax, lwt.preemptive, threads, str
 
 # +-------------------------------------------------------------------+
+# | Monitor program                                                   |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-monitor"
+  Path: src/tools/monitor/
+  CompiledObject: best
+  MainIs: monitor.ml
+  BuildDepends: krobot, lwt.syntax, lwt.preemptive, threads
+
+# +-------------------------------------------------------------------+
 # | AX12 stuff                                                        |
 # +-------------------------------------------------------------------+
 

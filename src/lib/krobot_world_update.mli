@@ -3,6 +3,17 @@ type world_update =
   | Motor_started
   | Motor_stopped
   | New_vertice
+  | Jack_changed
+  | Team_changed
+  | Emergency_changed
+
+type jack_state =
+   | In
+   | Out
+
+type emergency_state =
+   | Pressed
+   | OK
 
 type robot = {
   position : Krobot_geom.vertice;
@@ -15,6 +26,9 @@ type robot = {
 
 type world = {
   robot : robot;
+  jack : jack_state;
+  team : Krobot_bus.team;
+  em_stop : emergency_state;
 }
 
 val init_world : world
