@@ -152,6 +152,7 @@ let do_homologation () =
     lwt state = wait_for_jack ~state ~jack_state:In in
     lwt state = reset_odometry ~state in
     lwt state = wait_for_jack ~state ~jack_state:Out in
+    lwt state = reset_odometry ~state in
     do_homologation_run state (get_team state)
   with Match_end_exn ->
     match_end state
