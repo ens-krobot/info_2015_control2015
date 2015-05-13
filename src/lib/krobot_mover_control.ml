@@ -274,3 +274,5 @@ let reset_odometry ~state =
   let state = consume_and_update state in
   lwt position = send_team_initial_position state in
   wait_for_odometry ~state ~position
+
+let get_team state = state.world.team

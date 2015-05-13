@@ -157,47 +157,63 @@ let command_goto args =
 
 (****** Test homologatoin ************)
 
-type team = Yellow | Green
+type team = Krobot_bus.team
+
+let target = { x = 1.1 ; y = Krobot_config.world_height -. 1.75 }
+let dir = (3. /. 4.) *. pi
+let distance = Krobot_config.robot_radius +. 0.2
+let push_distance = 0.33
 
 let yellow_out_of_start_zone =
   { x = 0.5; y = 1. }
 
-let yellow_stuff_to_push =
-  (* TODO: real data *)
-  { x = 1.2; y = 0.5 }
+let yellow_stuff_to_push = translate target (vector_of_polar ~angle:dir ~norm:distance)
+let () =
+  Printf.printf "%f %f\n%!" yellow_stuff_to_push.x yellow_stuff_to_push.y
 
 let yellow_position_to_push =
-  (* TODO: real data *)
   translate
     yellow_stuff_to_push
-    { vx = 0.; vy = -. 0.1 }
+    (vector_of_polar ~angle:dir ~norm:(-.push_distance))
 
 let mirror v = { x = Krobot_config.world_width -. v.x; y = v.y }
 
-let out_of_start_zone = function
+let out_of_start_zone : Krobot_bus.team -> _ = function
   | Yellow -> yellow_out_of_start_zone
   | Green -> mirror yellow_out_of_start_zone
-let first_position = function
+let first_position : Krobot_bus.team -> _  = function
   | Yellow -> yellow_stuff_to_push
   | Green -> mirror yellow_stuff_to_push
-let push_position = function
+let push_position : Krobot_bus.team -> _  = function
   | Yellow -> yellow_position_to_push
   | Green -> mirror yellow_position_to_push
 
 let down_orientation = -. pi /. 2.
 
-let do_homologation team =
-  lwt state = make () in
+let do_homologation_run state team =
   lwt state = retry_move ~state ~destination:(out_of_start_zone team) ~ignore_fixed_obstacles:true in
   lwt state = retry_goto ~state ~destination:(first_position team) in
   lwt state = retry_turn ~state ~orientation:down_orientation in
   lwt state = retry_move ~state ~destination:(push_position team) ~ignore_fixed_obstacles:false in
   Lwt.return ()
 
+let do_homologation () =
+  lwt state = make () in
+  lwt state = wait_for_jack ~state ~jack_state:In in
+  lwt state = reset_odometry ~state in
+  lwt state = wait_for_jack ~state ~jack_state:Out in
+  do_homologation_run state (get_team state)
+
+let direct_homologation () =
+  lwt state = make () in
+  lwt state = reset_odometry ~state in
+  do_homologation_run state (get_team state)
+
 let homologation args =
+  lwt state = make () in
   match args with
-  | [|"yellow"|] -> do_homologation Yellow
-  | [|"green"|] -> do_homologation Green
+  | [|"yellow"|] -> do_homologation_run state Yellow
+  | [|"green"|] -> do_homologation_run state Green
   | _ ->
     Printf.printf "homologation: wrong number of arguments: %i, expected 1 (green or yellow)\n%!"
       (Array.length args);
@@ -213,8 +229,12 @@ lwt () =
     command_goto rest
   | "demo" ->
     demo_loop ()
-  | "homologation" ->
+  | "run_homologation" ->
     homologation rest
+  | "homologation" ->
+    do_homologation ()
+  | "test" ->
+    direct_homologation ()
   | cmd ->
     Printf.printf "unknown command %s\n%!" cmd;
     exit 1
