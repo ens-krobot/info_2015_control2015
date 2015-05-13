@@ -122,13 +122,6 @@ let retry_move ~state ~destination ~ignore_fixed_obstacles =
   Format.printf "try move %a@." Krobot_date.print (Krobot_date.now ());
   aux ~state;;
 
-(* lwt state = retry_goto ~state ~destination:{ x = 0.44; y = 1.6 };; *)
-(* lwt state = retry_goto ~state ~destination:{ x = 0.7; y = 1. };; *)
-
-(* lwt state = *)
-(*   lwt () = Lwt_unix.sleep 2. in *)
-(*   retry_goto ~state ~destination:{ x = 2.1; y = 1. };; *)
-
 let rec loop state =
   Printf.printf "goto 1\n%!";
   lwt state = retry_goto ~state ~destination:{ x = 0.8; y = 1. } in
@@ -197,17 +190,31 @@ let do_homologation_run state team =
   lwt state = retry_move ~state ~destination:(push_position team) ~ignore_fixed_obstacles:false in
   Lwt.return ()
 
+let match_end state =
+  Printf.printf "Match end\n%!";
+  lwt () = stop state in
+  Printf.printf "Stop\n%!";
+  lwt () = Lwt_unix.sleep 0.1 in
+  Printf.printf "die !\n%!";
+  exit 0
+
 let do_homologation () =
   lwt state = make () in
-  lwt state = wait_for_jack ~state ~jack_state:In in
-  lwt state = reset_odometry ~state in
-  lwt state = wait_for_jack ~state ~jack_state:Out in
-  do_homologation_run state (get_team state)
+  try_lwt
+    lwt state = wait_for_jack ~state ~jack_state:In in
+    lwt state = reset_odometry ~state in
+    lwt state = wait_for_jack ~state ~jack_state:Out in
+    do_homologation_run state (get_team state)
+  with Match_end_exn ->
+    match_end state
 
 let direct_homologation () =
   lwt state = make () in
-  lwt state = reset_odometry ~state in
-  do_homologation_run state (get_team state)
+  try
+    lwt state = reset_odometry ~state in
+    do_homologation_run state (get_team state)
+  with Match_end_exn ->
+    match_end state
 
 let homologation args =
   lwt state = make () in

@@ -36,54 +36,68 @@ type request_until =
   | Idle
   | Id of request_id
 
+exception Match_end_exn
+
+let test_end = function
+  | Match_end -> raise Match_end_exn
+  | _ -> ()
+
 let consume_and_update state =
-  let l = Lwt_stream.get_available state.stream in
-  List.fold_left (fun state (_,msg) ->
-    match Krobot_world_update.update_world state.world msg with
-    | None -> state
-    | Some (world, _) -> { state with world })
-    state l
+  try
+    let l = Lwt_stream.get_available state.stream in
+    let r =
+      List.fold_left (fun state (_,msg) ->
+        test_end msg;
+        match Krobot_world_update.update_world state.world msg with
+        | None -> state
+        | Some (world, _) -> { state with world })
+        state l
+    in
+    Lwt.return r
+  with e -> raise_lwt e
+
+let stream_get stream =
+  match_lwt Lwt_stream.get stream with
+  | None -> raise_lwt (Failure "connection closed")
+  | Some (_,Match_end) -> raise_lwt Match_end_exn
+  | Some (_, msg) -> Lwt.return msg
 
 let consume_until_mover_message (until:request_until) state : (state * mover_message) Lwt.t =
   let rec loop world stream : (world * mover_message) Lwt.t =
-    match_lwt Lwt_stream.get stream with
-    | None -> raise_lwt (Failure "connection closed")
-    | Some (_,msg) ->
-      let world =
-        match Krobot_world_update.update_world world msg with
-        | None -> world
-        | Some (world, _world_update) -> world
-      in
-      match msg, until with
-      | Mover_message Idle, Idle ->
-        Lwt.return (world, (Idle:mover_message))
-      | Mover_message (Not_idle _), Idle ->
-        lwt () = send state Request_mover_state in
-        loop world stream
-      | Mover_message mover_message, Id id ->
-        begin match mover_message_id mover_message with
-          | Some id' when id' = id ->
-            Lwt.return (world, mover_message)
-          | _ -> loop world stream
-        end
-      | _ ->
-        loop world stream
+    lwt msg = stream_get stream in
+    let world =
+      match Krobot_world_update.update_world world msg with
+      | None -> world
+      | Some (world, _world_update) -> world
+    in
+    match msg, until with
+    | Mover_message Idle, Idle ->
+      Lwt.return (world, (Idle:mover_message))
+    | Mover_message (Not_idle _), Idle ->
+      lwt () = send state Request_mover_state in
+      loop world stream
+    | Mover_message mover_message, Id id ->
+      begin match mover_message_id mover_message with
+        | Some id' when id' = id ->
+          Lwt.return (world, mover_message)
+        | _ -> loop world stream
+      end
+    | _ ->
+      loop world stream
   in
   lwt (world, msg) = loop state.world state.stream in
   Lwt.return ({ state with world }, msg)
 
 let consume_until_ax12_state ~ax12_side state : (state * ax12_state) Lwt.t =
   let rec loop world stream : (world * ax12_state) Lwt.t =
-    match_lwt Lwt_stream.get stream with
-    | None -> raise_lwt (Failure "connection closed")
-    | Some (_, msg) ->
-      match Krobot_world_update.update_world world msg with
-      | Some (world, Ax12_changed side) when side = ax12_side ->
-        Lwt.return (world, ax12_state_of_side world side)
-      | Some (world, _) ->
-        loop world stream
-      | None ->
-        loop world stream
+    lwt msg = stream_get stream in
+    match Krobot_world_update.update_world world msg with
+    | Some (world, Ax12_changed side) when side = ax12_side ->
+      Lwt.return (world, ax12_state_of_side world side)
+    | Some (world, _) ->
+      loop world stream
+    | None ->
+      loop world stream
   in
   lwt (world, ax12_state) = loop state.world state.stream in
   Lwt.return ({ state with world }, ax12_state)
@@ -94,13 +108,13 @@ type goto_result =
   | Goto_unreachable
 
 let new_request_id state =
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   Lwt.return
     (state.next_request_id,
      { state with next_request_id = state.next_request_id + 1 })
 
 let wait_idle state =
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   lwt () = send state Request_mover_state in
   lwt (state, _) = consume_until_mover_message Idle state in
   Lwt.return state
@@ -184,7 +198,7 @@ let ax12_action side status = match side, status with
 let admissible_ax12_distance = 10
 
 let clap ~state ~side ~status =
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   let idx, position = ax12_action side status in
   lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
   lwt () = Lwt_unix.sleep 0.1 in
@@ -202,18 +216,16 @@ let clap ~state ~side ~status =
 
 let wait_for_jack' ~jack_state ~(state:state) : state Lwt.t =
   let rec loop (world:world) stream : world Lwt.t =
-    match_lwt Lwt_stream.get stream with
-    | None -> raise_lwt (Failure "connection closed")
-    | Some (_,msg) ->
-      match Krobot_world_update.update_world world msg with
-      | Some (world, Jack_changed) when world.jack = jack_state ->
-        Lwt.return world
-      | Some (world, _) ->
-        loop world stream
-      | _ ->
-        loop world stream
+    lwt msg = stream_get stream in
+    match Krobot_world_update.update_world world msg with
+    | Some (world, Jack_changed) when world.jack = jack_state ->
+      Lwt.return world
+    | Some (world, _) ->
+      loop world stream
+    | _ ->
+      loop world stream
   in
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   if state.world.jack = jack_state then
     Lwt.return state
   else
@@ -227,16 +239,14 @@ let wait_for_jack ~jack_state ~state =
 
 let wait_for_team_change ~state : (state * Krobot_bus.team) Lwt.t =
   let rec loop (world:world) stream : (world * Krobot_bus.team) Lwt.t =
-    match_lwt Lwt_stream.get stream with
-    | None -> raise_lwt (Failure "connection closed")
-    | Some (_,msg) ->
-      match Krobot_world_update.update_world world msg with
-      | Some (world, Team_changed) ->
-        Lwt.return (world, world.team)
-      | Some (world, _) ->
-        loop world stream
-      | _ ->
-        loop world stream
+    lwt msg = stream_get stream in
+    match Krobot_world_update.update_world world msg with
+    | Some (world, Team_changed) ->
+      Lwt.return (world, world.team)
+    | Some (world, _) ->
+      loop world stream
+    | _ ->
+      loop world stream
   in
   lwt (world, team) = loop state.world state.stream in
   Lwt.return ({ state with world }, team)
@@ -246,18 +256,16 @@ let close world position =
 
 let wait_for_odometry ~state ~position =
   let rec loop (world:world) stream : world Lwt.t =
-    match_lwt Lwt_stream.get stream with
-    | None -> raise_lwt (Failure "connection closed")
-    | Some (_,msg) ->
-      match Krobot_world_update.update_world world msg with
-      | Some (world, _) when close world position ->
-        Lwt.return world
-      | Some (world, _) ->
-        loop world stream
-      | _ ->
-        loop world stream
+    lwt msg = stream_get stream in
+    match Krobot_world_update.update_world world msg with
+    | Some (world, _) when close world position ->
+      Lwt.return world
+    | Some (world, _) ->
+      loop world stream
+    | _ ->
+      loop world stream
   in
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   lwt world = loop state.world state.stream in
   Lwt.return { state with world }
 
@@ -271,8 +279,20 @@ let send_team_initial_position state =
   Lwt.return pos
 
 let reset_odometry ~state =
-  let state = consume_and_update state in
+  lwt state = consume_and_update state in
   lwt position = send_team_initial_position state in
   wait_for_odometry ~state ~position
 
 let get_team state = state.world.team
+
+let on_match_end state callback =
+  let ev = Lwt_react.E.map_s (function
+    | (_, Match_end) ->
+      Printf.printf "match end\n%!";
+      callback state.bus
+    | _ -> Lwt.return ())
+    (Krobot_bus.recv state.bus)
+  in
+  Lwt_react.E.keep ev
+
+let stop state = send state Stop

@@ -1,6 +1,8 @@
 
 type state
 
+exception Match_end_exn
+
 val make : unit -> state Lwt.t
 
 type goto_result =
@@ -36,3 +38,7 @@ val wait_for_team_change : state:state -> (state * Krobot_bus.team) Lwt.t
 val reset_odometry : state:state -> state Lwt.t
 
 val get_team : state -> Krobot_bus.team
+
+val on_match_end : state -> (Krobot_bus.t -> unit Lwt.t) -> unit
+
+val stop : state -> unit Lwt.t
