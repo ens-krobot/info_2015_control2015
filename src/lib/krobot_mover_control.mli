@@ -30,3 +30,7 @@ val clap : state:state -> side:Krobot_world_update.ax12_side -> status:clap_stat
   (state * clap_result) Lwt.t
 
 val wait_for_jack : jack_state:Krobot_world_update.jack_state -> state:state -> state Lwt.t
+
+val wait_for_team_change : state:state -> (state * Krobot_bus.team) Lwt.t
+
+val reset_odometry : state:state -> state Lwt.t

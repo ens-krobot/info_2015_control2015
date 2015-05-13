@@ -215,3 +215,53 @@ let wait_for_jack ~jack_state ~(state:state) : state Lwt.t =
   in
   lwt world = loop state.world state.stream in
   Lwt.return { state with world }
+
+let wait_for_team_change ~state : (state * Krobot_bus.team) Lwt.t =
+  let rec loop (world:world) stream : (world * Krobot_bus.team) Lwt.t =
+    match_lwt Lwt_stream.get stream with
+    | None -> raise_lwt (Failure "connection closed")
+    | Some (_,msg) ->
+      match Krobot_world_update.update_world world msg with
+      | Some (world, Team_changed) ->
+        Lwt.return (world, world.team)
+      | Some (world, _) ->
+        loop world stream
+      | _ ->
+        loop world stream
+  in
+  lwt (world, team) = loop state.world state.stream in
+  Lwt.return ({ state with world }, team)
+
+let close world position =
+  Krobot_geom.distance world.robot.position position <= 0.01
+
+let wait_for_odometry ~state ~position =
+  let rec loop (world:world) stream : world Lwt.t =
+    match_lwt Lwt_stream.get stream with
+    | None -> raise_lwt (Failure "connection closed")
+    | Some (_,msg) ->
+      match Krobot_world_update.update_world world msg with
+      | Some (world, _) when close world position ->
+        Lwt.return world
+      | Some (world, _) ->
+        loop world stream
+      | _ ->
+        loop world stream
+  in
+  let state = consume_and_update state in
+  lwt world = loop state.world state.stream in
+  Lwt.return { state with world }
+
+let send_team_initial_position state =
+  let (pos, theta) =
+    match state.world.team with
+    | Green -> Krobot_config.green_initial_position
+    | Yellow -> Krobot_config.yellow_initial_position
+  in
+  lwt () = send_can state (Set_odometry (pos.x, pos.y, theta)) in
+  Lwt.return pos
+
+let reset_odometry ~state =
+  let state = consume_and_update state in
+  lwt position = send_team_initial_position state in
+  wait_for_odometry ~state ~position

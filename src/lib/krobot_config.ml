@@ -7,8 +7,6 @@
  * This file is a part of [kro]bot.
  *)
 
-type side = Yellow | Green
-
 let sqr x = x *. x
 
 let world_height = 2.
