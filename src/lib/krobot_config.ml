@@ -120,8 +120,8 @@ let original_yellow_stands_in_rules_coordinates =
     { x = 0.85; y = 0.2 };
     { x = 0.85; y = 0.1 };
     { x = 0.87; y = 1.355 };
-    { x = 1.3; y = 1.4 };
-    { x = 1.7; y = 1.4 } ]
+    { x = 1.1; y = 1.75 };
+    { x = 1.3; y = 1.4 }; ]
 
 let world_coordinates_of_rules_coordinates {x;y} = {x; y = world_height -. y }
 let green_of_yellow { x; y } = { x = world_width -. x; y }
@@ -134,7 +134,7 @@ let original_green_stands =
   List.map green_of_yellow
     original_yellow_stands
 
-let stand_radius = 0.6 /. 2.
+let stand_radius = 0.06 /. 2.
 
 let original_pop_corn_in_rules_coordinates =
   [ { x = 0.25; y = 1.75 };
@@ -147,7 +147,7 @@ let original_pop_corn =
   List.map world_coordinates_of_rules_coordinates
     original_pop_corn_in_rules_coordinates
 
-let pop_corn_radius = 0.95 /. 2.
+let pop_corn_radius = 0.095 /. 2.
 
 type motor_limits = {
   v_lin_max : float; (* m/s *)
