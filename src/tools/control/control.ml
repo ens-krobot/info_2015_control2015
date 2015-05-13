@@ -194,6 +194,7 @@ let match_end state =
   Printf.printf "Match end\n%!";
   lwt () = stop state in
   Printf.printf "Stop\n%!";
+  lwt () = lcd_message ~state ~line:4 ~text:"Match end !" in
   lwt () = Lwt_unix.sleep 0.1 in
   Printf.printf "die !\n%!";
   exit 0

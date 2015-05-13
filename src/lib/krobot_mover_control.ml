@@ -296,3 +296,6 @@ let on_match_end state callback =
   Lwt_react.E.keep ev
 
 let stop state = send state Stop
+
+let lcd_message ~state ~line ~text =
+  Krobot_lcd.send_line state.bus line text

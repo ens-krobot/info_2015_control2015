@@ -42,3 +42,5 @@ val get_team : state -> Krobot_bus.team
 val on_match_end : state -> (Krobot_bus.t -> unit Lwt.t) -> unit
 
 val stop : state -> unit Lwt.t
+
+val lcd_message : state:state -> line:int -> text:string -> unit Lwt.t

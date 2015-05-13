@@ -107,7 +107,7 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
 
         | Switch1_status(new_jack, new_team, new_em_stop, _, _, _, _, _)  ->
           (* Did the emergency button changed ? *)
-          let new_em_stop = if new_em_stop then Pressed else OK in
+          let new_em_stop = if new_em_stop then OK else Pressed in
           if new_em_stop <> world.em_stop then
             Some ({ world with
                     em_stop = new_em_stop},
@@ -121,7 +121,7 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
                     Jack_changed)
             else
               (* Did the team changed ? *)
-              let new_team = if new_team then Yellow else Green in
+              let new_team = if new_team then Green else Yellow in
               if new_team <> world.team then
                 Some ({world with
                        team = new_team},
