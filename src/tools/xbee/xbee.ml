@@ -62,6 +62,7 @@ let handle_message info (timestamp, message) =
     info.match_state <- Ready;
     Lwt.return ()
   | Match_start ->
+    lwt () = Krobot_serial.write_line info.serial "g" in
     info.match_state <- Started;
     Lwt.return ()
   | Match_cancelled ->
@@ -131,7 +132,7 @@ lwt () =
   lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill "xbee") in
 
   (* serial communication loop *)
-  ignore(broadcast_state_loop info);
+  (* ignore(broadcast_state_loop info); *)
 
   (* Loop forever. *)
   fst (wait ())
