@@ -50,6 +50,9 @@ let left_arm_idx = 5
 
 let left_arm_positions = (437, 513, 600, 900)
 
+let yellow_led = 5
+let green_led = 7
+
 let green_fixed_beacons = [
   { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };

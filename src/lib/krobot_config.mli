@@ -72,6 +72,10 @@ val left_arm_idx : int
 val left_arm_positions : int * int * int * int
   (** positions of the servo for the left arm : (in, ready, perpendicular, parallel) *)
 
+val yellow_led : int
+val green_led : int
+  (** Indices of robot's LEDs for use in Switch_request CAN packets *)
+
 val fixed_obstacles : Krobot_geom.rect_obj list
 
 val test_obstacles : Krobot_geom.rect_obj list

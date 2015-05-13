@@ -14,6 +14,7 @@ open Lwt_react
 open Krobot_bus
 open Krobot_message
 open Krobot_world_update
+open Krobot_config
 
 let section = Lwt_log.Section.make "krobot(monitor)"
 
@@ -41,6 +42,14 @@ let handle_message info (timestamp, message) =
       info.world <- world;
       begin
         match update with
+        | Team_changed -> begin
+            let turn_on, turn_off = match world.team with
+              | Yellow -> yellow_led, green_led
+              | Green -> green_led, yellow_led
+            in
+            lwt () = Krobot_message.send info.bus (Unix.gettimeofday(), (Switch_request(turn_on, true))) in
+            Krobot_message.send info.bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
+          end
         | Jack_changed when world.jack = Out ->
           let canceled = ref false in
           started_match := Some canceled;
