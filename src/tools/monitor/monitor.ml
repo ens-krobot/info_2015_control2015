@@ -78,7 +78,8 @@ let handle_message info (timestamp, message) =
           let canceled = ref false in
           started_match := Some canceled;
           let _ : unit Lwt.t =
-            lwt () = Lwt_unix.sleep 90. in
+            lwt () = Lwt_unix.sleep 89. in
+            (* We stop at 89 seconds to let the robot really stop *)
             if (not !canceled) then
               Krobot_bus.send info.bus (Unix.gettimeofday(), Match_end)
             else
