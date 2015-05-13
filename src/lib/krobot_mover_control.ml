@@ -117,3 +117,25 @@ let turn ~state ~orientation =
       Lwt.return (state, Turn_failure)
   in
   loop ()
+
+
+type move_result =
+  | Move_success
+  | Move_failure
+
+let move ~state ~destination =
+  lwt state = wait_idle state in
+  lwt request_id, state = new_request_id state in
+  let order = destination, None in
+  lwt () = send state (Trajectory_set_vertices [order]) in
+  lwt () = send state (Trajectory_go (request_id, Normal)) in
+  let rec loop () =
+    lwt (state, msg) = consume_until_mover_message (Id request_id) state in
+    Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
+    match msg with
+    | Request_completed _ ->
+      Lwt.return (state, Move_success)
+    | _ ->
+      Lwt.return (state, Move_failure)
+  in
+  loop ()

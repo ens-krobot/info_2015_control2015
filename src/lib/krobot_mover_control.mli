@@ -15,3 +15,9 @@ type turn_result =
   | Turn_failure
 
 val turn : state:state -> orientation:float -> (state * turn_result) Lwt.t
+
+type move_result =
+  | Move_success
+  | Move_failure
+
+val move : state:state -> destination:Krobot_geom.vertice -> (state * move_result) Lwt.t
