@@ -430,6 +430,26 @@ let draw viewer =
         Cairo.fill ctx) escape_from
   in
 
+  (* Draw stands *)
+  let () =
+    List.iter (fun vert ->
+      Cairo.arc ctx vert.x vert.y Krobot_config.stand_radius 0. (2. *. pi);
+      set_color ctx Yellow;
+      Cairo.fill ctx) Krobot_config.original_yellow_stands;
+    List.iter (fun vert ->
+      Cairo.arc ctx vert.x vert.y Krobot_config.stand_radius 0. (2. *. pi);
+      set_color ctx Green;
+      Cairo.fill ctx) Krobot_config.original_green_stands
+  in
+
+  (* Draw pop-corn *)
+  let () =
+    List.iter (fun vert ->
+      Cairo.arc ctx vert.x vert.y Krobot_config.pop_corn_radius 0. (2. *. pi);
+      set_color ctx White;
+      Cairo.fill ctx) Krobot_config.original_pop_corn;
+  in
+
   (* Draw the beacon *)
   let draw_beacon = function
     | Some v ->
