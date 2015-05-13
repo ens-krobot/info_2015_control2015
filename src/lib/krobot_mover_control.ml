@@ -268,8 +268,11 @@ let wait_for_odometry ~state ~position =
       loop world stream
   in
   lwt state = consume_and_update state in
-  lwt world = loop state.world state.stream in
-  Lwt.return { state with world }
+  if close state.world position then
+    Lwt.return state
+  else
+    lwt world = loop state.world state.stream in
+    Lwt.return { state with world }
 
 let send_team_initial_position state =
   let (pos, theta) =
