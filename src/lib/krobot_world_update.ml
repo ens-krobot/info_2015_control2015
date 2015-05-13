@@ -14,6 +14,7 @@ type world_update =
   | Team_changed
   | Emergency_changed
   | Ax12_changed of ax12_side
+  | Obstacles_updated
 
 type jack_state =
    | In
@@ -45,6 +46,7 @@ type world = {
   jack : jack_state;
   team : Krobot_bus.team;
   em_stop : emergency_state;
+  urg_obstacles : Krobot_rectangle_path.obstacle list;
 }
 
 let default_ax12_state =
@@ -61,6 +63,7 @@ let init_world = {
   jack = In;
   team = Krobot_bus.Yellow;
   em_stop = Pressed;
+  urg_obstacles = [];
 }
 
 let ax12_state_of_side world = function
@@ -149,6 +152,13 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
         | _ ->
           None
       end
+
+    | Obstacles obstacles ->
+      let world =
+        { world with
+          urg_obstacles = List.map (fun (Rectangle (v1, v2)) -> (v1, v2)) obstacles } in
+      Some (world, Obstacles_updated)
+
     | Log _ ->
       None
     | message ->
