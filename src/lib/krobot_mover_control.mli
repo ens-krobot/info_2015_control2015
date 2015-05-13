@@ -20,4 +20,5 @@ type move_result =
   | Move_success
   | Move_failure
 
-val move : state:state -> destination:Krobot_geom.vertice -> (state * move_result) Lwt.t
+val move : state:state -> ignore_fixed_obstacles:bool ->
+  destination:Krobot_geom.vertice -> (state * move_result) Lwt.t

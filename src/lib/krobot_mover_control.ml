@@ -123,12 +123,13 @@ type move_result =
   | Move_success
   | Move_failure
 
-let move ~state ~destination =
+let move ~state ~ignore_fixed_obstacles ~destination =
   lwt state = wait_idle state in
   lwt request_id, state = new_request_id state in
   let order = destination, None in
+  let kind = if ignore_fixed_obstacles then Direct else Normal in
   lwt () = send state (Trajectory_set_vertices [order]) in
-  lwt () = send state (Trajectory_go (request_id, Normal)) in
+  lwt () = send state (Trajectory_go (request_id, kind)) in
   let rec loop () =
     lwt (state, msg) = consume_until_mover_message (Id request_id) state in
     Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
