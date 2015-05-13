@@ -113,23 +113,41 @@ let fixed_obstacles = [
 let test_obstacles =
   [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
 
-(* let initial_fires = [] *)
-(*   (\*List.map (fun (x, y, a) -> ({x;y},a)) *)
-(*   [ 0.4, 0.9, 0.; *)
-(*     2.6, 0.9, 0.; *)
-(*     0.9, 1.4, (pi/.2.); *)
-(*     0.9, 0.4, (pi/.2.); *)
-(*     2.1, 1.4, (pi/.2.); *)
-(*     2.1, 0.4, (pi/.2.); *)
-(*     0.018, 1.2, (pi/.2.); *)
-(*     2.982, 1.2, (pi/.2.); *)
-(*     1.3, 0.018, 0.; *)
-(*     1.7, 0.018, 0.; ]*\) *)
+let original_yellow_stands_in_rules_coordinates =
+  [ { x = 0.09; y = 1.850 };
+    { x = 0.09; y = 1.750 };
+    { x = 0.09; y = 0.2 };
+    { x = 0.85; y = 0.2 };
+    { x = 0.85; y = 0.1 };
+    { x = 0.87; y = 1.355 };
+    { x = 1.3; y = 1.4 };
+    { x = 1.7; y = 1.4 } ]
 
-(* let initial_torches = [] *)
-(*   (\*List.map (fun (x, y) -> {x;y}) *)
-(*   [ 0.9, 0.9; *)
-(*     2.1, 0.9; ]*\) *)
+let world_coordinates_of_rules_coordinates {x;y} = {x; y = world_height -. y }
+let green_of_yellow { x; y } = { x = world_width -. x; y }
+
+let original_yellow_stands =
+  List.map world_coordinates_of_rules_coordinates
+    original_yellow_stands_in_rules_coordinates
+
+let original_green_stands =
+  List.map green_of_yellow
+    original_yellow_stands
+
+let stand_radius = 0.6 /. 2.
+
+let original_pop_corn_in_rules_coordinates =
+  [ { x = 0.25; y = 1.75 };
+    { x = 0.91; y = 0.8 };
+    { x = 1.50; y = 1.65 };
+    { x = 2.09; y = 0.8 };
+    { x = 2.75; y = 1.75 } ]
+
+let original_pop_corn =
+  List.map world_coordinates_of_rules_coordinates
+    original_pop_corn_in_rules_coordinates
+
+let pop_corn_radius = 0.95 /. 2.
 
 type motor_limits = {
   v_lin_max : float; (* m/s *)

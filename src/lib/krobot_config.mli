@@ -80,9 +80,12 @@ val fixed_obstacles : Krobot_geom.rect_obj list
 
 val test_obstacles : Krobot_geom.rect_obj list
 
-(* val initial_fires : (Krobot_geom.vertice * float) list *)
+val stand_radius : float
+val pop_corn_radius : float
 
-(* val initial_torches : Krobot_geom.vertice list *)
+val original_yellow_stands : Krobot_geom.vertice list
+val original_green_stands : Krobot_geom.vertice list
+val original_pop_corn : Krobot_geom.vertice list
 
 val urg_up_position : Krobot_geom.vertice
 val urg_down_position : Krobot_geom.vertice
