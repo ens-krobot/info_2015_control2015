@@ -533,7 +533,7 @@ let urg_angles =
 let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) (Krobot_utils.array_rev urg_angles)
 let urg_down_angles = Array.map (fun a -> a +. urg_down_rotation) urg_angles
 
-let urg_down_filter =
+let urg_down_filter' =
 [|true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -598,7 +598,7 @@ let urg_down_filter =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; |]
 
-let urg_up_filter =
+let urg_up_filter' =
 [|true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -664,5 +664,12 @@ let urg_up_filter =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; |]
+
+let urg_up_filter, urg_down_filter =
+  match Krobot_utils.read_urg_filter_file ~filename:(Sys.getenv "URGFILTER") with
+  | None -> urg_up_filter', urg_down_filter'
+  | exception _ -> urg_up_filter', urg_down_filter'
+  | Some { urg_up_filter_file; urg_down_filter_file } ->
+    urg_up_filter_file, urg_down_filter_file
 
 let extract_number_of_pointneeded_for_obstacle = 2
