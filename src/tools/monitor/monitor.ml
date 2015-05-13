@@ -28,6 +28,18 @@ type info = {
 let started_match = ref None
 
 (* +-----------------------------------------------------------------+
+   | Helpers                                                         |
+   +-----------------------------------------------------------------+ *)
+
+let update_team_leds bus team =
+  let turn_on, turn_off = match team with
+    | Yellow -> yellow_led, green_led
+    | Green -> green_led, yellow_led
+  in
+  lwt () = Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_on, true))) in
+  Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
+
+(* +-----------------------------------------------------------------+
    | Message handling                                                |
    +-----------------------------------------------------------------+ *)
 
@@ -42,14 +54,7 @@ let handle_message info (timestamp, message) =
       info.world <- world;
       begin
         match update with
-        | Team_changed -> begin
-            let turn_on, turn_off = match world.team with
-              | Yellow -> yellow_led, green_led
-              | Green -> green_led, yellow_led
-            in
-            lwt () = Krobot_message.send info.bus (Unix.gettimeofday(), (Switch_request(turn_on, true))) in
-            Krobot_message.send info.bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
-          end
+        | Team_changed -> update_team_leds info.bus world.team
         | Jack_changed when world.jack = Out ->
           let canceled = ref false in
           started_match := Some canceled;
