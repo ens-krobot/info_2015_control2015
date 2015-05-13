@@ -200,7 +200,7 @@ let clap ~state ~side ~status =
   in
   loop state
 
-let wait_for_jack ~jack_state ~(state:state) : state Lwt.t =
+let wait_for_jack' ~jack_state ~(state:state) : state Lwt.t =
   let rec loop (world:world) stream : world Lwt.t =
     match_lwt Lwt_stream.get stream with
     | None -> raise_lwt (Failure "connection closed")
@@ -213,8 +213,17 @@ let wait_for_jack ~jack_state ~(state:state) : state Lwt.t =
       | _ ->
         loop world stream
   in
-  lwt world = loop state.world state.stream in
-  Lwt.return { state with world }
+  let state = consume_and_update state in
+  if state.world.jack = jack_state then
+    Lwt.return state
+  else
+    lwt world = loop state.world state.stream in
+    Lwt.return { state with world }
+
+let wait_for_jack ~jack_state ~state =
+  lwt state = wait_for_jack' ~jack_state ~state in
+  lwt () = Lwt_unix.sleep 0.1 in
+  wait_for_jack' ~jack_state ~state
 
 let wait_for_team_change ~state : (state * Krobot_bus.team) Lwt.t =
   let rec loop (world:world) stream : (world * Krobot_bus.team) Lwt.t =
