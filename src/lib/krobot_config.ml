@@ -691,7 +691,11 @@ let urg_filtered_distance' = 0.5
 let urg_up_filter, urg_down_filter, urg_filtered_distance =
   match Krobot_utils.read_urg_filter_file ~filename:(Sys.getenv "URGFILTER") with
   | None -> urg_up_filter', urg_down_filter', urg_filtered_distance'
-  | exception _ -> urg_up_filter', urg_down_filter', urg_filtered_distance'
+  | exception Not_found ->
+    urg_up_filter', urg_down_filter', urg_filtered_distance'
+  | exception exn ->
+    Printf.printf "filter error %s\n%!" (Printexc.to_string exn);
+    urg_up_filter', urg_down_filter', urg_filtered_distance'
   | Some { urg_up_filter_file; urg_down_filter_file; urg_filter_distance } ->
     urg_up_filter_file, urg_down_filter_file, urg_filter_distance
 
