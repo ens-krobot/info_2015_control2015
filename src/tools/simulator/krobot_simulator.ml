@@ -30,6 +30,7 @@ let robot_sim = ref true
 let go_normal = ref false
 let go_simu = ref false
 let go_hil = ref false
+let noise = ref 0.
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
@@ -40,6 +41,7 @@ let options = Arg.align [
   "-go-simulation", Arg.Set go_simu, " Put the cards in simulation mode and exit";
   "-go-normal", Arg.Set go_normal, " Put the cards in normal mode and exit";
   "-go-hil", Arg.Set go_hil, " Put the cards in hardware in the loop mode and exit";
+  "-noise", Arg.Set_float noise, " Add some noise to control";
 ]
 
 let usage = "\
@@ -447,6 +449,9 @@ let handle_message bus (timestamp, message) =
               | Motor_omni_limits(v_lin_max, v_rot_max, a_lin_max, a_rot_max) ->
                 sim.omni_limits <- (v_lin_max, v_rot_max, a_lin_max, a_rot_max)
               | Motor_omni_goto(x_end, y_end, theta_end) ->
+                let x_end = (Random.float !noise) -. !noise /. 2. +. x_end in
+                let y_end = (Random.float !noise) -. !noise /. 2. +. y_end in
+                let theta_end = (((Random.float !noise) -. !noise /. 2.) /. 10.) +. theta_end in
                 goto sim x_end y_end theta_end
               | _ ->
                 () end);
