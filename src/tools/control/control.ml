@@ -79,15 +79,18 @@ let command_goto args =
 
 let command_turn args =
   match args with
-  | [|theta|] ->
-    let theta = float_of_string theta in
-    lwt state = make () in
-    lwt state = retry_turn ~state ~orientation:theta in
-    Lwt.return ()
-  | _ ->
-    Printf.printf "goto: wrong number of arguments: %i, expected 1\n%!"
+  | [||] ->
+    Printf.printf "goto: wrong number of arguments: %i, expected at least 1\n%!"
       (Array.length args);
     exit 1
+  | _ ->
+    let args = Array.to_list (Array.map float_of_string args) in
+    Lwt_list.iter_s
+      (fun theta ->
+         lwt state = make () in
+         lwt state = retry_turn ~state ~orientation:theta in
+         Lwt.return ())
+      args
 
 (****** Test homologatoin ************)
 
@@ -102,8 +105,6 @@ let yellow_out_of_start_zone =
   { x = 0.5; y = 1. }
 
 let yellow_stuff_to_push = translate target (vector_of_polar ~angle:dir ~norm:distance)
-let () =
-  Printf.printf "%f %f\n%!" yellow_stuff_to_push.x yellow_stuff_to_push.y
 
 let yellow_position_to_push =
   translate

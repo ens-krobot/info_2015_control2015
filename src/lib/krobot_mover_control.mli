@@ -44,3 +44,5 @@ val on_match_end : state -> (Krobot_bus.t -> unit Lwt.t) -> unit
 val stop : state -> unit Lwt.t
 
 val lcd_message : state:state -> line:int -> text:string -> unit Lwt.t
+
+(* val wait_for_some_odometry : state:state -> state Lwt.t *)

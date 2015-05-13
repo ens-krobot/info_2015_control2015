@@ -7,7 +7,7 @@ type state =
     stream : (float * Krobot_bus.message) Lwt_stream.t;
     next_request_id : request_id }
 
-let make () : state Lwt.t =
+let inner_make () : state Lwt.t =
   lwt bus = Krobot_bus.get () in
   let ev = Krobot_bus.recv bus in
   let stream = Lwt_react.E.to_stream ev in
@@ -252,7 +252,9 @@ let wait_for_team_change ~state : (state * Krobot_bus.team) Lwt.t =
   Lwt.return ({ state with world }, team)
 
 let close world position =
-  Krobot_geom.distance world.robot.position position <= 0.01
+  match position with
+  | None -> true
+  | Some position -> Krobot_geom.distance world.robot.position position <= 0.01
 
 let wait_for_odometry ~state ~position =
   let rec loop (world:world) stream : world Lwt.t =
@@ -281,7 +283,7 @@ let send_team_initial_position state =
 let reset_odometry ~state =
   lwt state = consume_and_update state in
   lwt position = send_team_initial_position state in
-  wait_for_odometry ~state ~position
+  wait_for_odometry ~state ~position:(Some position)
 
 let get_team state = state.world.team
 
@@ -299,3 +301,11 @@ let stop state = send state Stop
 
 let lcd_message ~state ~line ~text =
   Krobot_lcd.send_line state.bus line text
+
+let wait_for_some_odometry ~state =
+  wait_for_odometry ~state ~position:None
+
+(* exported state: we wait for an initial state *)
+let make () =
+  lwt state = inner_make () in
+  wait_for_some_odometry ~state

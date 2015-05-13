@@ -119,6 +119,7 @@ let init_state = Transition_to_Idle
 let distance_before_stop = 0.4 (* stop if half a metter before collision *)
 let distance_before_handling_obstacle = distance_before_stop +. 0.1
 let close_distance_from_destination = 0.01
+let close_angle_from_destination = 0.01
 
 let generate_path_display world waypoints =
   let _, curves = List.fold_left (fun (prev_vert,curves) (vert,_) ->
@@ -239,7 +240,9 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
           Some (world, Message message), []
       end
     | Trajectory_set_vertices l ->
-      let s = List.map (fun ({Krobot_geom.x;y},_) -> Printf.sprintf "(%f, %f)" x y) l in
+      let s = List.map (fun ({Krobot_geom.x;y},dir) ->
+        let dir = match dir with None -> "" | Some dir -> string_of_float dir in
+        Printf.sprintf "(%f, %f) %s" x y dir) l in
       let s = String.concat ", " s in
       Lwt_log.ign_info_f "Set vertice [%s]" s;
       let l = List.map (fun (v, dir) ->
@@ -270,6 +273,8 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
         { world with
           urg_obstacles = List.map (fun (Rectangle (v1, v2)) -> (v1, v2)) obstacles } in
       Some (world, World_updated Obstacles_updated), []
+    | Request_mover_state ->
+      Some (world, Message message), []
     | message ->
       Lwt_log.ign_info_f "msg: %s" (string_of_message message);
       Some (world, Message message), []
@@ -297,6 +302,14 @@ let problematic_position { x; y } theta =
   | _, (FP_nan | FP_infinite), _
   | _, _, (FP_nan | FP_infinite) -> true
   | _ -> false
+
+let close_from ~(robot:robot) ~position ~orientation =
+  Krobot_geom.distance robot.position position
+  <= close_distance_from_destination &&
+  min
+    (abs_float (diff_angle Trigo robot.orientation orientation))
+    (abs_float (diff_angle Antitrigo robot.orientation orientation))
+  <= close_angle_from_destination
 
 let rec general_step (input:input) (world:world) (state:state) : output =
   match state with
@@ -347,8 +360,9 @@ let rec general_step (input:input) (world:world) (state:state) : output =
   | Transition_to_Moving_to (request_id, { position = dest; orientation = theta; move_kind }, rest) -> begin
       let open Krobot_geom in
       let date = Krobot_date.now () in
-      Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %a" dest.x dest.y theta
-        Krobot_date.pr date;
+      Lwt_log.ign_info_f "Start_moving_to (%f, %f, %f) %a from (%f, %f, %f)" dest.x dest.y theta
+        Krobot_date.pr date
+        world.robot.position.x world.robot.position.y world.robot.orientation;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
       let goto = Motor_omni_goto(dest.x, dest.y, theta) in
       let command_of_limits { Krobot_config.v_lin_max; v_rot_max;
@@ -404,8 +418,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | Direct -> "direct"
       in
       let timeout () =
-        if Krobot_geom.distance world.robot.position moving_to.move.position
-           <= close_distance_from_destination
+        if close_from ~robot:world.robot ~position:moving_to.move.position
+            ~orientation:moving_to.move.orientation
         then begin
           Lwt_log.ign_info_f "Already arrived %s %a"
             move_kind Krobot_date.pr date;
