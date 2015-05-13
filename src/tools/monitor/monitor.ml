@@ -49,6 +49,20 @@ let print_team bus team =
   | Green ->
     print_state bus "  switched to Green"
 
+let print_emergency bus em =
+  match em with
+  | Pressed ->
+    print_state bus " Emer. Stop pressed"
+  | OK ->
+    print_state bus "Emer. Stop released"
+
+(* +-----------------------------------------------------------------+
+   | Refresh standard display                                        |
+   +-----------------------------------------------------------------+ *)
+let rec refresh_display bus =
+  lwt () = Krobot_lcd.send_line bus 1 "   -==[ Nuky ]==-   " in
+  lwt () = Lwt_unix.sleep 1. in
+  refresh_display bus
 
 (* +-----------------------------------------------------------------+
    | Notify emergency stop                                           |
@@ -84,6 +98,8 @@ let handle_message info (timestamp, message) =
       info.world <- world;
       begin
         match update with
+        | Emergency_changed ->
+          print_emergency info.bus world.em_stop
         | Team_changed ->
           lwt () = update_team_leds info.bus world.team in
           print_team info.bus world.team
@@ -101,8 +117,11 @@ let handle_message info (timestamp, message) =
           Krobot_bus.send info.bus (Unix.gettimeofday(), Match_start)
         | Jack_changed when world.jack = In -> begin
             match !started_match with
-            | None -> Lwt.return ()
-            | Some cancelation -> cancelation := true; Lwt.return ()
+            | None ->
+              Krobot_bus.send info.bus (Unix.gettimeofday(), Match_ready)
+            | Some cancelation ->
+              cancelation := true;
+              Krobot_bus.send info.bus (Unix.gettimeofday(), Match_cancelled)
           end
         | _ ->
           Lwt.return ()
@@ -156,8 +175,9 @@ lwt () =
   (* Kill any running urg_handler. *)
   lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill "monitor") in
 
-  (* emergency button notification *)
+  (* utils loops *)
   ignore(blink info false false);
+  ignore(refresh_display info.bus);
 
   (* signal on LCD screen *)
   lwt () = Krobot_lcd.send_line bus 1 "   -==[ Nuky ]==-   " in

@@ -78,6 +78,8 @@ type message =
   | Beacon_raw of (int * int * int * int * int * int
       * int * int * int * int * int)
   | Match_start
+  | Match_ready
+  | Match_cancelled
   | Match_end
   | Vision_find_target of int * string
   | Vision_find_target_response of int * string * ((int * int) list)
@@ -240,6 +242,10 @@ let string_of_message = function
       sprintf "Raw beacon packet"
   | Match_start ->
       "Match start"
+  | Match_ready ->
+      "Match_ready"
+  | Match_cancelled ->
+      "Match_cancelled"
   | Match_end ->
       "Match end"
   | Vision_find_target (id,camera) ->

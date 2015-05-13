@@ -119,6 +119,8 @@ type message =
       * int * int * int * int * int)
 
   | Match_start
+  | Match_ready
+  | Match_cancelled
   | Match_end
 
   | Vision_find_target of int * string (* request id, selected camera *)
