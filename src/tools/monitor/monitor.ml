@@ -39,6 +39,17 @@ let update_team_leds bus team =
   lwt () = Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_on, true))) in
   Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
 
+let print_state bus msg =
+  Krobot_lcd.send_line bus 2 msg
+
+let print_team bus team =
+  match team with
+  | Yellow ->
+    print_state bus " switched to Yellow"
+  | Green ->
+    print_state bus "  switched to Green"
+
+
 (* +-----------------------------------------------------------------+
    | Notify emergency stop                                           |
    +-----------------------------------------------------------------+ *)
@@ -73,7 +84,9 @@ let handle_message info (timestamp, message) =
       info.world <- world;
       begin
         match update with
-        | Team_changed -> update_team_leds info.bus world.team
+        | Team_changed ->
+          lwt () = update_team_leds info.bus world.team in
+          print_team info.bus world.team
         | Jack_changed when world.jack = Out ->
           let canceled = ref false in
           started_match := Some canceled;
@@ -145,6 +158,10 @@ lwt () =
 
   (* emergency button notification *)
   ignore(blink info false false);
+
+  (* signal on LCD screen *)
+  lwt () = Krobot_lcd.send_line bus 1 "   -==[ Nuky ]==-   " in
+  lwt () = Krobot_lcd.send_line bus 2 "         Monitor Rdy" in
 
   (* Loop forever. *)
   fst (wait ())
