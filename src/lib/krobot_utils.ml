@@ -15,7 +15,8 @@ let array_rev a =
 
 type urg_filters =
   { urg_up_filter_file : bool array;
-    urg_down_filter_file : bool array }
+    urg_down_filter_file : bool array;
+    urg_filter_distance : float }
 
 let read_urg_filter_file ~filename : urg_filters option =
   if not (Sys.file_exists filename) then begin
@@ -35,8 +36,12 @@ let read_urg_filter_file ~filename : urg_filters option =
         done
       with End_of_file -> ()
     end;
+    let urg_filter_distance = float_of_string (input_line ic) in
     match !lines with
     | [] -> None
-    | [urg_up_filter_file; urg_down_filter_file] -> Some { urg_down_filter_file; urg_up_filter_file }
+    | [urg_up_filter_file; urg_down_filter_file] ->
+      Some { urg_down_filter_file;
+             urg_up_filter_file;
+             urg_filter_distance }
     | _ :: _ -> None
   end

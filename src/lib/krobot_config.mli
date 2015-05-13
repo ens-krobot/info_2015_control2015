@@ -97,6 +97,7 @@ val urg_up_filter : bool array
 val urg_down_filter : bool array
 (* filterd points *)
 
+val urg_filtered_distance : float
 
 (** Motor limits *)
 
