@@ -27,7 +27,7 @@ let read_urg_filter_file ~filename : urg_filters option =
     let ic = open_in filename in
     let lines = ref [] in
     let lines_curr = ref [] in
-    begin try while true do
+    begin try while List.length !lines < 2 do
           match input_char ic with
           | 't' -> lines_curr := true :: !lines_curr
           | 'f' -> lines_curr := false :: !lines_curr
