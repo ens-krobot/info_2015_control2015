@@ -1,6 +1,10 @@
 open Krobot_bus
 open Krobot_message
 
+type ax12_side =
+  | Left
+  | Right
+
 type world_update =
   | Position_updated
   | Motor_started
@@ -9,6 +13,7 @@ type world_update =
   | Jack_changed
   | Team_changed
   | Emergency_changed
+  | Ax12_changed of ax12_side
 
 type jack_state =
    | In
@@ -18,6 +23,12 @@ type emergency_state =
    | Pressed
    | OK
 
+type ax12_state = {
+  position : int;
+  speed : int;
+  torque : int;
+}
+
 type robot = {
   position : Krobot_geom.vertice;
   (* The position of the robot on the table. *)
@@ -25,6 +36,8 @@ type robot = {
   (* The orientation of the robot. *)
   motors_moving : bool;
   (* Are motors moving ? *)
+  left_ax12_state : ax12_state;
+  right_ax12_state : ax12_state;
 }
 
 type world = {
@@ -34,16 +47,25 @@ type world = {
   em_stop : emergency_state;
 }
 
+let default_ax12_state =
+  { position = 0; speed = 0; torque = 0 }
+
 let init_world = {
   robot = {
     position = { x = 0.; y = 0. };
     orientation = 0.;
     motors_moving = false;
+    left_ax12_state = default_ax12_state;
+    right_ax12_state = default_ax12_state;
   };
   jack = In;
   team = Krobot_bus.Yellow;
   em_stop = Pressed;
 }
+
+let ax12_state_of_side world = function
+  | Left -> world.robot.left_ax12_state
+  | Right -> world.robot.right_ax12_state
 
 let update_world : world -> Krobot_bus.message -> (world * world_update) option =
   fun world message ->
@@ -106,6 +128,24 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
                       Team_changed)
               else
                 None
+        | (Ax12_State (id, position, speed, torque)) -> begin
+            let ax12_state = { position; speed; torque } in
+            if id = Krobot_config.right_arm_idx then
+              if world.robot.right_ax12_state <> ax12_state then
+                Some ({ world with
+                        robot = { world.robot with right_ax12_state = ax12_state } },
+                      Ax12_changed Right)
+              else
+                None
+            else if id = Krobot_config.left_arm_idx then
+              if world.robot.left_ax12_state <> ax12_state then
+                Some ({ world with
+                        robot = { world.robot with left_ax12_state = ax12_state } },
+                      Ax12_changed Left)
+              else
+                None
+            else None
+          end
         | _ ->
           None
       end

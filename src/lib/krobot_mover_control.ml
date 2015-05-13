@@ -19,6 +19,9 @@ let make () : state Lwt.t =
 let send state msg =
   Krobot_bus.send state.bus (Unix.gettimeofday (), msg)
 
+let send_can state msg =
+  Krobot_bus.send state.bus (Unix.gettimeofday (), CAN (Info, Krobot_message.encode msg))
+
 let mover_message_id = function
   | Escaping _
   | First_obstacle _
@@ -32,6 +35,14 @@ let mover_message_id = function
 type request_until =
   | Idle
   | Id of request_id
+
+let consume_and_update state =
+  let l = Lwt_stream.get_available state.stream in
+  List.fold_left (fun state (_,msg) ->
+    match Krobot_world_update.update_world state.world msg with
+    | None -> state
+    | Some (world, _) -> { state with world })
+    state l
 
 let consume_until_mover_message (until:request_until) state : (state * mover_message) Lwt.t =
   let rec loop world stream : (world * mover_message) Lwt.t =
@@ -61,19 +72,35 @@ let consume_until_mover_message (until:request_until) state : (state * mover_mes
   lwt (world, msg) = loop state.world state.stream in
   Lwt.return ({ state with world }, msg)
 
+let consume_until_ax12_state ~ax12_side state : (state * ax12_state) Lwt.t =
+  let rec loop world stream : (world * ax12_state) Lwt.t =
+    match_lwt Lwt_stream.get stream with
+    | None -> raise_lwt (Failure "connection closed")
+    | Some (_, msg) ->
+      match Krobot_world_update.update_world world msg with
+      | Some (world, Ax12_changed side) when side = ax12_side ->
+        Lwt.return (world, ax12_state_of_side world side)
+      | Some (world, _) ->
+        loop world stream
+      | None ->
+        loop world stream
+  in
+  lwt (world, ax12_state) = loop state.world state.stream in
+  Lwt.return ({ state with world }, ax12_state)
+
 type goto_result =
   | Goto_success
   | Goto_failure
   | Goto_unreachable
 
 let new_request_id state =
-  let _ : _ list = Lwt_stream.get_available state.stream in
+  let state = consume_and_update state in
   Lwt.return
     (state.next_request_id,
      { state with next_request_id = state.next_request_id + 1 })
 
 let wait_idle state =
-  let _ : _ list = Lwt_stream.get_available state.stream in
+  let state = consume_and_update state in
   lwt () = send state Request_mover_state in
   lwt (state, _) = consume_until_mover_message Idle state in
   Lwt.return state
@@ -140,3 +167,51 @@ let move ~state ~ignore_fixed_obstacles ~destination =
       Lwt.return (state, Move_failure)
   in
   loop ()
+
+
+type clap_result = unit
+type clap_status = Clap_in | Clap_out
+
+let (left_arm_in, _, _, left_arm_out) = Krobot_config.left_arm_positions
+let (right_arm_in, _, _, right_arm_out) = Krobot_config.right_arm_positions
+
+let ax12_action side status = match side, status with
+  | Left, Clap_out -> Krobot_config.left_arm_idx, left_arm_out
+  | Left, Clap_in -> Krobot_config.left_arm_idx, left_arm_in
+  | Right, Clap_out -> Krobot_config.left_arm_idx, left_arm_out
+  | Right, Clap_in -> Krobot_config.left_arm_idx, left_arm_in
+
+let admissible_ax12_distance = 10
+
+let clap ~state ~side ~status =
+  let state = consume_and_update state in
+  let idx, position = ax12_action side status in
+  lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
+  lwt () = Lwt_unix.sleep 0.1 in
+  lwt () = send_can state (Ax12_Request_State idx) in
+  let rec loop state =
+    lwt (state, { position = state_position }) = consume_until_ax12_state ~ax12_side:side state in
+    if abs (state_position - position) < admissible_ax12_distance then
+      Lwt.return (state, ())
+    else
+      lwt () = Lwt_unix.sleep 0.05 in
+      lwt () = send_can state (Ax12_Request_State idx) in
+      loop state
+  in
+  loop state
+
+let wait_for_jack ~jack_state ~(state:state) : state Lwt.t =
+  let rec loop (world:world) stream : world Lwt.t =
+    match_lwt Lwt_stream.get stream with
+    | None -> raise_lwt (Failure "connection closed")
+    | Some (_,msg) ->
+      match Krobot_world_update.update_world world msg with
+      | Some (world, Jack_changed) when world.jack = jack_state ->
+        Lwt.return world
+      | Some (world, _) ->
+        loop world stream
+      | _ ->
+        loop world stream
+  in
+  lwt world = loop state.world state.stream in
+  Lwt.return { state with world }

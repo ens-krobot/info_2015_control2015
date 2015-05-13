@@ -15,6 +15,8 @@ val world_width : float
 val world_height : float
   (** The height of the board. *)
 
+type side = Yellow | Green
+
 val green_fixed_beacons : Krobot_geom.vertice list
   (** Positions of the fixed beacons for the green team *)
 
