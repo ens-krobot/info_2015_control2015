@@ -40,6 +40,25 @@ let update_team_leds bus team =
   Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
 
 (* +-----------------------------------------------------------------+
+   | Notify emergency stop                                           |
+   +-----------------------------------------------------------------+ *)
+let rec blink info state last_state =
+  match info.world.em_stop with
+  | Pressed ->
+    lwt () = Krobot_message.send info.bus (Unix.gettimeofday (), LCD_backlight state) in
+    lwt () = Lwt_unix.sleep 0.5 in
+    blink info (not state) state
+  | OK ->
+    lwt () =
+      if (not last_state) then
+        Krobot_message.send info.bus (Unix.gettimeofday (), LCD_backlight true)
+      else
+        Lwt.return ()
+    in
+    lwt () = Lwt_unix.sleep 0.5 in
+    blink info false true
+
+(* +-----------------------------------------------------------------+
    | Message handling                                                |
    +-----------------------------------------------------------------+ *)
 
@@ -122,6 +141,9 @@ lwt () =
 
   (* Kill any running urg_handler. *)
   lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill "monitor") in
+
+  (* emergency button notification *)
+  ignore(blink info false false);
 
   (* Loop forever. *)
   fst (wait ())
