@@ -175,11 +175,10 @@ type move_result =
   | Move_success
   | Move_failure
 
-let move ~state ~ignore_fixed_obstacles ~destination =
+let generic_move ~state ~kind ~destination =
   lwt state = wait_idle state in
   lwt request_id, state = new_request_id state in
   let order = destination, None in
-  let kind = if ignore_fixed_obstacles then Direct else Normal in
   lwt () = send state (Trajectory_set_vertices [order]) in
   lwt () = send state (Trajectory_go (request_id, kind)) in
   let rec loop () =
@@ -193,6 +192,12 @@ let move ~state ~ignore_fixed_obstacles ~destination =
   in
   loop ()
 
+let move ~state ~ignore_fixed_obstacles ~destination =
+  let kind = if ignore_fixed_obstacles then Direct else Normal in
+  generic_move ~state ~kind ~destination
+
+let ignore_all_move ~state ~destination =
+  generic_move ~state ~kind:Ignore_all ~destination
 
 type clap_result = unit
 type clap_status = Clap_in | Clap_out
@@ -303,6 +308,18 @@ let reset_odometry ~state =
   lwt position = send_team_initial_position state in
   wait_for_odometry ~state ~position:(Some position)
 
+let reset_team_odometry ~state ~team =
+  lwt state = consume_and_update state in
+  let (pos, theta) =
+    match team with
+    | Green -> Krobot_config.green_initial_position
+    | Yellow -> Krobot_config.yellow_initial_position
+  in
+  lwt () = send_can state (Set_odometry (pos.x, pos.y, theta)) in
+  if close state.world (Some pos)
+  then Lwt.return state
+  else wait_for_odometry ~state ~position:(Some pos)
+
 let get_team state = state.world.team
 
 let on_match_end state callback =
@@ -393,5 +410,15 @@ let choose_close_stand ~state =
   match sorted_reachable_stand with
   | [] -> None
   | (closest_stand, _, path) :: _ -> Some (closest_stand, path)
+
+(* let choose_close_clap ~state = *)
+(*   let claps =  *)
+(*   let obstacles = base_obstacles state in *)
+(*   let sorted_reachable_stand = *)
+(*     List.sort (fun (_,l1, _) (_,l2,_) -> compare l1 l2) *)
+(*       (reachable_stands ~src:state.world.robot.position ~stands *)
+(*          ~obstacles) *)
+(*   in *)
+
 
 let update ~state = consume_and_update state

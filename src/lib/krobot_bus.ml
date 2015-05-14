@@ -50,6 +50,7 @@ type move_kind =
   | Normal
   | Constrained
   | Direct
+  | Ignore_all
 
 type team =
   | Green
@@ -177,6 +178,7 @@ let string_of_message = function
       | Normal -> "Normal"
       | Constrained -> "Constrained"
       | Direct -> "Direct"
+      | Ignore_all -> "Ignore_all"
     in
     Printf.sprintf "Trajectory_go (%X, %s)" req_id kind
   | Goto (req_id, v) ->

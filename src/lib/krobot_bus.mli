@@ -54,6 +54,7 @@ type move_kind =
   | Normal
   | Constrained (* Move assuming potential collisions *)
   | Direct (* Move ignoring the fixed world *)
+  | Ignore_all
 
 type team =
   | Green

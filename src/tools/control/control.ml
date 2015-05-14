@@ -278,7 +278,7 @@ let direct_clap () =
     match_end state
 
 let clap_strat () =
-  Printf.printf "direct clap strategy\n%!";
+  Printf.printf "clap strategy\n%!";
   lwt state = make () in
   lwt state = wait_for_jack ~state ~jack_state:In in
   lwt state = reset_odometry ~state in

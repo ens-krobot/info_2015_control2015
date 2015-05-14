@@ -87,8 +87,10 @@ type clap =
     dir : float;
     left_side : bool }
 
+val yellow_clap_1 : clap
 val yellow_clap_2 : clap
 val yellow_clap_3 : clap
+val green_clap_1 : clap
 val green_clap_2 : clap
 val green_clap_3 : clap
 

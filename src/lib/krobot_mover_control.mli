@@ -25,6 +25,9 @@ type move_result =
 val move : state:state -> ignore_fixed_obstacles:bool ->
   destination:Krobot_geom.vertice -> (state * move_result) Lwt.t
 
+val ignore_all_move : state:state -> destination:Krobot_geom.vertice ->
+  (state * move_result) Lwt.t
+
 type clap_result = unit
 type clap_status = Clap_in | Clap_out
 
@@ -36,6 +39,8 @@ val wait_for_jack : jack_state:Krobot_world_update.jack_state -> state:state -> 
 val wait_for_team_change : state:state -> (state * Krobot_bus.team) Lwt.t
 
 val reset_odometry : state:state -> state Lwt.t
+
+val reset_team_odometry : state:state -> team:Krobot_bus.team -> state Lwt.t
 
 val get_team : state -> Krobot_bus.team
 

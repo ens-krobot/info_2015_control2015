@@ -2,7 +2,7 @@
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: 9e67f457c62e3527fa5ccb5760dc7943)
+# DO NOT EDIT (digest: 5839d6c79710d55ca08be85fb4648d79)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -112,6 +112,11 @@ true: annot, bin_annot
 <src/tools/control/control.{native,byte}>: pkg_lwt.syntax
 <src/tools/control/control.{native,byte}>: pkg_lwt.unix
 <src/tools/control/control.{native,byte}>: use_krobot
+# Executable krobot-game
+<src/tools/control/game_strat.{native,byte}>: pkg_lwt.react
+<src/tools/control/game_strat.{native,byte}>: pkg_lwt.syntax
+<src/tools/control/game_strat.{native,byte}>: pkg_lwt.unix
+<src/tools/control/game_strat.{native,byte}>: use_krobot
 <src/tools/control/*.ml{,i,y}>: pkg_lwt.react
 <src/tools/control/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/control/*.ml{,i,y}>: pkg_lwt.unix

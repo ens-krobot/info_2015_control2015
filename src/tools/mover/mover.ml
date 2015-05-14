@@ -385,7 +385,8 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         match move_kind with
         | Constrained -> command_of_limits Krobot_config.constrained_limits
         | Normal
-        | Direct -> command_of_limits Krobot_config.normal_limits
+        | Direct
+        | Ignore_all -> command_of_limits Krobot_config.normal_limits
       in
       if problematic_position dest theta then begin
         let kind =
@@ -393,6 +394,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
           | Constrained -> "constrained"
           | Normal -> ""
           | Direct -> "direct"
+          | Ignore_all -> "ignore all"
         in
         Lwt_log.ign_warning_f "Problematic position %s" kind;
         { timeout = 0.1;
@@ -427,6 +429,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         | Constrained -> "constrained"
         | Normal -> ""
         | Direct -> "direct"
+        | Ignore_all -> "ignore all"
       in
       let timeout () =
         if close_from ~robot:world.robot ~position:moving_to.move.position
@@ -498,7 +501,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         in
         let first_intersection =
           match move.move_kind with
-          | Constrained ->
+          | Constrained | Ignore_all ->
             (* In constrained_move we ignore the collisions.
                We limited the torque to avoid having too much problems *)
             None

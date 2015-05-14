@@ -70,6 +70,13 @@ type clap =
     dir : float;
     left_side : bool }
 
+let yellow_clap_1 =
+    { clap_pos = yellow_clap_1;
+      approach_pos = yellow_clap_1 -. 0.05;
+      after_pos = yellow_clap_1 +. 0.05;
+      dir = pi /. 2.;
+      left_side = false }
+
 let yellow_clap_2 =
     { clap_pos = yellow_clap_2;
       approach_pos = yellow_clap_2 -. 0.1;
@@ -91,6 +98,7 @@ let green_clap_of_yellow clap =
     dir = Krobot_geom.angle_pi_minus_pi (2. *. pi -. clap.dir);
     left_side = not clap.left_side; }
 
+let green_clap_1 = green_clap_of_yellow yellow_clap_1
 let green_clap_2 = green_clap_of_yellow yellow_clap_2
 let green_clap_3 = green_clap_of_yellow yellow_clap_3
 
