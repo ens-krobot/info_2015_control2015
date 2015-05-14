@@ -25,6 +25,8 @@ type info = {
   mutable started : bool;
 }
 
+let match_length = 90. (* Match length in seconds *)
+
 let started_match = ref None
 
 (* +-----------------------------------------------------------------+
@@ -83,6 +85,33 @@ let rec blink info state last_state =
     lwt () = Lwt_unix.sleep 0.5 in
     blink info false true
 
+let count_match_time bus =
+  let canceled = ref false in
+  started_match := Some canceled;
+  let rec loop remaining_time =
+    if !canceled then
+      Krobot_lcd.send_line bus 3 "     Match cancelled"
+    else
+    if remaining_time < 0.1 then
+      Krobot_lcd.send_line bus 3 "         Match End !"
+    else
+      let msg = Printf.sprintf "   %02.0f s remaining..." remaining_time in
+      lwt () = Krobot_lcd.send_line bus 3 msg in
+      lwt () = Lwt_unix.sleep 1. in
+      loop (remaining_time-.1.)
+  in
+  let _ : unit Lwt.t =
+    loop match_length
+  in
+  let _ : unit Lwt.t =
+    lwt () = Lwt_unix.sleep (match_length-.1.) in
+    if (not !canceled) then
+      Krobot_bus.send bus (Unix.gettimeofday(), Match_end)
+    else
+      Lwt.return ()
+  in
+  ()
+
 (* +-----------------------------------------------------------------+
    | Message handling                                                |
    +-----------------------------------------------------------------+ *)
@@ -104,23 +133,16 @@ let handle_message info (timestamp, message) =
           lwt () = update_team_leds info.bus world.team in
           print_team info.bus world.team
         | Jack_changed when world.jack = Out ->
-          let canceled = ref false in
-          started_match := Some canceled;
-          let _ : unit Lwt.t =
-            lwt () = Lwt_unix.sleep 89. in
-            (* We stop at 89 seconds to let the robot really stop *)
-            if (not !canceled) then
-              Krobot_bus.send info.bus (Unix.gettimeofday(), Match_end)
-            else
-              Lwt.return ()
-          in
+          count_match_time info.bus;
           Krobot_bus.send info.bus (Unix.gettimeofday(), Match_start)
         | Jack_changed when world.jack = In -> begin
             match !started_match with
             | None ->
+              lwt () = print_state info.bus "        Match ready" in
               Krobot_bus.send info.bus (Unix.gettimeofday(), Match_ready)
             | Some cancelation ->
               cancelation := true;
+              lwt () = print_state info.bus "    Match cancelled" in
               Krobot_bus.send info.bus (Unix.gettimeofday(), Match_cancelled)
           end
         | _ ->
@@ -163,7 +185,7 @@ lwt () =
 
   let info = {
     bus = bus;
-    world = init_world;
+    world = {init_world with team = !start_team};
     started = !start_on;
   } in
 
