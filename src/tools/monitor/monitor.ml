@@ -138,11 +138,11 @@ let handle_message info (timestamp, message) =
         | Jack_changed when world.jack = In -> begin
             match !started_match with
             | None ->
-              lwt () = print_state info.bus "        Match ready" in
+              lwt () = Krobot_lcd.send_line info.bus 3 "        Match ready" in
               Krobot_bus.send info.bus (Unix.gettimeofday(), Match_ready)
             | Some cancelation ->
               cancelation := true;
-              lwt () = print_state info.bus "    Match cancelled" in
+              lwt () = Krobot_lcd.send_line info.bus 3 "    Match cancelled" in
               Krobot_bus.send info.bus (Unix.gettimeofday(), Match_cancelled)
           end
         | _ ->
