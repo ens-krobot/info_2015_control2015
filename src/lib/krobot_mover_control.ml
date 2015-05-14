@@ -302,11 +302,68 @@ let stop state = send state Stop
 let lcd_message ~state ~line ~text =
   Krobot_lcd.send_line state.bus line text
 
-let wait_for_some_odometry ~state =
-  wait_for_odometry ~state ~position:None
+let wait_for_non_zero_odometry ~state =
+  if state.world.robot.position <> { x = 0.; y = 0. }
+  then Lwt.return state
+  else wait_for_odometry ~state ~position:None
 
 (* exported state: we wait for an initial state *)
 let make () =
   lwt state = inner_make () in
-  Lwt.return state
-  (* wait_for_some_odometry ~state *)
+  wait_for_non_zero_odometry ~state
+
+let team_stands (team:Krobot_bus.team) =
+  match team with
+  | Yellow -> Krobot_config.original_yellow_stands
+  | Green -> Krobot_config.original_green_stands
+
+let obstacle_of_point radius pos =
+  let dir = Krobot_geom.normalize { vx = 1.; vy = 1.} in
+  let radius = (sqrt 2.) *. radius in
+  Krobot_geom.(translate pos (dir *| radius),
+               translate pos (dir *| (-. radius)))
+
+let other_stands stand stands =
+  List.filter ((<>) stand) stands
+
+let distance_before_stand = Krobot_config.(robot_radius +. safety_margin +. stand_radius +. 0.03)
+
+let reachable_stands ~src ~stands ~obstacles =
+  Krobot_utils.filter_map (fun stand ->
+    let other_stands =
+      List.map (obstacle_of_point Krobot_config.stand_radius)
+        (other_stands stand stands)
+    in
+    let obstacles = other_stands @ obstacles in
+    match Krobot_rectangle_path.find_path
+            ~src ~dst:stand
+            ~inflate:0.
+            ~obstacles
+            ~before_dst:distance_before_stand
+            ~fixed_obstacles:Krobot_config.fixed_obstacles () with
+    | [] -> None
+    | path ->
+      Some (stand, Krobot_rectangle_path.path_length ~src ~path, path))
+    stands
+
+let print_path path =
+  List.iter (fun {Krobot_geom.x;y} -> Printf.printf "%f %f ->" x y) path;
+  Printf.printf "\n%!"
+
+let choose_close_stand ~state =
+  let stands = team_stands state.world.team in
+  (* Printf.printf "stands: %i\n%!" (List.length stands); *)
+  let sorted_reachable_stand =
+    List.sort (fun (_,l1, _) (_,l2,_) -> compare l1 l2)
+      (reachable_stands ~src:state.world.robot.position ~stands
+         ~obstacles:state.world.urg_obstacles)
+  in
+  (* Printf.printf "stands: %i\n%!" (List.length sorted_reachable_stand); *)
+  (* Printf.printf ": %i\n%!" (List.length sorted_reachable_stand); *)
+  (* let () = List.iter (fun ({Krobot_geom.x;y},d,path) -> *)
+  (*   Printf.printf "%f %f ... %f\n%!" x y d; *)
+  (*   print_path path) *)
+  (*   sorted_reachable_stand in *)
+  match sorted_reachable_stand with
+  | [] -> None
+  | (closest_stand, _, path) :: _ -> Some (closest_stand, path)

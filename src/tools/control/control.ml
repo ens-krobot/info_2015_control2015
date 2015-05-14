@@ -92,6 +92,30 @@ let command_turn args =
          Lwt.return ())
       args
 
+(****** Goto closest stand ***********)
+
+let rec list_last = function
+  | [t] -> Some t
+  | h :: t -> list_last t
+  | [] -> None
+
+let goto_closest_stand () =
+  lwt state = make () in
+  Printf.printf "state ready\n%!";
+  match choose_close_stand state with
+  | None ->
+    Printf.printf "no reachable stand\n%!";
+    Lwt.return ()
+  | Some (_closest_stand, path) ->
+    match list_last path with
+    | None ->
+      Printf.printf "no end of path for stand\n%!";
+      Lwt.return ()
+    | Some last_position ->
+      Printf.printf "destination %f %f\n%!" last_position.x last_position.y;
+      lwt state = retry_goto ~state ~destination:last_position in
+      Lwt.return ()
+
 (****** Test homologatoin ************)
 
 type team = Krobot_bus.team
@@ -158,9 +182,12 @@ let do_homologation () =
     match_end state
 
 let direct_homologation () =
+  Printf.printf "go ?\n%!";
   lwt state = make () in
+  Printf.printf "state ready\n%!";
   try
     lwt state = reset_odometry ~state in
+    Printf.printf "start\n%!";
     do_homologation_run state (get_team state)
   with Match_end_exn ->
     match_end state
@@ -181,6 +208,8 @@ let () = if Array.length Sys.argv < 2 then Printf.printf "Missing argument\n%!"
 lwt () =
   let rest = Array.sub Sys.argv 2 (Array.length Sys.argv - 2) in
   match Sys.argv.(1) with
+  | "stand" ->
+    goto_closest_stand ()
   | "goto" ->
     command_goto rest
   | "turn" ->

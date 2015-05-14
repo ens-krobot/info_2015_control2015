@@ -46,6 +46,12 @@ type state =
 let count_intersect = ref 0
 let count_steps = ref 0
 
+let rec path_length ~src ~path =
+  match path with
+  | [] -> 0.
+  | h :: t ->
+    Krobot_geom.distance src h +. path_length ~src:h ~path:t
+
 let init_state ~src ~dst vertices =
   let v : Vertice_with_cost.t =
     { vertice = src;
@@ -191,6 +197,18 @@ let exists_intersection graph segment =
 let neighbors : src:vertice -> graph -> VerticeSet.t = fun ~src graph ->
   VerticeSet.filter (fun v -> not (exists_intersection graph (src, v))) graph.vertices
 
+let exists_intersection_before graph ~src ~before_dst ~dst =
+  let v = normalize (vector src dst) in
+  let d = distance src dst in
+  let shortened = d -. before_dst in
+  if shortened < -.0.01 then
+    None
+  else
+    let pt = translate src (v *| shortened) in
+    if exists_intersection graph (src, pt)
+    then None
+    else Some pt
+
 type step =
   | Found of vertice list
   | Unreachable
@@ -201,18 +219,23 @@ let next_to_evaluate : VerticeHeap.t -> VerticeHeap.t * Vertice_with_cost.t = fu
   let queue = VerticeHeap.delete_min queue in
   queue, v
 
-let step : dst:vertice -> state -> graph -> step = fun ~dst state graph ->
+let step : dst:vertice -> before_dst:float -> state -> graph -> step =
+  fun ~dst ~before_dst state graph ->
   incr count_steps;
   if VerticeHeap.is_empty state.queue then
     Unreachable
   else
     let queue, vertice_path = next_to_evaluate state.queue in
-    let neighbors =
-      neighbors ~src:vertice_path.vertice
-        { graph with vertices = state.not_visited } in
-    if VerticeSet.mem dst neighbors then
+    (* Printf.printf "next %f %f\n%!" vertice_path.vertice.x vertice_path.vertice.y; *)
+    match exists_intersection_before graph ~src:vertice_path.vertice
+            ~before_dst ~dst with
+    | Some dst ->
+      (* Printf.printf "found %f %f\n%!" dst.x dst.y; *)
       Found (List.rev (dst :: vertice_path.path))
-    else
+    | None ->
+      let neighbors =
+        neighbors ~src:vertice_path.vertice
+          { graph with vertices = state.not_visited } in
       let state =
         VerticeSet.fold (fun vertice state ->
           let path_length =
@@ -229,14 +252,15 @@ let step : dst:vertice -> state -> graph -> step = fun ~dst state graph ->
       in
       Continue state
 
-let rec loop ~dst state graph =
-  match step ~dst state graph with
+let rec loop ~dst ~before_dst state graph =
+  match step ~dst ~before_dst state graph with
   | Found l -> l
   | Unreachable -> []
   | Continue state ->
-    loop ~dst state graph
+    loop ~dst ~before_dst state graph
 
-let find_path ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
+let find_path ~src ~dst ~inflate ?(before_dst=0.) ~fixed_obstacles ~obstacles () =
+  (* Printf.printf "find path %f %f -> %f %f\n%!" src.x src.y dst.x dst.y; *)
   count_intersect := 0;
   count_steps := 0;
 
@@ -250,7 +274,7 @@ let find_path ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
 
   let t3 = Unix.gettimeofday () in
 
-  let r = loop ~dst state graph in
+  let r = loop ~dst ~before_dst state graph in
 
   let t4 = Unix.gettimeofday () in
 
@@ -452,13 +476,13 @@ let find_path_for_directions ~src ~dst ~inflate ~obstacles ~fixed_obstacles ~esc
         let v = vector src start in
         if norm v < 0.00001 then begin
           Printf.printf "escape vector ~0\n%!";
-          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
+          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles () with
           | [] -> aux "no path after escaping" rest
           | h::t -> Simple_path (h, t)
         end
         else
           let start = translate src (normalize v *| (norm v +. 0.0001)) in
-          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles with
+          match find_path ~src:start ~inflate ~dst ~obstacles ~fixed_obstacles () with
           | [] -> aux "no path after escaping" rest
           | h::t ->
             Escaping_path {escape_point = start;
@@ -502,7 +526,7 @@ let rec colliding_pathfinding ~src ~dst ~inflate ~fixed_obstacles ~obstacles =
     | No_path _ ->
       colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | r -> r
-  else match find_path ~src ~dst ~inflate ~obstacles ~fixed_obstacles with
+  else match find_path ~src ~dst ~inflate ~obstacles ~fixed_obstacles () with
     | [] ->
       colliding_pathfinding ~src ~dst ~inflate:(inflate -. inflate_step) ~obstacles ~fixed_obstacles
     | h::t -> Simple_path (h,t)

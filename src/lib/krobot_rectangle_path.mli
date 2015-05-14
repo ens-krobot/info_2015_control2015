@@ -5,8 +5,10 @@ val find_path :
   src:Krobot_geom.vertice ->
   dst:Krobot_geom.vertice ->
   inflate:float ->
+  ?before_dst:float ->
   fixed_obstacles:obstacle list ->
   obstacles:obstacle list ->
+  unit ->
   Krobot_geom.vertice list
 (** Find a trajectory between [src] and [dst] avoiding the [obstacles].
     If no trajectory was found it returns an empty list.
@@ -62,3 +64,5 @@ val colliding_pathfinding :
     from [first_point].
     If the original situation is not constrained, the result is like
     find_path *)
+
+val path_length : src:Krobot_geom.vertice -> path:Krobot_geom.vertice list -> float
