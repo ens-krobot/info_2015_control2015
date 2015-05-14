@@ -368,15 +368,17 @@ let reachable_stands ~src ~stands ~obstacles =
 (*   List.iter (fun {Krobot_geom.x;y} -> Printf.printf "%f %f ->" x y) path; *)
 (*   Printf.printf "\n%!" *)
 
-let choose_close_stand ~state =
-  let stands = team_stands state.world.team in
-  (* Printf.printf "stands: %i\n%!" (List.length stands); *)
+let base_obstacles state =
   let beacon_obstacles =
     List.map (obstacle_of_point Krobot_config.beacon_radius)
       state.world.beacons
   in
-  (* Printf.printf "beacon %i\n%!" (List.length beacon_obstacles); *)
-  let obstacles = state.world.urg_obstacles @ beacon_obstacles in
+  state.world.urg_obstacles @ beacon_obstacles
+
+let choose_close_stand ~state =
+  let stands = team_stands state.world.team in
+  (* Printf.printf "stands: %i\n%!" (List.length stands); *)
+  let obstacles = base_obstacles state in
   let sorted_reachable_stand =
     List.sort (fun (_,l1, _) (_,l2,_) -> compare l1 l2)
       (reachable_stands ~src:state.world.robot.position ~stands
