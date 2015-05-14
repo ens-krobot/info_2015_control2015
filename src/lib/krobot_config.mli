@@ -79,6 +79,19 @@ val green_led : int
 val yellow_clap_positions : float * float * float
 val green_clap_positions : float * float * float
 
+val clap_y : float
+type clap =
+  { clap_pos : float;
+    approach_pos : float;
+    after_pos : float;
+    dir : float;
+    left_side : bool }
+
+val yellow_clap_2 : clap
+val yellow_clap_3 : clap
+val green_clap_2 : clap
+val green_clap_3 : clap
+
 val fixed_obstacles : Krobot_geom.rect_obj list
 
 val test_obstacles : Krobot_geom.rect_obj list

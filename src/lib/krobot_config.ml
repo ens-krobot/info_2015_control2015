@@ -59,6 +59,41 @@ let green_clap_positions =
   let a, b, c = yellow_clap_positions in
   world_width -. a, world_width -. b, world_width -. c
 
+let yellow_clap_1, yellow_clap_2, yellow_clap_3 = yellow_clap_positions
+
+let clap_y = robot_radius +. 0.03
+
+type clap =
+  { clap_pos : float;
+    approach_pos : float;
+    after_pos : float;
+    dir : float;
+    left_side : bool }
+
+let yellow_clap_2 =
+    { clap_pos = yellow_clap_2;
+      approach_pos = yellow_clap_2 -. 0.1;
+      after_pos = yellow_clap_2 +. 0.05;
+      dir = pi /. 2.;
+      left_side = false }
+
+let yellow_clap_3 =
+    { clap_pos = yellow_clap_3;
+      approach_pos = yellow_clap_3 +. 0.1;
+      after_pos = yellow_clap_3 -. 0.05;
+      dir = -. (pi /. 2.);
+      left_side = true }
+
+let green_clap_of_yellow clap =
+  { clap_pos = world_width -. clap.clap_pos;
+    approach_pos = world_width -. clap.approach_pos;
+    after_pos = world_width -. clap.after_pos;
+    dir = Krobot_geom.angle_pi_minus_pi (2. *. pi -. clap.dir);
+    left_side = not clap.left_side; }
+
+let green_clap_2 = green_clap_of_yellow yellow_clap_2
+let green_clap_3 = green_clap_of_yellow yellow_clap_3
+
 let green_fixed_beacons = [
   { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };
