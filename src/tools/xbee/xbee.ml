@@ -32,22 +32,39 @@ type info = {
   (* The bus used to communicate with the robot. *)
   mutable world : world;
   mutable match_state : match_state;
+  mutable ack_received : bool;
+  mutable last_sent : string;
+  mutable xbee_ack : bool;
 }
 
 (* +-----------------------------------------------------------------+
    | CAN YOU HEAR MEEEE ???? loop                                    |
    +-----------------------------------------------------------------+ *)
 
+let rec receive_response info =
+  lwt resp = Krobot_serial.read_line info.serial in
+  if resp = info.last_sent then
+    info.xbee_ack <- true ;
+  receive_response info
+
 let rec broadcast_state_loop info =
-  let msg = match info.match_state with
-    | Waiting -> "w"
-    | Ready -> (match info.world.team with Yellow -> "y" | Green -> "g" )
-    | Started -> "s"
-    | Cancelled -> "c"
-    | Ended -> "e"
+  lwt () =
+    if not info.ack_received then
+      let msg = match info.match_state with
+        | Waiting -> "w"
+        | Ready -> (match info.world.team with Yellow -> "y" | Green -> "g" )
+        | Started -> "s"
+        | Cancelled -> "c"
+        | Ended -> "e"
+      in
+      info.last_sent <- msg;
+      lwt () = Krobot_serial.write_line info.serial msg in
+      info.xbee_ack <- false;
+      Lwt.return ()
+    else
+      Lwt.return ()
   in
-  lwt () = Krobot_serial.write_line info.serial msg in
-  lwt () = Lwt_unix.sleep 0.1 in
+  lwt () = Lwt_unix.sleep 0.2 in
   broadcast_state_loop info
 
 (* +-----------------------------------------------------------------+
@@ -62,7 +79,6 @@ let handle_message info (timestamp, message) =
     info.match_state <- Ready;
     Lwt.return ()
   | Match_start ->
-    lwt () = Krobot_serial.write_line info.serial "g" in
     info.match_state <- Started;
     Lwt.return ()
   | Match_cancelled ->
@@ -123,6 +139,9 @@ lwt () =
     world = {init_world with team = !start_team};
     serial = serial;
     match_state = Waiting;
+    ack_received = false;
+    last_sent = "w";
+    xbee_ack = false;
   } in
 
   (* Handle krobot message. *)
