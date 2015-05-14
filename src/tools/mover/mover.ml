@@ -132,16 +132,27 @@ let generate_path_display world waypoints =
   in
   curves
 
+let obstacle_of_point radius pos =
+  let dir = normalize { vx = 1.; vy = 1.} in
+  let radius = (sqrt 2.) *. radius in
+  (translate pos (dir *| radius),
+   translate pos (dir *| (-. radius)))
+
+let stand_obstacles l =
+  List.map (obstacle_of_point Krobot_config.stand_radius) l
+
+let pop_corn_obstacles l =
+  List.map (obstacle_of_point Krobot_config.pop_corn_radius) l
+
 let not_fixed_obstacles world =
-  let beacon_obstacles = List.fold_left (fun obstacles beacon ->
-    let dir = normalize { vx = 1.; vy = 1.} in
-    let radius = (sqrt 2.) *. Krobot_config.beacon_radius in
-    (translate beacon (dir *| radius),
-     translate beacon (dir *| (-. radius))) :: obstacles)
-    []
-    world.beacons
+  let beacon_obstacles =
+    List.map (obstacle_of_point Krobot_config.beacon_radius)
+      world.beacons
   in
-  (beacon_obstacles @ world.urg_obstacles)
+  (* stand_obstacles Krobot_config.original_yellow_stands @ *)
+  (* stand_obstacles Krobot_config.original_green_stands @ *)
+  (* pop_corn_obstacles Krobot_config.original_pop_corn @ *)
+  beacon_obstacles @ world.urg_obstacles
 
 let obstacles world =
   Krobot_config.fixed_obstacles @ not_fixed_obstacles world
@@ -364,7 +375,7 @@ let rec general_step (input:input) (world:world) (state:state) : output =
         Krobot_date.pr date
         world.robot.position.x world.robot.position.y world.robot.orientation;
       (* let limits = Motor_omni_limits(0.1, 0.25, (pi/.4.), (pi/.8.)) in *)
-      let goto = Motor_omni_goto(dest.x, dest.y, theta) in
+      let goto = Motor_omni_goto(dest.x, dest.y, Krobot_geom.angle_pi_minus_pi theta) in
       let command_of_limits { Krobot_config.v_lin_max; v_rot_max;
                               a_lin_max; a_rot_max; torque_limit } =
         [CAN (Motor_omni_limits (v_lin_max, v_rot_max, a_lin_max, a_rot_max));
