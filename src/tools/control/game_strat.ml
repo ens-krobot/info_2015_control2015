@@ -139,12 +139,14 @@ let yellow_aim_first_move =
   { x = 1.2; y = 0.1 }
 
 let yellow_start_first_push_dir =
-  Krobot_geom.(angle (vector yellow_start_first_push yellow_aim_first_move)) +. (pi /. 2.)
+  Krobot_geom.(angle (vector yellow_start_first_push yellow_aim_first_move))
+  +. (7. *. pi /. 6.)
+  (* (pi /. 2.) *)
 
 let yellow_end_first_push =
   let open Krobot_geom in
   let v = normalize (vector yellow_aim_first_move yellow_start_first_push) in
-  let approach_distance = Krobot_config.robot_radius +. 0.1 in
+  let approach_distance = Krobot_config.robot_radius +. 0.07 in
   let trans_vect = v *| approach_distance in
   translate yellow_aim_first_move trans_vect
 

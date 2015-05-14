@@ -94,8 +94,11 @@ let string_of_urg_id = function
   | Up -> "Up"
   | Down -> "Down"
 
+let odo = ref (0., 0., 0.)
+
 let print_pos id ts l =
-  Printf.printf "%f %s " ts (string_of_urg_id id);
+  let (x, y, theta) = !odo in
+  Printf.printf "%f %s odo: %f %f %f data: " ts (string_of_urg_id id) x y theta;
   Array.iter (fun {x;y} -> Format.printf "%f %f " x y) l;
   Printf.printf "\n%!"
 
@@ -103,6 +106,13 @@ let handle_listener (timestamp, message) =
   match message with
     | Urg (id, data) ->
       print_pos id timestamp data;
+      return ()
+    | CAN (_,msg) ->
+      begin match Krobot_message.decode msg with
+        | Odometry (x, y, theta) ->
+          odo := (x, y, theta)
+        | _ -> ()
+      end;
       return ()
     | _ -> Lwt.return ()
 

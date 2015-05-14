@@ -42,13 +42,13 @@ let yellow_initial_position =
     y = world_height /. 2.; },
   (pi)
 
-let right_arm_idx = 3
+let left_arm_idx = 3
 
-let right_arm_positions = (700, 640, 440, 160)
+let left_arm_positions = (700, 640, 440, 160)
 
-let left_arm_idx = 5
+let right_arm_idx = 5
 
-let left_arm_positions = (437, 513, 600, 900)
+let right_arm_positions = (437, 513, 600, 900)
 
 let yellow_led = 5
 let green_led = 7
@@ -603,6 +603,69 @@ let urg_angles =
 let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) (Krobot_utils.array_rev urg_angles)
 let urg_down_angles = Array.map (fun a -> a +. urg_down_rotation) urg_angles
 
+let urg_up_filter' =
+[|true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; false; false;
+ false; false; false; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ true; true; true; true; true; true; true; false; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; false; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; false; false; false; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; false; true; true; true; true; true; true; true;
+ false; false; false; false; false; false; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; false; false; false; false; false; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; false; false; false;
+ false; false; false; false; false; true; true; true; true; true; true; true;
+ true; true; true; false; false; false; false; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; false; false; false; false;
+ true; true; true; true; true; true; true; true; false; false; false; false;
+ false; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; true; true;
+ true; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; true;
+ true; true; true; true; true; true; true; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; true; true; true; true;
+ true; true; true; true; true; true; true; true; false; false; false; false;
+ false; false; true; true; true; true; true; true; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ false; false; false; true; true; true; false; false; false; false; false;
+ false; false; false; false; false; false; false; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; |]
 let urg_down_filter' =
 [|true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -634,31 +697,6 @@ let urg_down_filter' =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; false; false; false; false; false;
- false; false; false; true; true; true; true; true; true; true; true; true;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
@@ -666,76 +704,35 @@ let urg_down_filter' =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; |]
-
-let urg_up_filter' =
-[|true; true; true; true; true; true; true; true; true; true; true; true;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; false; false; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; true; true; true; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; true; true; true; true; true; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; false; false; true; true; true; true; true; true;
- true; true; true; true; true; true; true; false; false; false; true; true;
- true; true; true; true; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; true; true;
- true; true; true; true; false; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- false; false; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; false; false; false; false; false; false; true; true;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; true; false; false; false; false; false; false; false;
- true; true; true; true; true; true; true; true; true; true; true; true;
- true; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; true; true; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; true; true; true; true; true; true; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; |]
-
-let urg_filtered_distance' = 0.5
+ false; false; |]
+let urg_filtered_distance' = 0.400000
 
 let urg_up_filter, urg_down_filter, urg_filtered_distance =
   match Krobot_utils.read_urg_filter_file ~filename:(Sys.getenv "URGFILTER") with
