@@ -211,7 +211,7 @@ let normal_limits = {
   v_lin_max = 0.5;
   v_rot_max = (2. *. pi) /. 2.;
   a_lin_max = 0.5;
-  a_rot_max = (2. *. pi) /. 2.;
+  a_rot_max = ((2. *. pi) /. 2.) *. 0.5;
   torque_limit = 3600;
 }
 
