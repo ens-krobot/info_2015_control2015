@@ -48,3 +48,5 @@ val lcd_message : state:state -> line:int -> text:string -> unit Lwt.t
 (* val wait_for_non_zero_odometry : state:state -> state Lwt.t *)
 
 val choose_close_stand : state:state -> (Krobot_geom.vertice * Krobot_geom.vertice list) option
+
+val update : state:state -> state Lwt.t

@@ -99,8 +99,15 @@ let rec list_last = function
   | h :: t -> list_last t
   | [] -> None
 
-let goto_closest_stand () =
+let goto_closest_stand rest =
+  let wait_time =
+    match rest with
+    | [|t|] -> float_of_string t
+    | _ -> 0.
+  in
   lwt state = make () in
+  lwt () = Lwt_unix.sleep wait_time in
+  lwt state = update ~state in
   Printf.printf "state ready\n%!";
   match choose_close_stand state with
   | None ->
@@ -209,7 +216,7 @@ lwt () =
   let rest = Array.sub Sys.argv 2 (Array.length Sys.argv - 2) in
   match Sys.argv.(1) with
   | "stand" ->
-    goto_closest_stand ()
+    goto_closest_stand rest
   | "goto" ->
     command_goto rest
   | "turn" ->
