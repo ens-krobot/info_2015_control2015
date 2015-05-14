@@ -12,6 +12,7 @@ type world_update =
   | Emergency_changed
   | Ax12_changed of ax12_side
   | Obstacles_updated
+  | Beacons_updated
 
 type jack_state =
    | In
@@ -44,6 +45,7 @@ type world = {
   team : Krobot_bus.team;
   em_stop : emergency_state;
   urg_obstacles : Krobot_rectangle_path.obstacle list;
+  beacons : Krobot_geom.vertice list;
 }
 
 val init_world : world

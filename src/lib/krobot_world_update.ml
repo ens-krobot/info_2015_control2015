@@ -15,6 +15,7 @@ type world_update =
   | Emergency_changed
   | Ax12_changed of ax12_side
   | Obstacles_updated
+  | Beacons_updated
 
 type jack_state =
    | In
@@ -47,6 +48,7 @@ type world = {
   team : Krobot_bus.team;
   em_stop : emergency_state;
   urg_obstacles : Krobot_rectangle_path.obstacle list;
+  beacons : Krobot_geom.vertice list;
 }
 
 let default_ax12_state =
@@ -64,6 +66,7 @@ let init_world = {
   team = Krobot_bus.Yellow;
   em_stop = Pressed;
   urg_obstacles = [];
+  beacons = [];
 }
 
 let ax12_state_of_side world = function
@@ -149,6 +152,33 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
                 None
             else None
           end
+        | Beacon_position (a1, a2, d1, d2) ->
+          let new_beacons = List.fold_left (fun beacons (d,a) ->
+            if d > 0.001 then
+              let delta = Krobot_geom.vector_of_polar d (a +. world.robot.orientation) in
+              (Krobot_geom.translate world.robot.position delta) :: beacons
+            else
+              beacons)
+            []
+            [(d1,a1);(d2,a2)]
+          in
+          if (List.length world.beacons) == (List.length new_beacons) then
+            let total_diff = List.fold_left2 (fun t_diff beacon new_beacon ->
+              t_diff +. (Krobot_geom.square_distance beacon new_beacon))
+              0.
+              world.beacons
+              new_beacons
+            in
+            if total_diff > (0.05 *. 0.05) then
+              Some ({ world with
+                      beacons = new_beacons},
+                    Beacons_updated)
+            else
+              None
+          else
+            Some ({ world with
+                    beacons = new_beacons},
+                  Beacons_updated)
         | _ ->
           None
       end
