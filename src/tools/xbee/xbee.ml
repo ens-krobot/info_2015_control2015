@@ -50,12 +50,22 @@ let rec receive_response info =
 let rec broadcast_state_loop info =
   lwt () =
     if not info.ack_received then
+      (* let msg = match info.match_state with *)
+      (*   | Waiting -> "w" *)
+      (*   | Ready -> (match info.world.team with Yellow -> "y" | Green -> "g" ) *)
+      (*   | Started -> "s" *)
+      (*   | Cancelled -> "c" *)
+      (*   | Ended -> "e" *)
+      (* in *)
       let msg = match info.match_state with
-        | Waiting -> "w"
-        | Ready -> (match info.world.team with Yellow -> "y" | Green -> "g" )
-        | Started -> "s"
-        | Cancelled -> "c"
-        | Ended -> "e"
+        | Waiting
+        | Cancelled
+        | Ready ->
+          (match info.world.team with Yellow -> "y" | Green -> "g" )
+        | Started ->
+          "s"
+        | Ended ->
+          "e"
       in
       info.last_sent <- msg;
       lwt () = Krobot_serial.write_line info.serial msg in
