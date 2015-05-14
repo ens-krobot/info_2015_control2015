@@ -214,13 +214,71 @@ let homologation args =
 
 (* GOTO clap *)
 
+let do_given_clap_run state clap =
+  let open Krobot_config in
+  let side = if clap.left_side then
+      Krobot_world_update.Left
+    else
+      Krobot_world_update.Right
+  in
+  Printf.printf "Approach clap\n%!";
+  lwt state = retry_goto ~state
+      ~destination:{ x = clap.approach_pos; y = clap_y } in
+  Printf.printf "turn to position\n%!";
+  lwt state = retry_turn ~state ~orientation:clap.dir in
+  Printf.printf "arm out\n%!";
+  lwt (state, ()) = Krobot_mover_control.clap ~state ~side ~status:Clap_out in
+  Printf.printf "push clap\n%!";
+  lwt state = retry_move ~state
+      ~destination:{ x = clap.after_pos; y = clap_y }
+      ~ignore_fixed_obstacles:false in
+  Printf.printf "arm in\n%!";
+  lwt (state, ()) = Krobot_mover_control.clap ~state ~side ~status:Clap_in in
+  Printf.printf "Done !\n%!";
+  Lwt.return state
+
+type clap_num = Clap2 | Clap3
+
+let team_clap team clap =
+  let open Krobot_config in
+  match team, clap with
+  | Krobot_bus.Yellow, Clap2 -> yellow_clap_2
+  | Yellow, Clap3 -> yellow_clap_3
+  | Green, Clap2 -> green_clap_2
+  | Green, Clap3 -> green_clap_3
+
+let do_clap_run state team clapn =
+  let clap = team_clap team clapn in
+  do_given_clap_run state clap
+
+let direct_clap () =
+  Printf.printf "direct clap strategy\n%!";
+  lwt state = make () in
+  lwt () = Lwt_unix.sleep 1. in
+  lwt state = update ~state in
+  let team = get_team state in
+  let () = match team with
+    | Green -> Printf.printf "Green\n%!"
+    | Yellow -> Printf.printf "Yellow\n%!"
+  in
+  Printf.printf "state ready\n%!";
+  try
+    lwt state = reset_odometry ~state in
+    Printf.printf "exit home\n%!";
+    lwt state = out_of_start_zone state team in
+    lwt state = do_clap_run state team Clap2 in
+    lwt state = do_clap_run state team Clap3 in
+    Lwt.return ()
+  with Match_end_exn ->
+    match_end state
+
 let yellow_clap_1, yellow_clap_2, yellow_clap_3 = Krobot_config.yellow_clap_positions
 let goto_first_yellow_clap_position =
   { x = yellow_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
 let goto_first_yellow_clap_position_after =
   { x = yellow_clap_2 +. 0.05; y = Krobot_config.robot_radius +. 0.03 }
 
-let do_clap_run state (team:Krobot_bus.team) =
+let do_clap_hand_run state (team:Krobot_bus.team) =
   let swap pos = match team with
     | Yellow -> pos
     | Green -> mirror pos
@@ -247,7 +305,7 @@ let do_clap_run state (team:Krobot_bus.team) =
   Printf.printf "clap 3 !\n%!";
   Lwt.return ()
 
-let direct_clap () =
+let direct_clap_hand () =
   Printf.printf "clap !\n%!";
   lwt state = make () in
   lwt () = Lwt_unix.sleep 1. in
@@ -260,7 +318,7 @@ let direct_clap () =
   try
     lwt state = reset_odometry ~state in
     Printf.printf "start\n%!";
-    do_clap_run state (get_team state)
+    do_clap_hand_run state (get_team state)
   with Match_end_exn ->
     match_end state
 
@@ -308,6 +366,8 @@ lwt () =
     direct_homologation ()
   | "clap" ->
     direct_clap ()
+  | "claphand" ->
+    direct_clap_hand ()
   | "sclap" ->
     stuff_clap ()
   | cmd ->
