@@ -144,7 +144,7 @@ let yellow_position_to_push =
 
 let mirror v = { x = Krobot_config.world_width -. v.x; y = v.y }
 
-let out_of_start_zone : Krobot_bus.team -> _ = function
+let out_of_start_zone_pos : Krobot_bus.team -> _ = function
   | Yellow -> yellow_out_of_start_zone
   | Green -> mirror yellow_out_of_start_zone
 let first_position : Krobot_bus.team -> _  = function
@@ -162,7 +162,7 @@ let push_orientation : Krobot_bus.team -> _  = function
   | Green -> flip yellow_push_orientation
 
 let out_of_start_zone state team =
-  retry_move ~state ~destination:(out_of_start_zone team) ~ignore_fixed_obstacles:true
+  retry_move ~state ~destination:(out_of_start_zone_pos team) ~ignore_fixed_obstacles:true
 
 let do_homologation_run state team =
   lwt state = out_of_start_zone state team in
@@ -234,6 +234,10 @@ let do_given_clap_run state clap =
       ~ignore_fixed_obstacles:false in
   Printf.printf "arm in\n%!";
   lwt (state, ()) = Krobot_mover_control.clap ~state ~side ~status:Clap_in in
+  Printf.printf "escape a bit\n%!";
+  lwt state = retry_move ~state
+      ~destination:{ x = clap.after_pos; y = clap_y +. 0.1 }
+      ~ignore_fixed_obstacles:false in
   Printf.printf "Done !\n%!";
   Lwt.return state
 
@@ -268,6 +272,7 @@ let direct_clap () =
     lwt state = out_of_start_zone state team in
     lwt state = do_clap_run state team Clap2 in
     lwt state = do_clap_run state team Clap3 in
+    lwt state = retry_goto ~state ~destination:(out_of_start_zone_pos team) in
     Lwt.return ()
   with Match_end_exn ->
     match_end state
