@@ -155,14 +155,17 @@ let push_position : Krobot_bus.team -> _  = function
   | Green -> mirror yellow_position_to_push
 
 let yellow_push_orientation = pi /. 4.
-let flip angle = pi -. angle
+let flip angle = 2. *. pi -. angle
 
 let push_orientation : Krobot_bus.team -> _  = function
   | Yellow -> yellow_push_orientation
   | Green -> flip yellow_push_orientation
 
+let out_of_start_zone state team =
+  retry_move ~state ~destination:(out_of_start_zone team) ~ignore_fixed_obstacles:true
+
 let do_homologation_run state team =
-  lwt state = retry_move ~state ~destination:(out_of_start_zone team) ~ignore_fixed_obstacles:true in
+  lwt state = out_of_start_zone state team in
   lwt state = retry_goto ~state ~destination:(first_position team) in
   lwt state = retry_turn ~state ~orientation:(push_orientation team) in
   lwt state = retry_move ~state ~destination:(push_position team) ~ignore_fixed_obstacles:false in
@@ -209,6 +212,80 @@ let homologation args =
       (Array.length args);
     exit 1
 
+(* GOTO clap *)
+
+let yellow_clap_1, yellow_clap_2, yellow_clap_3 = Krobot_config.yellow_clap_positions
+let goto_first_yellow_clap_position =
+  { x = yellow_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
+let goto_first_yellow_clap_position_after =
+  { x = yellow_clap_2 +. 0.1; y = Krobot_config.robot_radius +. 0.03 }
+
+let do_clap_run state (team:Krobot_bus.team) =
+  let swap pos = match team with
+    | Yellow -> pos
+    | Green -> mirror pos
+  in
+  let flip dir = match team with
+    | Yellow -> dir
+    | Green -> flip dir
+  in
+  let side = match team with
+    | Yellow -> Krobot_world_update.Right
+    | Green -> Krobot_world_update.Left
+  in
+  lwt state = out_of_start_zone state team in
+  lwt state = retry_goto ~state ~destination:(swap goto_first_yellow_clap_position) in
+  Printf.printf "turn !\n%!";
+  lwt state = retry_turn ~state ~orientation:(flip (pi/.2.)) in
+  Printf.printf "clap before !\n%!";
+  lwt (state, ()) = clap ~state ~side ~status:Clap_out in
+  Printf.printf "clap 1 !\n%!";
+  lwt state = retry_move ~state ~destination:(swap goto_first_yellow_clap_position_after)
+      ~ignore_fixed_obstacles:false in
+  Printf.printf "clap 2 !\n%!";
+  lwt (state, ()) = clap ~state ~side ~status:Clap_in in
+  Printf.printf "clap 3 !\n%!";
+  Lwt.return ()
+
+let direct_clap () =
+  Printf.printf "clap !\n%!";
+  lwt state = make () in
+  lwt () = Lwt_unix.sleep 1. in
+  lwt state = update ~state in
+  let () = match get_team state with
+    | Green -> Printf.printf "Green\n%!"
+    | Yellow -> Printf.printf "Yellow\n%!"
+  in
+  Printf.printf "state ready\n%!";
+  try
+    lwt state = reset_odometry ~state in
+    Printf.printf "start\n%!";
+    do_clap_run state (get_team state)
+  with Match_end_exn ->
+    match_end state
+
+let do_clap_stuff state (team:Krobot_bus.team) =
+  Printf.printf "clap before !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Left ~status:Clap_out in
+  Printf.printf "clap 1 !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Left ~status:Clap_in in
+  Printf.printf "clap 2 !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Right ~status:Clap_out in
+  Printf.printf "clap 3 !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Left ~status:Clap_out in
+  Printf.printf "clap 4 !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Left ~status:Clap_in in
+  Printf.printf "clap 5 !\n%!";
+  lwt (state, ()) = clap ~state ~side:Krobot_world_update.Right ~status:Clap_in in
+  Printf.printf "clap 6 !\n%!";
+  Lwt.return ()
+
+let stuff_clap () =
+  Printf.printf "clap !\n%!";
+  lwt state = make () in
+  Printf.printf "state ready\n%!";
+  do_clap_stuff state (get_team state)
+
 (****** Command_line ************)
 
 let () = if Array.length Sys.argv < 2 then Printf.printf "Missing argument\n%!"
@@ -229,6 +306,10 @@ lwt () =
     do_homologation ()
   | "test" ->
     direct_homologation ()
+  | "clap" ->
+    direct_clap ()
+  | "sclap" ->
+    stuff_clap ()
   | cmd ->
     Printf.printf "unknown command %s\n%!" cmd;
     exit 1

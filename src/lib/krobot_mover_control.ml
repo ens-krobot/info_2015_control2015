@@ -88,18 +88,28 @@ let consume_until_mover_message (until:request_until) state : (state * mover_mes
   lwt (world, msg) = loop state.world state.stream in
   Lwt.return ({ state with world }, msg)
 
-let consume_until_ax12_state ~ax12_side state : (state * ax12_state) Lwt.t =
-  let rec loop world stream : (world * ax12_state) Lwt.t =
+let ax12_wait_time = 0.2
+
+let consume_until_ax12_state ~ax12_side ~idx ~date state : (state * ax12_state) Lwt.t =
+  let rec loop ~date world stream : (world * ax12_state) Lwt.t =
     lwt msg = stream_get stream in
     match Krobot_world_update.update_world world msg with
     | Some (world, Ax12_changed side) when side = ax12_side ->
       Lwt.return (world, ax12_state_of_side world side)
     | Some (world, _) ->
-      loop world stream
+      if Krobot_date.(now () >= add date ax12_wait_time) then
+        (* lwt () = send_can state (Ax12_Request_State idx) in *)
+        (* Lwt.return (Krobot_date.now ()) *)
+        Lwt.return (world, ax12_state_of_side world ax12_side)
+      else loop ~date world stream
     | None ->
-      loop world stream
+      if Krobot_date.(now () >= add date ax12_wait_time) then
+        (* lwt () = send_can state (Ax12_Request_State idx) in *)
+        (* Lwt.return (Krobot_date.now ()) *)
+        Lwt.return (world, ax12_state_of_side world ax12_side)
+      else loop ~date world stream
   in
-  lwt (world, ax12_state) = loop state.world state.stream in
+  lwt (world, ax12_state) = loop ~date state.world state.stream in
   Lwt.return ({ state with world }, ax12_state)
 
 type goto_result =
@@ -143,6 +153,7 @@ type turn_result =
   | Turn_failure
 
 let turn ~state ~orientation =
+  let orientation = Krobot_geom.angle_pi_minus_pi orientation in
   lwt state = wait_idle state in
   lwt request_id, state = new_request_id state in
   let order = state.world.robot.position, Some orientation in
@@ -192,23 +203,30 @@ let (right_arm_in, _, _, right_arm_out) = Krobot_config.right_arm_positions
 let ax12_action side status = match side, status with
   | Left, Clap_out -> Krobot_config.left_arm_idx, left_arm_out
   | Left, Clap_in -> Krobot_config.left_arm_idx, left_arm_in
-  | Right, Clap_out -> Krobot_config.left_arm_idx, left_arm_out
-  | Right, Clap_in -> Krobot_config.left_arm_idx, left_arm_in
+  | Right, Clap_out -> Krobot_config.right_arm_idx, right_arm_out
+  | Right, Clap_in -> Krobot_config.right_arm_idx, right_arm_in
 
-let admissible_ax12_distance = 10
+let admissible_ax12_distance = 1000
 
 let clap ~state ~side ~status =
   lwt state = consume_and_update state in
   let idx, position = ax12_action side status in
   lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
-  lwt () = Lwt_unix.sleep 0.1 in
+  lwt () = Lwt_unix.sleep ax12_wait_time in
   lwt () = send_can state (Ax12_Request_State idx) in
   let rec loop state =
-    lwt (state, { position = state_position }) = consume_until_ax12_state ~ax12_side:side state in
+    Printf.printf "consume\n%!";
+    lwt (state, { position = state_position }) =
+      consume_until_ax12_state ~ax12_side:side ~idx ~date:(Krobot_date.now ()) state in
+    Printf.printf "got one\n%!";
     if abs (state_position - position) < admissible_ax12_distance then
+      let () = Printf.printf "close\n%!" in
       Lwt.return (state, ())
     else
-      lwt () = Lwt_unix.sleep 0.05 in
+      let () = Printf.printf "retry %i\n%!" (abs (state_position - position)) in
+      lwt () = Lwt_unix.sleep ax12_wait_time in
+      lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
+      lwt () = Lwt_unix.sleep ax12_wait_time in
       lwt () = send_can state (Ax12_Request_State idx) in
       loop state
   in

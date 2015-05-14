@@ -53,6 +53,12 @@ let left_arm_positions = (437, 513, 600, 900)
 let yellow_led = 5
 let green_led = 7
 
+let yellow_clap_positions =
+  0.25, 0.85, 2.45
+let green_clap_positions =
+  let a, b, c = yellow_clap_positions in
+  world_width -. a, world_width -. b, world_width -. c
+
 let green_fixed_beacons = [
   { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };

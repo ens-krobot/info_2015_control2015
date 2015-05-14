@@ -76,6 +76,9 @@ val yellow_led : int
 val green_led : int
   (** Indices of robot's LEDs for use in Switch_request CAN packets *)
 
+val yellow_clap_positions : float * float * float
+val green_clap_positions : float * float * float
+
 val fixed_obstacles : Krobot_geom.rect_obj list
 
 val test_obstacles : Krobot_geom.rect_obj list
