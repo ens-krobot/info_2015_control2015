@@ -277,6 +277,30 @@ let direct_clap () =
   with Match_end_exn ->
     match_end state
 
+let clap_strat () =
+  Printf.printf "direct clap strategy\n%!";
+  lwt state = make () in
+  lwt state = wait_for_jack ~state ~jack_state:In in
+  lwt state = reset_odometry ~state in
+  lwt state = wait_for_jack ~state ~jack_state:Out in
+  lwt state = reset_odometry ~state in
+  let team = get_team state in
+  let () = match team with
+    | Green -> Printf.printf "Green\n%!"
+    | Yellow -> Printf.printf "Yellow\n%!"
+  in
+  Printf.printf "state ready\n%!";
+  try
+    lwt state = reset_odometry ~state in
+    Printf.printf "exit home\n%!";
+    lwt state = out_of_start_zone state team in
+    lwt state = do_clap_run state team Clap2 in
+    lwt state = do_clap_run state team Clap3 in
+    lwt state = retry_goto ~state ~destination:(out_of_start_zone_pos team) in
+    Lwt.return ()
+  with Match_end_exn ->
+    match_end state
+
 let yellow_clap_1, yellow_clap_2, yellow_clap_3 = Krobot_config.yellow_clap_positions
 let goto_first_yellow_clap_position =
   { x = yellow_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
@@ -370,7 +394,7 @@ lwt () =
   | "test" ->
     direct_homologation ()
   | "clap" ->
-    direct_clap ()
+    clap_strat ()
   | "claphand" ->
     direct_clap_hand ()
   | "sclap" ->
