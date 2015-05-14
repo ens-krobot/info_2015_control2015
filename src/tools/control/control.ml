@@ -218,7 +218,7 @@ let yellow_clap_1, yellow_clap_2, yellow_clap_3 = Krobot_config.yellow_clap_posi
 let goto_first_yellow_clap_position =
   { x = yellow_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
 let goto_first_yellow_clap_position_after =
-  { x = yellow_clap_2 +. 0.1; y = Krobot_config.robot_radius +. 0.03 }
+  { x = yellow_clap_2 +. 0.05; y = Krobot_config.robot_radius +. 0.03 }
 
 let do_clap_run state (team:Krobot_bus.team) =
   let swap pos = match team with
