@@ -48,33 +48,20 @@ let rec receive_response info =
   receive_response info
 
 let rec broadcast_state_loop info =
-  lwt () =
-    if not info.ack_received then
-      (* let msg = match info.match_state with *)
-      (*   | Waiting -> "w" *)
-      (*   | Ready -> (match info.world.team with Yellow -> "y" | Green -> "g" ) *)
-      (*   | Started -> "s" *)
-      (*   | Cancelled -> "c" *)
-      (*   | Ended -> "e" *)
-      (* in *)
-      let msg = match info.match_state with
-        | Waiting
-        | Cancelled
-        | Ready ->
-          (match info.world.team with Yellow -> "y" | Green -> "g" )
-        | Started ->
-          "s"
-        | Ended ->
-          "e"
-      in
-      info.last_sent <- msg;
-      lwt () = Krobot_serial.write_line info.serial msg in
-      info.xbee_ack <- false;
-      Lwt.return ()
-    else
-      Lwt.return ()
+  let msg = match info.match_state with
+    | Waiting
+    | Cancelled
+    | Ready ->
+      (match info.world.team with Yellow -> "y" | Green -> "g" )
+    | Started ->
+      "s"
+    | Ended ->
+      "e"
   in
-  lwt () = Lwt_unix.sleep 0.2 in
+  info.last_sent <- msg;
+  lwt () = Krobot_serial.write_line info.serial msg in
+  info.xbee_ack <- false;
+  lwt () = Lwt_unix.sleep 0.1 in
   broadcast_state_loop info
 
 (* +-----------------------------------------------------------------+
@@ -90,19 +77,28 @@ let handle_message info (timestamp, message) =
     Lwt.return ()
   | Match_start ->
     info.match_state <- Started;
-    Lwt.return ()
+    Krobot_serial.write_line info.serial "s"
   | Match_cancelled ->
     info.match_state <- Cancelled;
     Lwt.return ()
   | Match_end ->
     info.match_state <- Ended;
-    Lwt.return ()
+    Krobot_serial.write_line info.serial "e"
   | _ -> match update_world info.world message with
     | None ->
       Lwt.return ()
     | Some (world, update) ->
       info.world <- world;
-      Lwt.return ()
+      match update with
+      | Team_changed -> begin
+          match info.world.team with
+          | Yellow ->
+            Krobot_serial.write_line info.serial "y"
+          | Green ->
+            Krobot_serial.write_line info.serial "g"
+        end
+      | _ ->
+        Lwt.return ()
 
 (* +-----------------------------------------------------------------+
    | Command-line arguments                                          |
@@ -161,6 +157,7 @@ lwt () =
   lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill "xbee") in
 
   (* serial communication loop *)
+  (*ignore(receive_response info);*)
   (* ignore(broadcast_state_loop info); *)
 
   (* Loop forever. *)
