@@ -80,7 +80,7 @@ let yellow_clap_1 =
 let yellow_clap_2 =
     { clap_pos = yellow_clap_2;
       approach_pos = yellow_clap_2 -. 0.1;
-      after_pos = yellow_clap_2 +. 0.05;
+      after_pos = yellow_clap_2 +. 0.08;
       dir = pi /. 2.;
       left_side = false }
 

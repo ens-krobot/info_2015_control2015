@@ -1,5 +1,6 @@
 open Krobot_geom;;
 open Krobot_mover_control;;
+open Krobot_config;;
 
 let log fmt =
   Printf.ksprintf (fun s ->
@@ -161,7 +162,7 @@ let yellow_start_first_push_dir =
 let yellow_end_first_push =
   let open Krobot_geom in
   let v = normalize (vector yellow_aim_first_move yellow_start_first_push) in
-  let approach_distance = Krobot_config.robot_radius -. 0.02 in
+  let approach_distance = Krobot_config.robot_radius -. 0.04 in
   let trans_vect = v *| approach_distance in
   translate yellow_aim_first_move trans_vect
 
@@ -253,19 +254,18 @@ let yellow_end_last_push =
   translate yellow_aim_last_move trans_vect
 
 let yellow_aim_last_move2 =
-  { x = 0.65; y = 1.4}
+  { x = 2.09; y = 1.2 }
 
 let yellow_start_last_push_dir2 =
-  Krobot_geom.(angle (vector yellow_aim_last_move yellow_aim_last_move))
+  Krobot_geom.(angle (vector yellow_start_last_push yellow_aim_last_move2))
   +. (pi /. 2.)
 
 let yellow_end_last_push2 =
   let open Krobot_geom in
-  let v = normalize (vector yellow_aim_last_move2 yellow_start_last_push) in
-  let approach_distance = Krobot_config.robot_radius +. 0.2 in
+  let v = normalize (vector yellow_aim_last_move yellow_start_last_push) in
+  let approach_distance = Krobot_config.robot_radius +. 0.5 in
   let trans_vect = v *| approach_distance in
-  translate yellow_aim_last_move trans_vect
-
+  translate yellow_end_last_push trans_vect
 
 let yellow_clap1_approach =
   { x = 0.54; y = 0.3 }
@@ -273,28 +273,28 @@ let yellow_clap1_approach =
 let yellow_closer_from_border =
   { x = 0.54; y = 0.23 }
 
-let yellow_corner_push =
-  { x = 0.54; y = 0.23 }
+(* let yellow_corner_push = *)
+(*   { x = 0.54; y = 0.23 } *)
 
-let yellow_last_stand =
-  { x = 1.634; y = 0.628 }
+(* let yellow_last_stand = *)
+(*   { x = 1.634; y = 0.628 } *)
 
-let yellow_before_last_push =
-  { x = 1.; y = 0.65 }
+(* let yellow_before_last_push = *)
+(*   { x = 1.; y = 0.65 } *)
 
-let yellow_last_push_dir = pi /. 2.
+(* let yellow_last_push_dir = pi /. 2. *)
 
-let yellow_last_push_middle =
-  { x = 2.; y = 0.65 }
+(* let yellow_last_push_middle = *)
+(*   { x = 2.; y = 0.65 } *)
 
-let yellow_last_push_end =
-  { x = 2.5; y = 0.55 }
+(* let yellow_last_push_end = *)
+(*   { x = 2.5; y = 0.55 } *)
 
-let yellow_last_push_back =
-  { x = 2.3; y = 0.55 }
+(* let yellow_last_push_back = *)
+(*   { x = 2.3; y = 0.55 } *)
 
-let yellow_back_home =
-  { x = 0.9; y = 0.9 }
+(* let yellow_back_home = *)
+(*   { x = 0.9; y = 0.9 } *)
 
 (***** Actions ******)
 
@@ -329,11 +329,18 @@ let actions state team =
   lwt state = retry_move ~state ~destination:(mirror yellow_end_second_push4) ~ignore_fixed_obstacles:false in
   lwt state = retry_goto ~state ~destination:(mirror yellow_back_after_second_push4) in
   lwt state = do_clap_run state team Clap2 ~goto_approach:true in
-  lwt state = retry_goto ~state ~destination:(mirror yellow_start_last_push) in
-  lwt state = retry_turn ~state ~orientation:(flip yellow_start_last_push_dir) in
-  lwt () = change_limits state Krobot_config.constrained_limits in
-  lwt state = retry_move ~state ~destination:(mirror yellow_end_last_push) ~ignore_fixed_obstacles:false in
-  lwt () = change_limits state Krobot_config.normal_limits in
+  (* lwt state = retry_goto ~state ~destination:(mirror yellow_start_last_push) in *)
+  (* lwt state = retry_turn ~state ~orientation:(flip yellow_start_last_push_dir) in *)
+  (* lwt state = retry_move ~state ~destination:(mirror yellow_end_last_push) ~ignore_fixed_obstacles:false in *)
+  (* let coef = 0.4 in *)
+  (* let push_constraints = {Krobot_config.normal_limits with *)
+  (*                         v_lin_max = normal_limits.v_lin_max*.coef; *)
+  (*                         v_rot_max = normal_limits.v_rot_max*.coef; *)
+  (*                         a_lin_max = normal_limits.a_lin_max*.coef; *)
+  (*                         a_rot_max = normal_limits.a_rot_max*.coef;} in *)
+  (* lwt () = change_limits state push_constraints in *)
+  (* lwt state = retry_move ~state ~destination:(mirror yellow_end_last_push2) ~ignore_fixed_obstacles:false in *)
+  (* lwt () = change_limits state Krobot_config.normal_limits in *)
 
   (* lwt state = clap1 state team in *)
   (* lwt state = retry_goto ~state ~destination:(mirror yellow_before_last_push) in *)
