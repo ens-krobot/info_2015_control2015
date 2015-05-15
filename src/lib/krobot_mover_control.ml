@@ -217,25 +217,28 @@ let clap ~state ~side ~status =
   lwt state = consume_and_update state in
   let idx, position = ax12_action side status in
   lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
-  lwt () = Lwt_unix.sleep ax12_wait_time in
-  lwt () = send_can state (Ax12_Request_State idx) in
-  let rec loop state =
-    Printf.printf "consume\n%!";
-    lwt (state, { position = state_position }) =
-      consume_until_ax12_state ~ax12_side:side ~idx ~date:(Krobot_date.now ()) state in
-    Printf.printf "got one\n%!";
-    if abs (state_position - position) < admissible_ax12_distance then
-      let () = Printf.printf "close\n%!" in
-      Lwt.return (state, ())
-    else
-      let () = Printf.printf "retry %i\n%!" (abs (state_position - position)) in
-      lwt () = Lwt_unix.sleep ax12_wait_time in
-      lwt () = send_can state (Ax12_Goto (idx, position, 500)) in
-      lwt () = Lwt_unix.sleep ax12_wait_time in
-      lwt () = send_can state (Ax12_Request_State idx) in
-      loop state
-  in
-  loop state
+  (* lwt () = Lwt_unix.sleep ax12_wait_time in *)
+  (* lwt () = send_can state (Ax12_Request_State idx) in *)
+  (* let rec loop state = *)
+  (*   Printf.printf "consume\n%!"; *)
+  (*   lwt (state, { position = state_position }) = *)
+  (*     consume_until_ax12_state ~ax12_side:side ~idx ~date:(Krobot_date.now ()) state in *)
+  (*   Printf.printf "got one\n%!"; *)
+  (*   if abs (state_position - position) < admissible_ax12_distance then *)
+  (*     let () = Printf.printf "close\n%!" in *)
+  (*     Lwt.return (state, ()) *)
+  (*   else *)
+  (*     let () = Printf.printf "retry %i\n%!" (abs (state_position - position)) in *)
+  (*     lwt () = Lwt_unix.sleep ax12_wait_time in *)
+  (*     lwt () = send_can state (Ax12_Goto (idx, position, 500)) in *)
+  (*     lwt () = Lwt_unix.sleep ax12_wait_time in *)
+  (*     lwt () = send_can state (Ax12_Request_State idx) in *)
+  (*     loop state *)
+  (* in *)
+  (* loop state *)
+  lwt () = Lwt_unix.sleep 1. in
+  lwt state = consume_and_update state in
+  Lwt.return (state, ())
 
 let wait_for_jack' ~jack_state ~(state:state) : state Lwt.t =
   let rec loop (world:world) stream : world Lwt.t =
