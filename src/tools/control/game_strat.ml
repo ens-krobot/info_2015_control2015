@@ -44,6 +44,21 @@ let retry_turn ~state ~orientation =
   Format.printf "try turn %a@." Krobot_date.print (Krobot_date.now ());
   aux ~state;;
 
+let retry_ignore_all_turn ~state ~orientation =
+  let rec aux ~state =
+    Format.printf "Start ignore_all_turn %a@." Krobot_date.print (Krobot_date.now ());
+    match_lwt ignore_all_turn ~state ~orientation with
+    | state, Turn_success ->
+      Format.printf "Cool %a@." Krobot_date.print (Krobot_date.now ());
+      Lwt.return state
+    | state, Turn_failure ->
+      Format.printf "Fail %a@." Krobot_date.print (Krobot_date.now ());
+      lwt () = Lwt_unix.sleep 0.1 in
+      aux ~state
+  in
+  Format.printf "try turn %a@." Krobot_date.print (Krobot_date.now ());
+  aux ~state;;
+
 let retry_move ~state ~destination ~ignore_fixed_obstacles =
   let rec aux ~state =
     Format.printf "Start move %a@." Krobot_date.print (Krobot_date.now ());
@@ -92,7 +107,7 @@ let do_given_clap_run state clap ~goto_approach =
       retry_ignore_all_move ~state ~destination
   in
   log "turn to position";
-  lwt state = retry_turn ~state ~orientation:clap.dir in
+  lwt state = retry_ignore_all_turn ~state ~orientation:clap.dir in
   log "arm out";
   lwt (state, ()) = Krobot_mover_control.clap ~state ~side ~status:Clap_out in
   log "push clap";
@@ -216,9 +231,41 @@ let yellow_end_second_push4 =
 let yellow_back_after_second_push4 =
   let open Krobot_geom in
   let v = normalize (vector yellow_aim_second_push4 yellow_end_second_push3) in
-  let approach_distance = Krobot_config.robot_radius +. 0.15 in (* TODO: tune by increasing distance *)
+  let approach_distance = Krobot_config.robot_radius +. 0.1 in (* TODO: tune by increasing distance *)
   let trans_vect = v *| approach_distance in
   translate yellow_aim_second_push4 trans_vect
+
+let yellow_start_last_push =
+  { x = 1.7; y = 1.2 }
+
+let yellow_aim_last_move =
+  { x = 2.09; y = 1.2 }
+
+let yellow_start_last_push_dir =
+  Krobot_geom.(angle (vector yellow_start_last_push yellow_aim_last_move))
+  +. (pi /. 2.)
+
+let yellow_end_last_push =
+  let open Krobot_geom in
+  let v = normalize (vector yellow_aim_last_move yellow_start_last_push) in
+  let approach_distance = Krobot_config.robot_radius +. 0.2 in
+  let trans_vect = v *| approach_distance in
+  translate yellow_aim_last_move trans_vect
+
+let yellow_aim_last_move2 =
+  { x = 0.65; y = 1.4}
+
+let yellow_start_last_push_dir2 =
+  Krobot_geom.(angle (vector yellow_aim_last_move yellow_aim_last_move))
+  +. (pi /. 2.)
+
+let yellow_end_last_push2 =
+  let open Krobot_geom in
+  let v = normalize (vector yellow_aim_last_move2 yellow_start_last_push) in
+  let approach_distance = Krobot_config.robot_radius +. 0.2 in
+  let trans_vect = v *| approach_distance in
+  translate yellow_aim_last_move trans_vect
+
 
 let yellow_clap1_approach =
   { x = 0.54; y = 0.3 }
@@ -282,6 +329,12 @@ let actions state team =
   lwt state = retry_move ~state ~destination:(mirror yellow_end_second_push4) ~ignore_fixed_obstacles:false in
   lwt state = retry_goto ~state ~destination:(mirror yellow_back_after_second_push4) in
   lwt state = do_clap_run state team Clap2 ~goto_approach:true in
+  lwt state = retry_goto ~state ~destination:(mirror yellow_start_last_push) in
+  lwt state = retry_turn ~state ~orientation:(flip yellow_start_last_push_dir) in
+  lwt () = change_limits state Krobot_config.constrained_limits in
+  lwt state = retry_move ~state ~destination:(mirror yellow_end_last_push) ~ignore_fixed_obstacles:false in
+  lwt () = change_limits state Krobot_config.normal_limits in
+
   (* lwt state = clap1 state team in *)
   (* lwt state = retry_goto ~state ~destination:(mirror yellow_before_last_push) in *)
   (* lwt state = retry_turn ~state ~orientation:(flip yellow_last_push_dir) in *)

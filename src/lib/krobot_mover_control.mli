@@ -18,6 +18,8 @@ type turn_result =
 
 val turn : state:state -> orientation:float -> (state * turn_result) Lwt.t
 
+val ignore_all_turn:  state:state -> orientation:float -> (state * turn_result) Lwt.t
+
 type move_result =
   | Move_success
   | Move_failure
@@ -33,6 +35,8 @@ type clap_status = Clap_in | Clap_out
 
 val clap : state:state -> side:Krobot_world_update.ax12_side -> status:clap_status ->
   (state * clap_result) Lwt.t
+
+val change_limits : state -> Krobot_config.motor_limits -> unit Lwt.t
 
 val wait_for_jack : jack_state:Krobot_world_update.jack_state -> state:state -> state Lwt.t
 

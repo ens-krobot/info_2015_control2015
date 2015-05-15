@@ -22,6 +22,11 @@ let send state msg =
 let send_can state msg =
   Krobot_bus.send state.bus (Unix.gettimeofday (), CAN (Info, Krobot_message.encode msg))
 
+let change_limits state { Krobot_config.v_lin_max; v_rot_max;
+                          a_lin_max; a_rot_max; torque_limit } =
+  lwt () = send_can state (Motor_omni_limits (v_lin_max, v_rot_max, a_lin_max, a_rot_max)) in
+  send_can state (Drive_torque_limit torque_limit)
+
 let mover_message_id = function
   | Escaping _
   | First_obstacle _
@@ -170,6 +175,23 @@ let turn ~state ~orientation =
   in
   loop ()
 
+let ignore_all_turn ~state ~orientation =
+  let orientation = Krobot_geom.angle_pi_minus_pi orientation in
+  lwt state = wait_idle state in
+  lwt request_id, state = new_request_id state in
+  let order = state.world.robot.position, Some orientation in
+  lwt () = send state (Trajectory_set_vertices [order]) in
+  lwt () = send state (Trajectory_go (request_id, Ignore_all)) in
+  let rec loop () =
+    lwt (state, msg) = consume_until_mover_message (Id request_id) state in
+    Printf.printf "msg: %s\n%!" (Krobot_bus.string_of_message (Mover_message msg));
+    match msg with
+    | Request_completed _ ->
+      Lwt.return (state, Turn_success)
+    | _ ->
+      Lwt.return (state, Turn_failure)
+  in
+  loop ()
 
 type move_result =
   | Move_success
