@@ -85,7 +85,7 @@ let () =
   if urg_ocaml_file then
     let urg_data = List.map generate_urg !tty in
     List.iter print_ocaml urg_data;
-    Format.printf "let urg_filtered_distance = %f@." distance
+    Format.printf "let urg_filtered_distance' = %f@." distance
   else
     match !tty with
     | [ tty1; tty2 ] -> begin
