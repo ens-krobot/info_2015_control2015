@@ -470,6 +470,17 @@ let draw viewer =
   draw_beacon b1;
   draw_beacon b2;
 
+  let draw_urg_lines a =
+    Cairo.set_line_width ctx 0.05;
+    Cairo.set_source_rgba ctx 1. 0. 0. 1.;
+    let aux ({x=x1;y=y1},{x=x2;y=y2}) =
+      Cairo.move_to ctx x1 y1;
+      Cairo.line_to ctx x2 y2;
+      Cairo.stroke ctx
+    in
+    Array.iter aux a in
+  draw_urg_lines viewer.urg_lines;
+
   let draw_urg (r, g, b) a =
     Cairo.set_source_rgba ctx r g b 0.5;
     let aux {x;y} =
@@ -479,16 +490,6 @@ let draw viewer =
     Array.iter aux a in
   draw_urg (0.5, 0.3, 0.7) viewer.urg_up;
   draw_urg (0.5, 0.7, 0.3) viewer.urg_down;
-
-  let draw_urg_lines a =
-    Cairo.set_source_rgba ctx 1. 0.5 1. 0.5;
-    let aux ({x=x1;y=y1},{x=x2;y=y2}) =
-      Cairo.move_to ctx x1 y1;
-      Cairo.line_to ctx x2 y2;
-      Cairo.stroke ctx
-    in
-    Array.iter aux a in
-  draw_urg_lines viewer.urg_lines;
 
   (* Draw the target *)
   Cairo.set_line_width ctx 0.005;
@@ -651,6 +652,33 @@ let convert_pos dist angle =
   let y = float dist *. sin angle *. 0.001 in
   { x ; y }
 
+let rotate_vert theta vert =
+  let rot = rot_mat theta in
+  let pos = [| vert.x; vert.y; 1. |] in
+  let r_pos = mult rot pos in
+  { x = r_pos.(0); y = r_pos.(1) }
+
+let urg_pos urg_pos (x, y, theta) =
+  let vert = rotate_vert theta urg_pos in
+  { vx = vert.x +. x; vy = vert.y +. y }
+
+let project_urg urg (x, y, theta) pos =
+  let robot_urg_pos = match urg with
+    | Down -> Krobot_config.urg_down_position
+    | Up -> Krobot_config.urg_up_position
+  in
+  let rot = rot_mat (theta +. pi) in
+  let down_urg_pos = urg_pos robot_urg_pos (x, y, theta) in
+  let f { x;y } =
+    let urg_pos = [| x; y; 1. |] in
+    let urg_pos = mult rot urg_pos in
+    let state_pos = Krobot_geom.translate
+        { x = urg_pos.(0); y = urg_pos.(1) }
+        down_urg_pos in
+    state_pos
+  in
+  Array.map f pos
+
 let project_urg viewer pos =
   (* TODO: put the real urg position rather than the robot position *)
   let theta = viewer.state.theta in
@@ -664,14 +692,14 @@ let project_urg viewer pos =
   in
   Array.map f pos
 
-let project_urg_lines viewer lines =
-  let rot = rot_mat viewer.state.theta in
-  let f v =
-    let v = [|v.x;v.y;1.|] in
-    let v = mult rot v in
-    Krobot_geom.translate viewer.state.pos { vx = v.(0); vy = v.(1) }
-  in
-  Array.map (fun (v1,v2) -> f v1,f v2) lines
+(* let project_urg_lines viewer lines = *)
+(*   let rot = rot_mat viewer.state.theta in *)
+(*   let f v = *)
+(*     let v = [|v.x;v.y;1.|] in *)
+(*     let v = mult rot v in *)
+(*     Krobot_geom.translate viewer.state.pos { vx = v.(0); vy = v.(1) } *)
+(*   in *)
+(*   Array.map (fun (v1,v2) -> f v1,f v2) lines *)
 
 (* +-----------------------------------------------------------------+
    | Message handling                                                |
@@ -793,7 +821,8 @@ let handle_message viewer (timestamp, message) =
       queue_draw viewer
 
     | Urg_lines lines ->
-      viewer.urg_lines <- project_urg_lines viewer lines
+      viewer.urg_lines <- (* project_urg_lines viewer *) lines;
+      queue_draw viewer
 
     | Obstacles obstacles ->
       viewer.obstacles <- obstacles;
