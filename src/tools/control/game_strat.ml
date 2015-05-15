@@ -146,16 +146,51 @@ let yellow_start_first_push_dir =
 let yellow_end_first_push =
   let open Krobot_geom in
   let v = normalize (vector yellow_aim_first_move yellow_start_first_push) in
-  let approach_distance = Krobot_config.robot_radius +. 0.07 in
+  let approach_distance = Krobot_config.robot_radius -. 0.02 in
   let trans_vect = v *| approach_distance in
   translate yellow_aim_first_move trans_vect
 
 let yellow_back_after_first_push =
   let open Krobot_geom in
   let v = normalize (vector yellow_aim_first_move yellow_start_first_push) in
-  let approach_distance = Krobot_config.robot_radius +. 0.3 in
+  let approach_distance = Krobot_config.robot_radius +. 0.10 in (* TODO: tune this *)
   let trans_vect = v *| approach_distance in
   translate yellow_aim_first_move trans_vect
+
+let yellow_aim_second_push1 =
+  { x = 1.3; y = 0.6 }
+
+let yellow_start_second_push_dir1 =
+  Krobot_geom.(angle (vector yellow_back_after_first_push yellow_aim_second_push1))
+  +. (pi /. 2.)
+
+let yellow_end_second_push1 =
+  let open Krobot_geom in
+  let v = normalize (vector yellow_aim_second_push1 yellow_back_after_first_push) in
+  let approach_distance = Krobot_config.robot_radius -. 0.04 in (* TODO: tune by redussing distance *)
+  let trans_vect = v *| approach_distance in
+  translate yellow_aim_second_push1 trans_vect
+
+let yellow_aim_second_push2 =
+  { x = 0.5; y = 0.9}
+
+let yellow_start_second_push_dir2 =
+  Krobot_geom.(angle (vector yellow_end_second_push1 yellow_aim_second_push2))
+  +. (pi /. 2.)
+
+let yellow_end_second_push2 =
+  let open Krobot_geom in
+  let v = normalize (vector yellow_aim_second_push2 yellow_end_second_push1) in
+  let approach_distance = Krobot_config.robot_radius -. 0.04 in (* TODO: tune by redussing distance *)
+  let trans_vect = v *| approach_distance in
+  translate yellow_aim_second_push2 trans_vect
+
+let yellow_back_after_second_push2 =
+  let open Krobot_geom in
+  let v = normalize (vector yellow_aim_second_push2 yellow_end_second_push1) in
+  let approach_distance = Krobot_config.robot_radius +. 0.15 in (* TODO: tune by increasing distance *)
+  let trans_vect = v *| approach_distance in
+  translate yellow_aim_second_push2 trans_vect
 
 let yellow_clap1_approach =
   { x = 0.54; y = 0.3 }
@@ -207,17 +242,22 @@ let actions state team =
   lwt state = retry_move ~state ~destination:(mirror yellow_out_of_start_zone) ~ignore_fixed_obstacles:true in
   lwt state = retry_goto ~state ~destination:(mirror yellow_start_first_push) in
   lwt state = retry_turn ~state ~orientation:(flip yellow_start_first_push_dir) in
-  lwt state = retry_move ~state ~destination:(mirror yellow_end_first_push) ~ignore_fixed_obstacles:false in
-  lwt state = retry_move ~state ~destination:(mirror yellow_back_after_first_push) ~ignore_fixed_obstacles:false in
+  lwt state = retry_move ~state ~destination:(mirror yellow_end_first_push) ~ignore_fixed_obstacles:true in
+  lwt state = retry_move ~state ~destination:(mirror yellow_back_after_first_push) ~ignore_fixed_obstacles:true in
+  lwt state = retry_turn ~state ~orientation:(flip yellow_start_second_push_dir1) in
+  lwt state = retry_goto ~state ~destination:(mirror yellow_end_second_push1) in
+  lwt state = retry_turn ~state ~orientation:(flip yellow_start_second_push_dir2) in
+  lwt state = retry_move ~state ~destination:(mirror yellow_end_second_push2) ~ignore_fixed_obstacles:false in
+  lwt state = retry_goto ~state ~destination:(mirror yellow_back_after_second_push2) in
   lwt state = do_clap_run state team Clap2 ~goto_approach:true in
   (* lwt state = clap1 state team in *)
-  lwt state = retry_goto ~state ~destination:(mirror yellow_before_last_push) in
-  lwt state = retry_turn ~state ~orientation:(flip yellow_last_push_dir) in
-  lwt state = retry_move ~state ~destination:(mirror yellow_last_push_middle) ~ignore_fixed_obstacles:false in
-  lwt state = retry_move ~state ~destination:(mirror yellow_last_push_end) ~ignore_fixed_obstacles:false in
-  lwt state = retry_move ~state ~destination:(mirror yellow_last_push_back) ~ignore_fixed_obstacles:false in
-  lwt state = do_clap_run state team Clap3 ~goto_approach:true in
-  lwt state = retry_goto ~state ~destination:(mirror yellow_back_home) in
+  (* lwt state = retry_goto ~state ~destination:(mirror yellow_before_last_push) in *)
+  (* lwt state = retry_turn ~state ~orientation:(flip yellow_last_push_dir) in *)
+  (* lwt state = retry_move ~state ~destination:(mirror yellow_last_push_middle) ~ignore_fixed_obstacles:false in *)
+  (* lwt state = retry_move ~state ~destination:(mirror yellow_last_push_end) ~ignore_fixed_obstacles:false in *)
+  (* lwt state = retry_move ~state ~destination:(mirror yellow_last_push_back) ~ignore_fixed_obstacles:false in *)
+  (* lwt state = do_clap_run state team Clap3 ~goto_approach:true in *)
+  (* lwt state = retry_goto ~state ~destination:(mirror yellow_back_home) in *)
   log "All actions done";
   Lwt.return ()
 
