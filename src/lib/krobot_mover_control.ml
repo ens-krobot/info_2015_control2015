@@ -323,7 +323,7 @@ let send_team_initial_position state =
   let (pos, theta) =
     match state.world.team with
     | Green -> Krobot_config.green_initial_position
-    | Yellow -> Krobot_config.yellow_initial_position
+    | Purple -> Krobot_config.purple_initial_position
   in
   lwt () = send_can state (Set_odometry (pos.x, pos.y, theta)) in
   Lwt.return pos
@@ -338,7 +338,7 @@ let reset_team_odometry ~state ~team =
   let (pos, theta) =
     match team with
     | Green -> Krobot_config.green_initial_position
-    | Yellow -> Krobot_config.yellow_initial_position
+    | Purple -> Krobot_config.purple_initial_position
   in
   lwt () = send_can state (Set_odometry (pos.x, pos.y, theta)) in
   if close state.world (Some pos)
@@ -374,7 +374,7 @@ let make () =
 
 let team_stands (team:Krobot_bus.team) =
   match team with
-  | Yellow -> Krobot_config.original_yellow_stands
+  | Purple -> Krobot_config.original_purple_stands
   | Green -> Krobot_config.original_green_stands
 
 let obstacle_of_point radius pos =

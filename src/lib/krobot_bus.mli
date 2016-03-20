@@ -58,7 +58,7 @@ type move_kind =
 
 type team =
   | Green
-  | Yellow
+  | Purple
 
 (** Type of message exchanged over the bus. *)
 type message =

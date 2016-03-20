@@ -54,7 +54,7 @@ type move_kind =
 
 type team =
   | Green
-  | Yellow
+  | Purple
 
 type message =
   | CAN of frame_source * Krobot_can.frame
@@ -281,7 +281,7 @@ let string_of_message = function
   | Jack_plugged_out ->
       "Jack_plugged_out"
   | Team_select t ->
-      sprintf "Team_select(%s)" (match t with Green -> "Green" | Yellow -> "Yellow")
+      sprintf "Team_select(%s)" (match t with Green -> "Green" | Purple -> "Purple")
 
 (* +-----------------------------------------------------------------+
    | Sending/receiving messages                                      |

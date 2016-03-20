@@ -83,6 +83,7 @@ type color =
   | Red
   | Blue
   | Yellow
+  | Dark_yellow
   | Purple
   | Brown
   | Light_gray
@@ -91,10 +92,11 @@ let set_color ctx color =
   let r, g, b = match color with
     | Black -> (3., 5., 10.)
     | White -> (255., 255., 255.)
-    | Green -> (79., 168., 51.)
+    | Green -> (38., 102., 81.)
     | Red -> (199., 23., 18.)
-    | Blue -> (20., 80., 170.)
-    | Yellow -> (252., 184., 33.)
+    | Blue -> (23., 97., 171.)
+    | Yellow -> (252., 189., 31.)
+    | Dark_yellow -> (221., 159., 35.)
     | Purple -> (125., 31., 122.)
     | Brown -> (110., 59., 48.)
     | Light_gray -> (189., 186., 171.)
@@ -144,7 +146,7 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (-0.102) (world_height /. 2. -. 0.04) 0.08 0.08;
-  set_color ctx Yellow;
+  set_color ctx Purple;
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (-0.102) (world_height +. 0.022) 0.08 0.08;
@@ -152,7 +154,7 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (-0.102) 0.08 0.08;
-  set_color ctx Yellow;
+  set_color ctx Purple;
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (world_height /. 2. -. 0.04) 0.08 0.08;
@@ -160,144 +162,65 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.rectangle ctx (world_width +. 0.022) (world_height +. 0.022) 0.08 0.08;
-  set_color ctx Yellow;
+  set_color ctx Purple;
   Cairo.fill ctx;
 
   (* Draw the viewer background *)
   Cairo.rectangle ctx 0. 0. world_width world_height;
   set_color ctx Blue;
   Cairo.fill ctx;
+  Cairo.rectangle ctx 0. 0.8 world_width 1.2;
+  set_color ctx Yellow;
+  Cairo.fill ctx;
+  Cairo.arc ctx (world_width /. 2.) (world_height -. 1.5 +. 1.15) 1.15 pi 0.;
+  Cairo.fill ctx;
+
+  (* Draw beach huts *)
+  let draw_hut x color =
+    Cairo.rectangle ctx (x -. 0.05) (world_height +. 0.022) 0.1 0.08;
+    set_color ctx Light_gray;
+    Cairo.fill ctx;
+    Cairo.arc ctx x (world_height +. 0.06) 0.02 0. (2. *. pi);
+    set_color ctx color;
+    Cairo.fill ctx;
+  in
+  draw_hut 0.3 Purple;
+  draw_hut 0.6 Purple;
+  draw_hut 2.4 Green;
+  draw_hut 2.7 Green;
 
   (* Draw the starting areas *)
-  Cairo.rectangle ctx 0. (world_height -. 0.778) 0.4 0.378;
-  set_color ctx Green;
+  Cairo.rectangle ctx 0. 0.9 0.3 0.5;
+  set_color ctx Purple;
   Cairo.fill ctx;
-  Cairo.move_to ctx 0. (world_height -. 0.778);
-  Cairo.line_to ctx 0.4 (world_height -. 0.778);
-  Cairo.line_to ctx 0.4 (world_height -. 0.8);
-  Cairo.line_to ctx 0.45 (world_height -. 0.8);
-  Cairo.arc_negative ctx 0.45 1. 0.2 (pi/.2.) (3.*.pi/.2.);
-  Cairo.line_to ctx 0.4 0.8;
-  Cairo.line_to ctx 0.4 0.778;
-  Cairo.line_to ctx 0. 0.7788;
-  Cairo.line_to ctx 0. (world_height -. 0.778);
-  set_color ctx Yellow;
+  Cairo.rectangle ctx 0. 0.95 0.3 0.05;
+  set_color ctx White;
   Cairo.fill ctx;
-  Cairo.rectangle ctx 0. 0.4 0.4 0.378;
-  set_color ctx Green;
+  Cairo.rectangle ctx 0. 1.3 0.3 0.05;
   Cairo.fill ctx;
-  Cairo.set_line_width ctx 0.005;
-  set_color ctx Black;
-  Cairo.rectangle ctx 0. (world_height -. 0.8) 0.4 0.022;
-  Cairo.rectangle ctx 0. 0.778 0.4 0.022;
-  Cairo.rectangle ctx 0.07 0.8 (-0.022) 0.165;
-  Cairo.rectangle ctx 0.07 1.2 (-0.022) (-0.165);
-  Cairo.rectangle ctx 0. 0.965 0.07 0.07;
-  Cairo.stroke ctx;
-  Cairo.arc ctx 0.035 1. 0.0175 0. (2.*.pi);
-  Cairo.stroke ctx;
-  Cairo.set_line_width ctx 0.001;
 
-  Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.778) 0.4 0.378;
-  set_color ctx Yellow;
-  Cairo.fill ctx;
-  Cairo.move_to ctx world_width (world_height -. 0.778);
-  Cairo.line_to ctx (world_width -. 0.4) (world_height -. 0.778);
-  Cairo.line_to ctx (world_width -. 0.4) (world_height -. 0.8);
-  Cairo.line_to ctx (world_width -. 0.45) (world_height -. 0.8);
-  Cairo.arc ctx (world_width -. 0.45) 1. 0.2 (pi/.2.) (3.*.pi/.2.);
-  Cairo.line_to ctx (world_width -. 0.4) 0.8;
-  Cairo.line_to ctx (world_width -. 0.4) 0.778;
-  Cairo.line_to ctx world_width 0.7788;
-  Cairo.line_to ctx world_width (world_height -. 0.778);
+  Cairo.rectangle ctx 2.7 0.9 0.3 0.5;
   set_color ctx Green;
   Cairo.fill ctx;
-  Cairo.rectangle ctx (world_width -. 0.4) 0.4 0.4 0.378;
-  set_color ctx Yellow;
+  Cairo.rectangle ctx 2.7 0.95 0.3 0.05;
+  set_color ctx White;
   Cairo.fill ctx;
-  Cairo.set_line_width ctx 0.005;
-  set_color ctx Black;
-  Cairo.rectangle ctx (world_width -. 0.4) (world_height -. 0.8) 0.4 0.022;
-  Cairo.rectangle ctx (world_width -. 0.4) 0.778 0.4 0.022;
-  Cairo.rectangle ctx (world_width -. 0.07) 0.8 0.022 0.165;
-  Cairo.rectangle ctx (world_width -. 0.07) 1.2 0.022 (-0.165);
-  Cairo.rectangle ctx (world_width -. 0.07) 0.965 0.07 0.07;
-  Cairo.stroke ctx;
-  Cairo.arc ctx (world_width -. 0.035) 1. 0.0175 0. (2.*.pi);
-  Cairo.stroke ctx;
-  Cairo.set_line_width ctx 0.001;
+  Cairo.rectangle ctx 2.7 1.3 0.3 0.05;
+  Cairo.fill ctx;
 
-  (* draw the stairs*)
-  Cairo.rectangle ctx 0.989 (world_height -. 0.022) 0.5 (-0.58 +. 0.022);
-  set_color ctx Yellow;
+  (* draw central area *)
+  Cairo.rectangle ctx 0.9 1.25 1.2 0.022;
+  set_color ctx Dark_yellow;
   Cairo.fill ctx;
-  Cairo.rectangle ctx 2.011 (world_height -. 0.022) (-0.5) (-0.58 +. 0.022);
-  set_color ctx Green;
+  Cairo.rectangle ctx (0.9 +. 0.576) 1.25 0.048 (-0.512 -. 0.044);
   Cairo.fill ctx;
-  set_color ctx Light_gray;
-  Cairo.rectangle ctx 0.989 (world_height -. 0.3) 0.1 (-0.28);
-  Cairo.fill ctx;
-  Cairo.rectangle ctx 1.489 (world_height -. 0.3) (-0.1) (-0.28);
-  Cairo.fill ctx;
-  Cairo.rectangle ctx 1.511 (world_height -. 0.3) 0.1 (-0.28);
-  Cairo.fill ctx;
-  Cairo.rectangle ctx 2.011 (world_height -. 0.3) (-0.1) (-0.28);
-  Cairo.fill ctx;
-  Cairo.set_line_width ctx 0.005;
   set_color ctx Black;
-  Cairo.rectangle ctx 0.967 world_height 0.022 (-0.58);
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 1.489 world_height 0.022 (-0.58);
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 2.011 world_height 0.022 (-0.58);
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 0.989 world_height 0.5 (-0.022);
-  Cairo.stroke ctx;
-  Cairo.rectangle ctx 1.511 world_height 0.5 (-0.022);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 0.967 (world_height -. 0.37);
-  Cairo.line_to ctx 2.033 (world_height -. 0.37);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 0.989 (world_height -. 0.44);
-  Cairo.line_to ctx 1.489 (world_height -. 0.44);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 0.989 (world_height -. 0.51);
-  Cairo.line_to ctx 1.489 (world_height -. 0.51);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 0.989 (world_height -. 0.58);
-  Cairo.line_to ctx 1.489 (world_height -. 0.58);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 1.511 (world_height -. 0.44);
-  Cairo.line_to ctx 2.011 (world_height -. 0.44);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 1.511 (world_height -. 0.51);
-  Cairo.line_to ctx 2.011 (world_height -. 0.51);
-  Cairo.stroke ctx;
-  Cairo.move_to ctx 1.511 (world_height -. 0.58);
-  Cairo.line_to ctx 2.011 (world_height -. 0.58);
-  Cairo.stroke ctx;
   Cairo.set_line_width ctx 0.01;
+  Cairo.move_to ctx (0.9 +. 0.6) 1.25;
+  Cairo.line_to ctx (0.9 +. 0.6) (1.25 -. 0.512);
+  Cairo.stroke ctx;
 
-  (* draw the spot-light area *)
-  Cairo.move_to ctx (world_width /. 2. -. 0.4) 0.;
-  Cairo.line_to ctx (world_width /. 2. -. 0.4) 0.1;
-  Cairo.arc_negative ctx (world_width /. 2. -. 0.3) 0.1 0.1 pi (pi/.2.);
-  Cairo.line_to ctx (world_width /. 2. +. 0.3) 0.2;
-  Cairo.arc_negative ctx (world_width /. 2. +. 0.3) 0.1 0.1 (pi/.2.) (0.);
-  Cairo.line_to ctx (world_width /. 2. +. 0.4) 0.;
-  set_color ctx Red;
-  Cairo.fill ctx;
-  Cairo.set_line_width ctx 0.005;
-  set_color ctx Black;
-  Cairo.rectangle ctx 1.2 0. 0.6 0.1;
-  Cairo.stroke ctx;
-  Cairo.arc ctx 1.25 0.05 0.0175 0. (2.*.pi);
-  Cairo.stroke ctx;
-  Cairo.arc ctx 1.75 0.05 0.0175 0. (2.*.pi);
-  Cairo.stroke ctx;
-  Cairo.set_line_width ctx 0.001;
-
-  (* draw black lines *)
+  (*(* draw black lines *)
   set_color ctx Black;
   Cairo.set_line_width ctx 0.02;
 
@@ -358,7 +281,7 @@ let draw viewer =
   Cairo.arc ctx 2.4 (world_height -. 0.035) 0.025 0. (2.*.pi);
   Cairo.stroke ctx;
   Cairo.arc ctx 2.7 (world_height -. 0.035) 0.025 0. (2.*.pi);
-  Cairo.stroke ctx;
+  Cairo.stroke ctx;*)
 
   Cairo.set_line_width ctx 0.001;
 
@@ -431,24 +354,24 @@ let draw viewer =
   in
 
   (* Draw stands *)
-  let () =
+  (*let () =
     List.iter (fun vert ->
       Cairo.arc ctx vert.x vert.y Krobot_config.stand_radius 0. (2. *. pi);
       set_color ctx Yellow;
-      Cairo.fill ctx) Krobot_config.original_yellow_stands;
+      Cairo.fill ctx) Krobot_config.original_purple_stands;
     List.iter (fun vert ->
       Cairo.arc ctx vert.x vert.y Krobot_config.stand_radius 0. (2. *. pi);
       set_color ctx Green;
       Cairo.fill ctx) Krobot_config.original_green_stands
-  in
+    in*)
 
   (* Draw pop-corn *)
-  let () =
+  (*let () =
     List.iter (fun vert ->
       Cairo.arc ctx vert.x vert.y Krobot_config.pop_corn_radius 0. (2. *. pi);
       set_color ctx White;
       Cairo.fill ctx) Krobot_config.original_pop_corn;
-  in
+    in*)
 
   (* Draw the beacon *)
   let draw_beacon = function
@@ -1033,10 +956,10 @@ lwt () =
           false));
 
   ignore
-    (ui#button_start_yellow#event#connect#button_release
+    (ui#button_start_purple#event#connect#button_release
        (fun ev ->
           if GdkEvent.Button.button ev = 1 then begin
-            let {x; y}, theta = Krobot_config.yellow_initial_position in
+            let {x; y}, theta = Krobot_config.purple_initial_position in
             ignore (Krobot_message.send bus (Unix.gettimeofday (), Set_odometry(x, y, theta)))
           end;
           false));

@@ -132,34 +132,34 @@ let dir = (3. /. 4.) *. pi
 let distance = Krobot_config.robot_radius +. 0.2
 let push_distance = 0.33
 
-let yellow_out_of_start_zone =
+let purple_out_of_start_zone =
   { x = 0.5; y = 1. }
 
-let yellow_stuff_to_push = translate target (vector_of_polar ~angle:dir ~norm:distance)
+let purple_stuff_to_push = translate target (vector_of_polar ~angle:dir ~norm:distance)
 
-let yellow_position_to_push =
+let purple_position_to_push =
   translate
-    yellow_stuff_to_push
+    purple_stuff_to_push
     (vector_of_polar ~angle:dir ~norm:(-.push_distance))
 
 let mirror v = { x = Krobot_config.world_width -. v.x; y = v.y }
 
 let out_of_start_zone_pos : Krobot_bus.team -> _ = function
-  | Yellow -> yellow_out_of_start_zone
-  | Green -> mirror yellow_out_of_start_zone
+  | Purple -> purple_out_of_start_zone
+  | Green -> mirror purple_out_of_start_zone
 let first_position : Krobot_bus.team -> _  = function
-  | Yellow -> yellow_stuff_to_push
-  | Green -> mirror yellow_stuff_to_push
+  | Purple -> purple_stuff_to_push
+  | Green -> mirror purple_stuff_to_push
 let push_position : Krobot_bus.team -> _  = function
-  | Yellow -> yellow_position_to_push
-  | Green -> mirror yellow_position_to_push
+  | Purple -> purple_position_to_push
+  | Green -> mirror purple_position_to_push
 
-let yellow_push_orientation = pi /. 4.
+let purple_push_orientation = pi /. 4.
 let flip angle = 2. *. pi -. angle
 
 let push_orientation : Krobot_bus.team -> _  = function
-  | Yellow -> yellow_push_orientation
-  | Green -> flip yellow_push_orientation
+  | Purple -> purple_push_orientation
+  | Green -> flip purple_push_orientation
 
 let out_of_start_zone state team =
   retry_move ~state ~destination:(out_of_start_zone_pos team) ~ignore_fixed_obstacles:true
@@ -205,10 +205,10 @@ let direct_homologation () =
 let homologation args =
   lwt state = make () in
   match args with
-  | [|"yellow"|] -> do_homologation_run state Yellow
+  | [|"purple"|] -> do_homologation_run state Purple
   | [|"green"|] -> do_homologation_run state Green
   | _ ->
-    Printf.printf "homologation: wrong number of arguments: %i, expected 1 (green or yellow)\n%!"
+    Printf.printf "homologation: wrong number of arguments: %i, expected 1 (green or purple)\n%!"
       (Array.length args);
     exit 1
 
@@ -246,8 +246,8 @@ type clap_num = Clap2 | Clap3
 let team_clap team clap =
   let open Krobot_config in
   match team, clap with
-  | Krobot_bus.Yellow, Clap2 -> yellow_clap_2
-  | Yellow, Clap3 -> yellow_clap_3
+  | Krobot_bus.Purple, Clap2 -> purple_clap_2
+  | Purple, Clap3 -> purple_clap_3
   | Green, Clap2 -> green_clap_2
   | Green, Clap3 -> green_clap_3
 
@@ -263,7 +263,7 @@ let direct_clap () =
   let team = get_team state in
   let () = match team with
     | Green -> Printf.printf "Green\n%!"
-    | Yellow -> Printf.printf "Yellow\n%!"
+    | Purple -> Printf.printf "Purple\n%!"
   in
   Printf.printf "state ready\n%!";
   try
@@ -287,7 +287,7 @@ let clap_strat () =
   let team = get_team state in
   let () = match team with
     | Green -> Printf.printf "Green\n%!"
-    | Yellow -> Printf.printf "Yellow\n%!"
+    | Purple -> Printf.printf "Purple\n%!"
   in
   Printf.printf "state ready\n%!";
   try
@@ -301,33 +301,33 @@ let clap_strat () =
   with Match_end_exn ->
     match_end state
 
-let yellow_clap_1, yellow_clap_2, yellow_clap_3 = Krobot_config.yellow_clap_positions
-let goto_first_yellow_clap_position =
-  { x = yellow_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
-let goto_first_yellow_clap_position_after =
-  { x = yellow_clap_2 +. 0.05; y = Krobot_config.robot_radius +. 0.03 }
+let purple_clap_1, purple_clap_2, purple_clap_3 = Krobot_config.purple_clap_positions
+let goto_first_purple_clap_position =
+  { x = purple_clap_2 -. 0.1; y = Krobot_config.robot_radius +. 0.03 }
+let goto_first_purple_clap_position_after =
+  { x = purple_clap_2 +. 0.05; y = Krobot_config.robot_radius +. 0.03 }
 
 let do_clap_hand_run state (team:Krobot_bus.team) =
   let swap pos = match team with
-    | Yellow -> pos
+    | Purple -> pos
     | Green -> mirror pos
   in
   let flip dir = match team with
-    | Yellow -> dir
+    | Purple -> dir
     | Green -> flip dir
   in
   let side = match team with
-    | Yellow -> Krobot_world_update.Right
+    | Purple -> Krobot_world_update.Right
     | Green -> Krobot_world_update.Left
   in
   lwt state = out_of_start_zone state team in
-  lwt state = retry_goto ~state ~destination:(swap goto_first_yellow_clap_position) in
+  lwt state = retry_goto ~state ~destination:(swap goto_first_purple_clap_position) in
   Printf.printf "turn !\n%!";
   lwt state = retry_turn ~state ~orientation:(flip (pi/.2.)) in
   Printf.printf "clap before !\n%!";
   lwt (state, ()) = clap ~state ~side ~status:Clap_out in
   Printf.printf "clap 1 !\n%!";
-  lwt state = retry_move ~state ~destination:(swap goto_first_yellow_clap_position_after)
+  lwt state = retry_move ~state ~destination:(swap goto_first_purple_clap_position_after)
       ~ignore_fixed_obstacles:false in
   Printf.printf "clap 2 !\n%!";
   lwt (state, ()) = clap ~state ~side ~status:Clap_in in
@@ -341,7 +341,7 @@ let direct_clap_hand () =
   lwt state = update ~state in
   let () = match get_team state with
     | Green -> Printf.printf "Green\n%!"
-    | Yellow -> Printf.printf "Yellow\n%!"
+    | Purple -> Printf.printf "Purple\n%!"
   in
   Printf.printf "state ready\n%!";
   try

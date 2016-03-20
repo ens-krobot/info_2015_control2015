@@ -276,8 +276,8 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkButton" id="button_start_yellow">
-                        <property name="label" translatable="yes">Goto Yellow initial position</property>
+                      <widget class="GtkButton" id="button_start_purple">
+                        <property name="label" translatable="yes">Goto Purple initial position</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>

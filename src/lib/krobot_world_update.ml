@@ -63,7 +63,7 @@ let init_world = {
     right_ax12_state = default_ax12_state;
   };
   jack = In;
-  team = Krobot_bus.Yellow;
+  team = Krobot_bus.Purple;
   em_stop = Pressed;
   urg_obstacles = [];
   beacons = [];
@@ -127,7 +127,7 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
                     Jack_changed)
             else
               (* Did the team changed ? *)
-              let new_team = if new_team then Green else Yellow in
+              let new_team = if new_team then Green else Purple in
               if new_team <> world.team then
                 Some ({world with
                        team = new_team},

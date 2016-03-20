@@ -35,8 +35,8 @@ let started_match = ref None
 
 let update_team_leds bus team =
   let turn_on, turn_off = match team with
-    | Yellow -> yellow_led, green_led
-    | Green -> green_led, yellow_led
+    | Purple -> purple_led, green_led
+    | Green -> green_led, purple_led
   in
   lwt () = Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_on, true))) in
   Krobot_message.send bus (Unix.gettimeofday(), (Switch_request(turn_off, false)))
@@ -46,8 +46,8 @@ let print_state bus msg =
 
 let print_team bus team =
   match team with
-  | Yellow ->
-    print_state bus " switched to Yellow"
+  | Purple ->
+    print_state bus " switched to Purple"
   | Green ->
     print_state bus "  switched to Green"
 
@@ -155,7 +155,7 @@ let handle_message info (timestamp, message) =
 
 let fork = ref true
 let start_on = ref false
-let start_team = ref Yellow
+let start_team = ref Purple
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";

@@ -52,7 +52,7 @@ let rec broadcast_state_loop info =
     | Waiting
     | Cancelled
     | Ready ->
-      (match info.world.team with Yellow -> "y" | Green -> "g" )
+      (match info.world.team with Purple -> "y" | Green -> "g" )
     | Started ->
       "s"
     | Ended ->
@@ -92,7 +92,7 @@ let handle_message info (timestamp, message) =
       match update with
       | Team_changed -> begin
           match info.world.team with
-          | Yellow ->
+          | Purple ->
             Krobot_serial.write_line info.serial "y"
           | Green ->
             Krobot_serial.write_line info.serial "g"
@@ -108,7 +108,7 @@ let fork = ref true
 let tty = ref "/dev/xbee"
 let baudrate = ref 9600
 let start_on = ref false
-let start_team = ref Yellow
+let start_team = ref Purple
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";

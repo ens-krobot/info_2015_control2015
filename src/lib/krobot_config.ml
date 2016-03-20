@@ -37,7 +37,7 @@ let green_initial_position =
     y = world_height /. 2.; },
   (pi)
 
-let yellow_initial_position =
+let purple_initial_position =
   { x = 0.07 +. robot_radius;
     y = world_height /. 2.; },
   (pi)
@@ -50,16 +50,16 @@ let right_arm_idx = 5
 
 let right_arm_positions = (437, 513, 600, 900)
 
-let yellow_led = 5
+let purple_led = 5
 let green_led = 7
 
-let yellow_clap_positions =
+let purple_clap_positions =
   0.25, 0.85, 2.45
 let green_clap_positions =
-  let a, b, c = yellow_clap_positions in
+  let a, b, c = purple_clap_positions in
   world_width -. a, world_width -. b, world_width -. c
 
-let yellow_clap_1, yellow_clap_2, yellow_clap_3 = yellow_clap_positions
+let purple_clap_1, purple_clap_2, purple_clap_3 = purple_clap_positions
 
 let clap_y = robot_radius +. 0.03
 
@@ -70,44 +70,44 @@ type clap =
     dir : float;
     left_side : bool }
 
-let yellow_clap_1 =
-    { clap_pos = yellow_clap_1;
-      approach_pos = yellow_clap_1 -. 0.05;
-      after_pos = yellow_clap_1 +. 0.05;
+let purple_clap_1 =
+    { clap_pos = purple_clap_1;
+      approach_pos = purple_clap_1 -. 0.05;
+      after_pos = purple_clap_1 +. 0.05;
       dir = pi /. 2.;
       left_side = false }
 
-let yellow_clap_2 =
-    { clap_pos = yellow_clap_2;
-      approach_pos = yellow_clap_2 -. 0.1;
-      after_pos = yellow_clap_2 +. 0.08;
+let purple_clap_2 =
+    { clap_pos = purple_clap_2;
+      approach_pos = purple_clap_2 -. 0.1;
+      after_pos = purple_clap_2 +. 0.08;
       dir = pi /. 2.;
       left_side = false }
 
-let yellow_clap_3 =
-    { clap_pos = yellow_clap_3;
-      approach_pos = yellow_clap_3 +. 0.1;
-      after_pos = yellow_clap_3 -. 0.05;
+let purple_clap_3 =
+    { clap_pos = purple_clap_3;
+      approach_pos = purple_clap_3 +. 0.1;
+      after_pos = purple_clap_3 -. 0.05;
       dir = -. (pi /. 2.);
       left_side = true }
 
-let green_clap_of_yellow clap =
+let green_clap_of_purple clap =
   { clap_pos = world_width -. clap.clap_pos;
     approach_pos = world_width -. clap.approach_pos;
     after_pos = world_width -. clap.after_pos;
     dir = Krobot_geom.angle_pi_minus_pi (2. *. pi -. clap.dir);
     left_side = not clap.left_side; }
 
-let green_clap_1 = green_clap_of_yellow yellow_clap_1
-let green_clap_2 = green_clap_of_yellow yellow_clap_2
-let green_clap_3 = green_clap_of_yellow yellow_clap_3
+let green_clap_1 = green_clap_of_purple purple_clap_1
+let green_clap_2 = green_clap_of_purple purple_clap_2
+let green_clap_3 = green_clap_of_purple purple_clap_3
 
 let green_fixed_beacons = [
   { x = -. 0.062; y = world_height +. 0.062 };
   { x = -. 0.062; y = -. 0.062 };
   { x = world_width +. 0.062; y = world_height /. 2.}]
 
-let yellow_fixed_beacons = [
+let purple_fixed_beacons = [
   { x = world_width +. 0.062; y = world_height +. 0.062 };
   { x = world_width +. 0.062; y = -. 0.062 };
   { x = -. 0.062; y = world_height /. 2.}]
@@ -135,14 +135,14 @@ let line_obs p1 p2 rad =
       size = rad } ) l
 
 let left_obstacles = [
-  (* Pop-corn dispensers *)
+  (*(* Pop-corn dispensers *)
   { x = 0.265; y = world_height }, { x = 0.335; y = world_height -. 0.07 };
   { x = 0.565; y = world_height }, { x = 0.635; y = world_height -. 0.07 };
 
   (* Starting area *)
   { x = 0.; y = 0.8 }, { x = 0.4; y = 0.778 };
   { x = 0.; y = 1.2 }, { x = 0.4; y = 1.222 };
-  { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };
+    { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };*)
 ]
 
 let fixed_obstacles = [
@@ -152,17 +152,17 @@ let fixed_obstacles = [
   { x = 0.; y = world_height}, {x = world_width; y = world_height};
   { x = world_width; y =  0.}, {x = world_width; y = world_height};
 
-  (* Central spot-light zone *)
+  (*(* Central spot-light zone *)
   { x = 1.2; y =  0.}, {x = 1.8; y =  0.1};
 
   (* Stairs *)
-  { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };
+    { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };*)
 ] @ (List.map symetrical_rect left_obstacles) @ left_obstacles
 
 let test_obstacles =
   [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
 
-let original_yellow_stands_in_rules_coordinates =
+let original_purple_stands_in_rules_coordinates =
   [ { x = 0.09; y = 1.850 };
     { x = 0.09; y = 1.750 };
     { x = 0.09; y = 0.2 };
@@ -173,15 +173,15 @@ let original_yellow_stands_in_rules_coordinates =
     { x = 1.3; y = 1.4 }; ]
 
 let world_coordinates_of_rules_coordinates {x;y} = {x; y = world_height -. y }
-let green_of_yellow { x; y } = { x = world_width -. x; y }
+let green_of_purple { x; y } = { x = world_width -. x; y }
 
-let original_yellow_stands =
+let original_purple_stands =
   List.map world_coordinates_of_rules_coordinates
-    original_yellow_stands_in_rules_coordinates
+    original_purple_stands_in_rules_coordinates
 
 let original_green_stands =
-  List.map green_of_yellow
-    original_yellow_stands
+  List.map green_of_purple
+    original_purple_stands
 
 let stand_radius = 0.06 /. 2.
 

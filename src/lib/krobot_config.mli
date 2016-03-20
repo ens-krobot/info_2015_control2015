@@ -18,8 +18,8 @@ val world_height : float
 val green_fixed_beacons : Krobot_geom.vertice list
   (** Positions of the fixed beacons for the green team *)
 
-val yellow_fixed_beacons : Krobot_geom.vertice list
-  (** Positions of the fixed beacons for the yellow team *)
+val purple_fixed_beacons : Krobot_geom.vertice list
+  (** Positions of the fixed beacons for the purple team *)
 
 (* val robot_length : float *)
 (* val robot_width : float *)
@@ -57,8 +57,8 @@ val pathfinding_width_inflate : float
 val green_initial_position : Krobot_geom.vertice * float
   (** position and angle of the robot as green *)
 
-val yellow_initial_position : Krobot_geom.vertice * float
-  (** position and angle of the robot as yellow *)
+val purple_initial_position : Krobot_geom.vertice * float
+  (** position and angle of the robot as purple *)
 
 val right_arm_idx : int
   (** index of AX12 actionning the right arm *)
@@ -72,11 +72,11 @@ val left_arm_idx : int
 val left_arm_positions : int * int * int * int
   (** positions of the servo for the left arm : (in, ready, perpendicular, parallel) *)
 
-val yellow_led : int
+val purple_led : int
 val green_led : int
   (** Indices of robot's LEDs for use in Switch_request CAN packets *)
 
-val yellow_clap_positions : float * float * float
+val purple_clap_positions : float * float * float
 val green_clap_positions : float * float * float
 
 val clap_y : float
@@ -87,9 +87,9 @@ type clap =
     dir : float;
     left_side : bool }
 
-val yellow_clap_1 : clap
-val yellow_clap_2 : clap
-val yellow_clap_3 : clap
+val purple_clap_1 : clap
+val purple_clap_2 : clap
+val purple_clap_3 : clap
 val green_clap_1 : clap
 val green_clap_2 : clap
 val green_clap_3 : clap
@@ -101,7 +101,7 @@ val test_obstacles : Krobot_geom.rect_obj list
 val stand_radius : float
 val pop_corn_radius : float
 
-val original_yellow_stands : Krobot_geom.vertice list
+val original_purple_stands : Krobot_geom.vertice list
 val original_green_stands : Krobot_geom.vertice list
 val original_pop_corn : Krobot_geom.vertice list
 
