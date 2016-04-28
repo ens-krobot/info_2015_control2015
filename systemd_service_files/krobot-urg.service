@@ -1,0 +1,10 @@
+[Unit]
+Description=krobot-urg
+Requires=krobot-hub.service
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-urg -no-fork -refind -tty-prefix urg
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

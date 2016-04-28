@@ -1,0 +1,14 @@
+[Unit]
+Description=krobot-greetings
+Requires=krobot-hub.service
+Requires=krobot-driver.service
+Requires=krobot-mover.service
+Requires=krobot-urg-extract.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/krobot/bin/lcd_greetings.sh
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

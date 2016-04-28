@@ -1,0 +1,10 @@
+[Unit]
+Description=krobot-monitor
+Requires=krobot-hub.service
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-monitor -no-fork
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

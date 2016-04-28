@@ -1,0 +1,12 @@
+[Unit]
+Description=krobot-xbee
+Requires=krobot-hub.service
+Wants=dev-xbee.device
+After=dev-xbee.device
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-xbee -no-fork
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

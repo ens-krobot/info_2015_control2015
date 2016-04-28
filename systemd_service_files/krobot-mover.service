@@ -1,0 +1,10 @@
+[Unit]
+Description=krobot-mover
+Requires=krobot-hub.service
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-mover -no-fork
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

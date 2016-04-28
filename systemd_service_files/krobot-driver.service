@@ -1,0 +1,12 @@
+[Unit]
+Description=krobot-driver
+Requires=krobot-hub.service
+Wants=slcan_up.service
+After=slcan_up.service
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-driver -no-fork
+User=krobot
+
+[Install]
+WantedBy=multi-user.target

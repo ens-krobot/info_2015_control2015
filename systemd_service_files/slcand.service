@@ -1,0 +1,15 @@
+#
+# systemd/system/slcand <at> .service
+#
+
+[Unit]
+Description=Serial CAN daemon (can-utils)
+Wants=usb_can_tty.service
+After=usb_can_tty.service
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/slcand -o -c -f -s6 usb_can
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=ifconfig for slcan0
+BindsTo=sys-subsystem-net-devices-slcan0.device
+DefaultDependencies=no
+Wants=slcand.service
+After=slcand.service
+
+[Service]
+ExecStart=/sbin/ifconfig slcan0 up
+ExecStop=/sbin/ifdconfig slcan0 down
+RemainAfterExit=true
+

@@ -1,0 +1,11 @@
+[Unit]
+Description=krobot-hub
+
+[Service]
+ExecStart=/home/krobot/.opam/4.02.1/bin/krobot-hub -no-fork
+User=krobot
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
