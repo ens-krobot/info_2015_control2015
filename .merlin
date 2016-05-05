@@ -11,6 +11,7 @@ PKG cairo.lablgtk2
 PKG lwt.glib
 PKG lablgtk2.glade
 PKG urg
+PKG lacaml
 EXT lwt
 FLG -w -3
 FLG -w -40
