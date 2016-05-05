@@ -26,6 +26,7 @@ let time_step = 0.001
 let fork = ref true
 let hil = ref false
 let sensors_emu = ref false
+let sensors_noise = ref false
 let robot_sim = ref true
 let go_normal = ref false
 let go_simu = ref false
@@ -35,6 +36,7 @@ let noise = ref 0.
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
   "-sensors", Arg.Set sensors_emu, " Don't emulate sensor inputs";
+  "-sensors-noise", Arg.Set sensors_noise, " Add noise to simulated sensor inputs";
   "-no-simulation", Arg.Clear robot_sim, " Don't simulate the robot";
   "-hil", Arg.Set hil, " Run in hardware in the loop mode";
   "-go-normal", Arg.Set go_normal, " Put the card in normal mode and exit";
@@ -521,20 +523,39 @@ let distance_to_obj x y (sin_theta, cos_theta) obj =
   else
     None
 
+let distance_fixed_obstace x y theta obstacle =
+  let vector = { vx = 10. *. cos theta; vy = 10. *. sin theta } in
+  let viewer = { x; y} in
+  let view_segment = viewer, Krobot_geom.translate viewer vector in
+  match Krobot_geom.segment_intersect view_segment obstacle with
+  | None -> None
+  | Some inter -> Some (Krobot_geom.distance viewer inter)
+
 let closest_obstacle x y theta objs =
   let border = min_border_distance x y theta in
   let sin_theta = sin theta in
   let cos_theta = cos theta in
   let dist_to_objs = List.map (distance_to_obj x y (sin_theta, cos_theta)) objs in
-  List.fold_left
-    (fun min_dist dist -> match dist with
-       | Some dist ->
-         (match min_dist with
+  let min_dist =
+    List.fold_left
+      (fun min_dist dist -> match dist with
+         | Some dist ->
+           (match min_dist with
             | Some min_dist -> Some (min min_dist dist)
             | None -> Some dist)
+         | None -> min_dist)
+      border
+      dist_to_objs
+  in
+  List.fold_left
+    (fun min_dist obstacle -> match distance_fixed_obstace x y theta obstacle with
+       | Some dist ->
+         (match min_dist with
+          | Some min_dist -> Some (min min_dist dist)
+          | None -> Some dist)
        | None -> min_dist)
-    border
-    dist_to_objs
+    min_dist
+    Krobot_config.fixed_obstacles
 
 (*let gen_data robot =
   let dim = Array.length Krobot_config.urg_angles in
@@ -579,6 +600,18 @@ let gen_data robot =
     let obstacles = [] in
     match closest_obstacle robot.x robot.y (robot.theta +. angle) obstacles with
       | Some dist ->
+        let dist =
+          if !sensors_noise then begin
+            if (Random.float 1. > 0.8) (* 20% of outliers *)
+            then
+              Random.float 10. (* Somewhere *)
+            else
+              let noise_width = 0.1 in
+              dist +. (Random.float noise_width -. (noise_width /. 2.))
+          end
+          else
+            dist
+        in
         let x = dist *. cos angle in
         let y = dist *. sin angle  in
         l := {Krobot_geom.x=x;Krobot_geom.y=y} :: !l
