@@ -145,6 +145,19 @@ let left_obstacles = [
     { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };*)
 ]
 
+let rectangle x y w h =
+  let p1 = { x; y } in
+  let p2 = { x = x +. w; y } in
+  let p3 = { x = x +. w; y = y +. h } in
+  let p4 = { x = x; y = y +. h } in
+  [ p1, p2; p2, p3; p3, p4; p4, p1 ]
+
+let center =
+  List.flatten [
+    rectangle 0.9 1.25 1.2 0.022;
+    rectangle (0.9 +. 0.576) 1.25 0.048 (-0.512 -. 0.044)
+  ]
+
 let fixed_obstacles = [
   (* borders *)
   { x = 0.; y = 0.}, {x = world_width; y =  0.};
@@ -157,7 +170,7 @@ let fixed_obstacles = [
 
   (* Stairs *)
     { x = 0.967; y = world_height }, {x = 2.033; y = world_height -. 0.58 };*)
-] @ (List.map symetrical_rect left_obstacles) @ left_obstacles
+] @ (List.map symetrical_rect left_obstacles) @ left_obstacles @ center
 
 let test_obstacles =
   [ ({ x = 1.45; y = 0.95 }, { x = 1.55; y = 1.05 }) ]
@@ -225,10 +238,13 @@ let constrained_limits =
     torque_limit = 200;
   }
 
-let urg_up_position = { x = 0.0; y = -.0.117 }
-let urg_up_rotation = pi /. 2. +. 0.306
-let urg_down_position = { x = 0.0; y = 0. }
-let urg_down_rotation = pi /. 2. -. 0.040
+(* let urg_up_position = { x = 0.0; y = 0.149 } *)
+(* let urg_up_rotation = 0. (\* pi /. 2. +. 0. *\) *)
+let urg_up_position = { x = 0.0; y = 0.149 }
+let urg_up_rotation = 0.
+
+let urg_down_position = { x = 0.0; y = 0.149 }
+let urg_down_rotation = 0.
 
 let urg_min_distance = 0.1
 
@@ -600,8 +616,9 @@ let urg_angles =
     2.073942025221386931121969610103; 2.080077948372929252940366495750;
     2.086213871524472018847973231459; 2.092349794676014340666370117106; |]
 
-let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) (Krobot_utils.array_rev urg_angles)
+(* let urg_up_angles = Array.map (fun a -> a +. urg_up_rotation) (Krobot_utils.array_rev urg_angles) *)
 let urg_down_angles = Array.map (fun a -> a +. urg_down_rotation) urg_angles
+let urg_up_angles = urg_down_angles
 
 let urg_up_filter' =
 [|true; true; true; true; true; true; true; true; true; true; true; true;
