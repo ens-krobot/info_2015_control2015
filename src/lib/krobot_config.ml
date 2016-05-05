@@ -16,7 +16,7 @@ let world_width = 3.
 let wheels_diameter = (0.02475843 *. 2.)
 let wheels_distance = 0.15474249
 let wheels_position = 0.165
-let robot_radius = 0.382 /. 2.
+let robot_radius = 0.239
 let rotary_beacon_index_pos = 0.
 
 let safety_margin = 0.02
@@ -40,7 +40,7 @@ let green_initial_position =
 let purple_initial_position =
   { x = 0.07 +. robot_radius;
     y = world_height /. 2.; },
-  (pi)
+  0.
 
 let left_arm_idx = 3
 
