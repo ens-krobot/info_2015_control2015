@@ -88,6 +88,14 @@ let () =
     Format.printf "let urg_filtered_distance' = %f@." distance
   else
     match !tty with
+    | [ tty1 ] -> begin
+        let id1, data1 = generate_urg tty1 in
+        let urg_down = data1 in
+        print_config_file urg_down;
+        print_float distance;
+        print_char '\n';
+        flush stdout
+      end
     | [ tty1; tty2 ] -> begin
         let id1, data1 = generate_urg tty1 in
         let id2, data2 = generate_urg tty2 in
