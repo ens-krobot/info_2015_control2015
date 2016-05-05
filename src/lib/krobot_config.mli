@@ -21,8 +21,9 @@ val green_fixed_beacons : Krobot_geom.vertice list
 val purple_fixed_beacons : Krobot_geom.vertice list
   (** Positions of the fixed beacons for the purple team *)
 
-(* val robot_length : float *)
-(* val robot_width : float *)
+val robot_length : float
+val robot_width : float
+val robot_center_y : float
 
 val safety_margin : float
 (** The distance between the robot and the border/an object must

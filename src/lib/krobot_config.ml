@@ -11,8 +11,9 @@ let sqr x = x *. x
 
 let world_height = 2.
 let world_width = 3.
-(* let robot_length = 0.245 *)
-(* let robot_width = 0.30 *)
+let robot_length = 0.275
+let robot_width = 0.320
+let robot_center_y = 0.1765
 let wheels_diameter = (0.02475843 *. 2.)
 let wheels_distance = 0.15474249
 let wheels_position = 0.165
