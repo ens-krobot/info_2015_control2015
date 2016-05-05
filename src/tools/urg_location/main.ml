@@ -68,9 +68,12 @@ let fit_world ~init data =
   | Some ransac_result ->
     (* Refit for better precision *)
     let tr' =
-      Adjust_map.solve ~rounds:5
-        ~init:ransac_result.Ransac.model
-        map (Array.to_list ransac_result.Ransac.in_model)
+      try
+        Adjust_map.solve ~rounds:5
+          ~init:ransac_result.Ransac.model
+          map (Array.to_list ransac_result.Ransac.in_model)
+      with _ ->
+        ransac_result.Ransac.model
     in
     Some (tr', ransac_result.Ransac.in_model)
 
@@ -128,7 +131,9 @@ let start_loop bus =
           | Some (tr, in_model) ->
             Printf.printf "fitted, size: %i\n%!" (Array.length in_model);
             Printf.printf "sol th: %0.4f x: %0.4f y: %0.4f\n%!" tr.th tr.x tr.y;
-            Printf.printf "pos th: %0.4f x: %0.4f y: %0.4f\n%!" init.th init.x init.y
+            Printf.printf "pos th: %0.4f x: %0.4f y: %0.4f\n%!" init.th init.x init.y;
+            Printf.printf "dif th: %0.4f x: %0.4f y: %0.4f\n%!"
+              (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y)
         in
         Lwt.return_unit
     in
