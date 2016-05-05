@@ -115,6 +115,7 @@ type message =
   (** distances mesured by the URG (in millimeters) *)
   | Urg of urg_id * vertice array
   | Urg_lines of (vertice*vertice) array
+  | Urg_location of vertice * float (* translation and rotation from the Urg *)
 
   | Beacon_raw of (int * int * int * int * int * int
       * int * int * int * int * int)

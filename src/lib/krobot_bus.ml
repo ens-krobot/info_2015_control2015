@@ -76,6 +76,7 @@ type message =
   | Collisions of collision
   | Urg of urg_id * vertice array
   | Urg_lines of (vertice*vertice) array
+  | Urg_location of vertice * float (* translation and rotation from the Urg *)
   | Beacon_raw of (int * int * int * int * int * int
       * int * int * int * int * int)
   | Match_start
@@ -240,6 +241,8 @@ let string_of_message = function
       sprintf "Urg %s (many_points...)" (string_of_urg_id id)
   | Urg_lines lines ->
       sprintf "Urg_lines (many_lines...)"
+  | Urg_location ({ x; y }, th) ->
+      sprintf "Urg_location { th = %0.4f; x = %0.4f; y = %0.4f }" th x y
   | Beacon_raw _ ->
       sprintf "Raw beacon packet"
   | Match_start ->
