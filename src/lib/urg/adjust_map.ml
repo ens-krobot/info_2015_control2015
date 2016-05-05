@@ -75,8 +75,8 @@ let minimization a b =
   (* minimize || A*x - b ||^2 *)
   let a = Lacaml.D.Mat.add_const 0. a in (* copy *)
   let b' = Lacaml_D.Mat.of_col_vecs [| b |] in
-  let _rank = Lacaml_D.gelsd a b' in
-  copy_sub (Lacaml_D.Mat.as_vec b') 1 (Bigarray.Array2.dim2 a)
+  let rank = Lacaml_D.gelsd a b' in
+  copy_sub (Lacaml_D.Mat.as_vec b') 1 (Bigarray.Array2.dim2 a), rank
 
 
 let prepare_map (map:map) =
@@ -164,17 +164,18 @@ let invert_transformation (tr:transform) =
 let tr_zero = { th = 0.; x = 0.; y = 0. }
 
 let solve ?(rounds=3) ?(init=tr_zero) map points =
-  let rec loop n tr =
-    if n <= 0 then tr else
+  let rec loop n tr rank =
+    if n <= 0 then tr, rank else
       let points = List.map (transf tr) points in
       let a, b = make_problem map points in
-      let tr' = invtr (minimization a b) in
-      loop (n-1) (comp_tr tr tr')
+      let dir_tr, rank = minimization a b in
+      let tr' = invtr dir_tr in
+      loop (n-1) (comp_tr tr tr') rank
   in
-  loop rounds init
+  loop rounds init 0
 
 let rsolve ?rounds ?init map points =
-  let tr = solve ?rounds ?init map (Array.to_list points) in
+  let tr, _rank = solve ?rounds ?init map (Array.to_list points) in
   (* Printf.printf "solve th: %0.5f x: %0.5f y: %0.5f\n%!" tr.th tr.x tr.y; *)
   tr
 

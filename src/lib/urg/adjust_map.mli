@@ -7,7 +7,8 @@ type map = line list
 
 val distance_map : map -> point -> float
 
-val solve : ?rounds:int -> ?init:transform -> map -> point list -> transform
+val solve : ?rounds:int -> ?init:transform -> map -> point list -> transform * int
+(** [solve ... = transform, rank] *)
 val invert_transformation : transform -> transform
 (** [compose tr (invert_transformation tr)] is the identity  *)
 
