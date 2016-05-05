@@ -61,19 +61,28 @@ Library krobot
   CSources:
     krobot_message_stubs.c
 
+Library "krobot-urg-location"
+  FindlibName: urg-location
+  FindlibParent: krobot
+  BuildDepends: krobot, lacaml
+  XMETADescription: URG data fitting
+  XMETARequires: krobot, lacaml
+  Path: src/lib/urg/
+  Install: true
+  Modules:
+   Adjust_map,
+   Ransac
+
 Library "krobot-can"
   FindlibName: can
   FindlibParent: krobot
-  BuildDepends: krobot, lwt.syntax, sexplib, sexplib.syntax, bitstring
+  BuildDepends: krobot, lwt.syntax, bitstring
   XMETADescription: CAN interface using SocketCAN
-  XMETARequires: krobot, sexplib, bitstring
+  XMETARequires: krobot, bitstring
   Path: src/can
   Install: true
   Modules:
-   Krobot_can_bus,
-   Krobot_can_decoder,
-   Krobot_can_desc_lexer,
-   Krobot_can_desc_parser
+   Krobot_can_bus
   CSources: can_stubs.c
 
 # +-------------------------------------------------------------------+
@@ -142,6 +151,17 @@ Executable "krobot-mover"
   CompiledObject: best
   MainIs: mover.ml
   BuildDepends: krobot, lwt.syntax
+
+# +-------------------------------------------------------------------+
+# | High level controler                                              |
+# +-------------------------------------------------------------------+
+
+Executable "krobot-urg-location"
+  Path: src/tools/urg_location/
+  Install: true
+  CompiledObject: best
+  MainIs: main.ml
+  BuildDepends: krobot, krobot.urg-location, lwt.syntax
 
 # +-------------------------------------------------------------------+
 # | High level controler                                              |

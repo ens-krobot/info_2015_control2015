@@ -1,8 +1,8 @@
-<**/*.ml{,i}>: syntax_camlp4o
+#<**/*.ml{,i}>: syntax_camlp4o
 <**/*.ml{,i}>: warn(-3-40-23)
 
 # OASIS_START
-# DO NOT EDIT (digest: 5839d6c79710d55ca08be85fb4648d79)
+# DO NOT EDIT (digest: e3cdfa3c86575feadf8dba8123b673ba)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -26,6 +26,13 @@ true: annot, bin_annot
 "src/lib/krobot_message_stubs.c": pkg_lwt.react
 "src/lib/krobot_message_stubs.c": pkg_lwt.syntax
 "src/lib/krobot_message_stubs.c": pkg_lwt.unix
+# Library krobot-urg-location
+"src/lib/urg/krobot-urg-location.cmxs": use_krobot-urg-location
+<src/lib/urg/*.ml{,i,y}>: pkg_lacaml
+<src/lib/urg/*.ml{,i,y}>: pkg_lwt.react
+<src/lib/urg/*.ml{,i,y}>: pkg_lwt.syntax
+<src/lib/urg/*.ml{,i,y}>: pkg_lwt.unix
+<src/lib/urg/*.ml{,i,y}>: use_krobot
 # Library krobot-can
 "src/can/krobot-can.cmxs": use_krobot-can
 <src/can/krobot-can.{cma,cmxa}>: use_libkrobot-can_stubs
@@ -33,31 +40,23 @@ true: annot, bin_annot
 <src/can/*.ml{,i,y}>: pkg_lwt.react
 <src/can/*.ml{,i,y}>: pkg_lwt.syntax
 <src/can/*.ml{,i,y}>: pkg_lwt.unix
-<src/can/*.ml{,i,y}>: pkg_sexplib
-<src/can/*.ml{,i,y}>: pkg_sexplib.syntax
 <src/can/*.ml{,i,y}>: use_krobot
 "src/can/can_stubs.c": pkg_bitstring
 "src/can/can_stubs.c": pkg_lwt.react
 "src/can/can_stubs.c": pkg_lwt.syntax
 "src/can/can_stubs.c": pkg_lwt.unix
-"src/can/can_stubs.c": pkg_sexplib
-"src/can/can_stubs.c": pkg_sexplib.syntax
 "src/can/can_stubs.c": use_krobot
 # Executable krobot-driver
 <src/tools/driver/krobot_driver.{native,byte}>: pkg_bitstring
 <src/tools/driver/krobot_driver.{native,byte}>: pkg_lwt.react
 <src/tools/driver/krobot_driver.{native,byte}>: pkg_lwt.syntax
 <src/tools/driver/krobot_driver.{native,byte}>: pkg_lwt.unix
-<src/tools/driver/krobot_driver.{native,byte}>: pkg_sexplib
-<src/tools/driver/krobot_driver.{native,byte}>: pkg_sexplib.syntax
 <src/tools/driver/krobot_driver.{native,byte}>: use_krobot
 <src/tools/driver/krobot_driver.{native,byte}>: use_krobot-can
 <src/tools/driver/*.ml{,i,y}>: pkg_bitstring
 <src/tools/driver/*.ml{,i,y}>: pkg_lwt.react
 <src/tools/driver/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/driver/*.ml{,i,y}>: pkg_lwt.unix
-<src/tools/driver/*.ml{,i,y}>: pkg_sexplib
-<src/tools/driver/*.ml{,i,y}>: pkg_sexplib.syntax
 <src/tools/driver/*.ml{,i,y}>: use_krobot
 <src/tools/driver/*.ml{,i,y}>: use_krobot-can
 # Executable krobot-hub
@@ -107,6 +106,19 @@ true: annot, bin_annot
 <src/tools/mover/*.ml{,i,y}>: pkg_lwt.syntax
 <src/tools/mover/*.ml{,i,y}>: pkg_lwt.unix
 <src/tools/mover/*.ml{,i,y}>: use_krobot
+# Executable krobot-urg-location
+<src/tools/urg_location/main.{native,byte}>: pkg_lacaml
+<src/tools/urg_location/main.{native,byte}>: pkg_lwt.react
+<src/tools/urg_location/main.{native,byte}>: pkg_lwt.syntax
+<src/tools/urg_location/main.{native,byte}>: pkg_lwt.unix
+<src/tools/urg_location/main.{native,byte}>: use_krobot
+<src/tools/urg_location/main.{native,byte}>: use_krobot-urg-location
+<src/tools/urg_location/*.ml{,i,y}>: pkg_lacaml
+<src/tools/urg_location/*.ml{,i,y}>: pkg_lwt.react
+<src/tools/urg_location/*.ml{,i,y}>: pkg_lwt.syntax
+<src/tools/urg_location/*.ml{,i,y}>: pkg_lwt.unix
+<src/tools/urg_location/*.ml{,i,y}>: use_krobot
+<src/tools/urg_location/*.ml{,i,y}>: use_krobot-urg-location
 # Executable krobot-control
 <src/tools/control/control.{native,byte}>: pkg_lwt.react
 <src/tools/control/control.{native,byte}>: pkg_lwt.syntax
