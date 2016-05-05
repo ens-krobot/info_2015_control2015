@@ -128,10 +128,16 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
             else
               (* Did the team changed ? *)
               let new_team = if new_team then Green else Purple in
-              if new_team <> world.team then
+              if new_team <> world.team then begin
+                let team_str = match new_team with
+                  | Green -> "Green"
+                  | Purple -> "Purple"
+                in
+                Printf.eprintf "Team changed: %s\n%!" team_str;
                 Some ({world with
                        team = new_team},
                       Team_changed)
+              end
               else
                 None
         | (Ax12_State (id, position, speed, torque)) -> begin
