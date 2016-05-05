@@ -602,11 +602,11 @@ let gen_data robot =
       | Some dist ->
         let dist =
           if !sensors_noise then begin
-            if (Random.float 1. > 0.8) (* 20% of outliers *)
+            if (Random.float 1. > 0.7) (* 30% of outliers *)
             then
-              Random.float 10. (* Somewhere *)
+              Random.float 5. (* Somewhere *)
             else
-              let noise_width = 0.1 in
+              let noise_width = 0.2 in
               dist +. (Random.float noise_width -. (noise_width /. 2.))
           end
           else

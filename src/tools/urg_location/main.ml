@@ -33,9 +33,11 @@ type state =
    +-----------------------------------------------------------------+ *)
 
 let fork = ref true
+let set_odometry = ref false
 
 let options = Arg.align [
   "-no-fork", Arg.Clear fork, " Run in foreground";
+  "-set", Arg.Set set_odometry, " Set odometry";
 ]
 
 let usage = "\
@@ -46,7 +48,17 @@ options are:"
    | Main part                                                       |
    +-----------------------------------------------------------------+ *)
 
-(* TODO: mettre ailleurs et rajouter le centre*)
+(* TODO: mettre ailleurs *)
+let center_line_1 =
+  let open Adjust_map in
+  let y = 1.25 +. 0.022 /. 2. in
+  { a = { x = 0.9; y}; b = { x = 0.9 +. 1.2; y } }
+
+let center_line_2 =
+  let open Adjust_map in
+  let x = 1.5 in
+  { a = { x; y = 1.25 }; b = { x; y = 1.25 +. (-0.512 -. 0.044) } }
+
 let map =
   let open Adjust_map in
   let size_x = 3. in
@@ -60,6 +72,7 @@ let map =
     { a = p2; b = p3 };
     { a = p3; b = p4 };
     { a = p4; b = p1 } ]
+  @ [ center_line_1; center_line_2 ]
 
 let fit_world ~init data =
   let ransac_param = Adjust_map.ransac_param ~rounds:5 ~init map (Array.of_list data) in
@@ -67,17 +80,18 @@ let fit_world ~init data =
   | None -> None
   | Some ransac_result ->
     (* Refit for better precision *)
-    let tr' =
-      try
+    try
+      let tr', rank =
         Adjust_map.solve ~rounds:5
           ~init:ransac_result.Ransac.model
           map (Array.to_list ransac_result.Ransac.in_model)
-      with _ ->
-        ransac_result.Ransac.model
-    in
-    Some (tr', ransac_result.Ransac.in_model)
-
-
+      in
+      if rank < 3 then
+        None
+      else
+        Some (tr', ransac_result.Ransac.in_model)
+    with _ ->
+      None
 
 (* +-----------------------------------------------------------------+
    | Entry point                                                     |
@@ -124,16 +138,26 @@ let start_loop bus =
             y = robot.position.y }
         in
         let fitted = fit_world ~init (Array.to_list data.data) in
-        let () =
+        lwt () =
           match fitted with
           | None ->
-            Printf.printf "Can't fit\n%!"
+            Printf.printf "Can't fit\n%!";
+            Lwt.return_unit
           | Some (tr, in_model) ->
-            Printf.printf "fitted, size: %i\n%!" (Array.length in_model);
-            Printf.printf "sol th: %0.4f x: %0.4f y: %0.4f\n%!" tr.th tr.x tr.y;
-            Printf.printf "pos th: %0.4f x: %0.4f y: %0.4f\n%!" init.th init.x init.y;
-            Printf.printf "dif th: %0.4f x: %0.4f y: %0.4f\n%!"
-              (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y)
+            (* Printf.printf "fitted, size: %i\n%!" (Array.length in_model); *)
+            (* Printf.printf "sol th: %0.4f x: %0.4f y: %0.4f\n%!" tr.th tr.x tr.y; *)
+            (* Printf.printf "pos th: %0.4f x: %0.4f y: %0.4f\n%!" init.th init.x init.y; *)
+            (* Printf.printf "dif th: %0.4f x: %0.4f y: %0.4f\n%!" *)
+            (*   (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y) *)
+            Printf.printf "fitted, size: %i " (Array.length in_model);
+            Printf.printf " th: %0.4f x: %0.4f y: %0.4f\n%!"
+              (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y);
+            if Array.length in_model > 400 then
+              Krobot_bus.send bus
+                (data.timestamp,
+                 Krobot_bus.Urg_location ({x = tr.x; y = tr.y}, tr.th))
+            else
+              Lwt.return_unit
         in
         Lwt.return_unit
     in
@@ -143,16 +167,28 @@ let start_loop bus =
   lwt state = init () in
   loop state
 
+let send_odometry bus =
+  lwt _state = init () in
+  Lwt.return_unit
+
 lwt () =
   Arg.parse options ignore usage;
 
-  (* Display all informative messages. *)
-  Lwt_log.append_rule "*" Lwt_log.Info;
+  if !set_odometry then
+    (* Open the krobot bus. *)
+    lwt bus = Krobot_bus.get () in
 
-  (* Open the krobot bus. *)
-  lwt bus = Krobot_bus.get () in
+    send_odometry bus
+  else begin
 
-  (* Kill any running urg_handler. *)
-  lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill name) in
+    (* Display all informative messages. *)
+    Lwt_log.append_rule "*" Lwt_log.Info;
 
-  start_loop bus
+    (* Open the krobot bus. *)
+    lwt bus = Krobot_bus.get () in
+
+    (* Kill any running urg_handler. *)
+    lwt () = Krobot_bus.send bus (Unix.gettimeofday (), Krobot_bus.Kill name) in
+
+    start_loop bus
+  end

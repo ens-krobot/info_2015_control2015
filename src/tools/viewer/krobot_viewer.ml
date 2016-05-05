@@ -65,6 +65,7 @@ type viewer = {
   mutable urg_up : vertice array;
   mutable urg_down : vertice array;
   mutable urg_lines : (vertice*vertice) array;
+  mutable urg_location : state option;
 
   mutable obstacles : Krobot_bus.obstacle list;
 
@@ -332,6 +333,21 @@ let draw viewer =
   Cairo.fill ctx;
 
   Cairo.restore ctx;
+
+  (* Draw the robot as the urg sees it *)
+  begin match viewer.urg_location with
+    | None -> ()
+    | Some state ->
+      Cairo.save ctx;
+      Cairo.translate ctx state.pos.x state.pos.y;
+      Cairo.rotate ctx state.theta;
+
+      Cairo.set_source_rgba ctx 0.8 0.8 1. 0.5;
+      Cairo.arc ctx 0. 0. Krobot_config.robot_radius 0. (2. *. pi);
+      Cairo.set_source_rgb ctx 0.6 0.6 0.8;
+      Cairo.fill ctx;
+      Cairo.restore ctx
+  end;
 
   let () = match viewer.first_obstacle with
     | None -> ()
@@ -747,6 +763,10 @@ let handle_message viewer (timestamp, message) =
       viewer.urg_lines <- (* project_urg_lines viewer *) lines;
       queue_draw viewer
 
+    | Urg_location (pos, theta) ->
+      viewer.urg_location <- Some { pos; theta };
+      queue_draw viewer
+
     | Obstacles obstacles ->
       viewer.obstacles <- obstacles;
       queue_draw viewer
@@ -832,6 +852,7 @@ lwt () =
     urg_up = [||];
     urg_down = [||];
     urg_lines = [||];
+    urg_location = None;
     obstacles = [];
     first_obstacle = None;
     escape = None;
@@ -902,6 +923,12 @@ lwt () =
   ignore
     (ui#button_clear_beacon#connect#clicked
        (fun ev ->
+          (* TODO: put that on another button *)
+          begin match viewer.urg_location with
+            | None -> ()
+            | Some { pos = {x; y}; theta } ->
+              ignore (Krobot_message.send bus (Unix.gettimeofday (), Set_odometry(x, y, theta)))
+          end;
          ignore (Krobot_bus.send viewer.bus
                    (Unix.gettimeofday (),
                     Set_fake_beacons (None, None)))));
@@ -909,7 +936,8 @@ lwt () =
   ignore
     (ui#button_clear_collisions#connect#clicked
        (fun ev ->
-         viewer.collisions <- None;
+          viewer.collisions <- None;
+          viewer.urg_location <- None;
          queue_draw viewer));
 
   ignore
