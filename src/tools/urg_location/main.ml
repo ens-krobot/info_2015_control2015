@@ -152,7 +152,7 @@ let start_loop bus =
             Printf.printf "fitted, size: %i " (Array.length in_model);
             Printf.printf " th: %0.4f x: %0.4f y: %0.4f\n%!"
               (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y);
-            if Array.length in_model > 400 then
+            if Array.length in_model > 140 then
               Krobot_bus.send bus
                 (data.timestamp,
                  Krobot_bus.Urg_location ({x = tr.x; y = tr.y}, tr.th))
