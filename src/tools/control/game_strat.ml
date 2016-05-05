@@ -99,7 +99,7 @@ let centre_carre_a_pousser =
   { y = 0.908;
     x = 0.638 }
 
-let purple_start_out_dir = 0.
+let purple_start_out_dir = (pi /. 2.)
 
 let beach_hut_1_x = 0.3
 let beach_hut_2_x = 0.6
@@ -120,7 +120,9 @@ let purple_push_wall_2 =
   { x = beach_hut_2_x; y = y_after_push }
 
 let purple_in_front_of_wall_dir =
-  (pi /. 2.) (* Droite *)
+  0. (* Droite *)
+
+let purple_end_dir = -. (pi /. 2.)
 
 let quelquepart =
   { x = 0.7; y = 1. }
@@ -146,6 +148,7 @@ let actions state team =
   lwt state = retry_move ~state ~destination:(mirror purple_push_wall_2) ~ignore_fixed_obstacles:true in
   lwt state = retry_move ~state ~destination:(mirror purple_in_front_of_wall_2) ~ignore_fixed_obstacles:true in
   log "Finished";
+  lwt state = retry_turn ~state ~orientation:(flip purple_end_dir) in
   lwt _state = retry_goto ~state ~destination:(mirror quelquepart) in
   log "All actions done";
   Lwt.return ()
