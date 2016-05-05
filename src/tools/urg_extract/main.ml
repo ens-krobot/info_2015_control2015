@@ -196,7 +196,7 @@ let handle_message info (timestamp, message) =
               ()
       end
 
-    | Urg (Up, data) ->
+    | Urg (Down, data) ->
       (* TODO, do something for the down urg *)
       info.urg <- data;
       ignore (run_extract info data: unit Lwt.t)
