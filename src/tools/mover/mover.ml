@@ -31,6 +31,7 @@ type world = {
   robot : robot;
   prepared_vertices : (Krobot_geom.vertice * float) list;
   urg_obstacles : Krobot_rectangle_path.obstacle list;
+  urg_fixed_obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
   manage_theta : bool;
 }
@@ -88,6 +89,7 @@ let init_world = {
 
   prepared_vertices = [];
   urg_obstacles = [];
+  urg_fixed_obstacles = [];
   beacons = [];
   manage_theta = true;
 }
@@ -280,9 +282,18 @@ let update_world : world -> Krobot_bus.message -> ((world * input) option) * (me
       None, []
     | Urg _ -> None, []
     | Obstacles obstacles ->
+      let urg_obstacles, urg_fixed_obstacles =
+        List.fold_left (fun (movable, fixed) (Rectangle (v1, v2), kind) ->
+          match kind with
+          | Moving -> (v1, v2) :: movable, fixed
+          | Fixed -> movable, (v1, v2) :: fixed)
+          ([], [])
+          obstacles
+      in
       let world =
         { world with
-          urg_obstacles = List.map (fun (Rectangle (v1, v2)) -> (v1, v2)) obstacles } in
+          urg_obstacles;
+          urg_fixed_obstacles; } in
       Some (world, World_updated Obstacles_updated), []
     | Request_mover_state ->
       Some (world, Message message), []

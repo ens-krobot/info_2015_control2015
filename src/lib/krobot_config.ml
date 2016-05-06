@@ -146,18 +146,23 @@ let left_obstacles = [
     { x = 0.; y = 0.8 }, { x = 0.07; y = 1.2 };*)
 ]
 
-let rectangle x y w h =
-  let p1 = { x; y } in
-  let p2 = { x = x +. w; y } in
-  let p3 = { x = x +. w; y = y +. h } in
-  let p4 = { x = x; y = y +. h } in
-  [ p1, p2; p2, p3; p3, p4; p4, p1 ]
+(* let rectangle x y w h = *)
+(*   let p1 = { x; y } in *)
+(*   let p2 = { x = x +. w; y } in *)
+(*   let p3 = { x = x +. w; y = y +. h } in *)
+(*   let p4 = { x = x; y = y +. h } in *)
+(*   [ p1, p2; p2, p3; p3, p4; p4, p1 ] *)
 
-let center =
-  List.flatten [
-    rectangle 0.9 1.25 1.2 0.022;
-    rectangle (0.9 +. 0.576) 1.25 0.048 (-0.512 -. 0.044)
-  ]
+(* let center = *)
+(*   List.flatten [ *)
+(*     rectangle 0.9 1.25 1.2 0.022; *)
+(*     rectangle (0.9 +. 0.576) 1.25 0.048 (-0.512 -. 0.044) *)
+(*   ] *)
+
+let center = [
+  { x = 0.9; y = 1.25 +. 0.022 /. 2. }, { x = 0.9 +. 1.2; y = 1.25 +. 0.022 /. 2. };
+  { x = 1.5; y = 1.25 }, { x = 1.5; y = 1.25 +. (-0.512 -. 0.044) };
+]
 
 let fixed_obstacles = [
   (* borders *)

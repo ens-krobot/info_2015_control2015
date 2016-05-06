@@ -67,7 +67,7 @@ type viewer = {
   mutable urg_lines : (vertice*vertice) array;
   mutable urg_location : state option;
 
-  mutable obstacles : Krobot_bus.obstacle list;
+  mutable obstacles : (Krobot_bus.obstacle * Krobot_bus.obstacle_kind) list;
 
   mutable first_obstacle : vertice option;
   mutable escape : Krobot_bus.mover_escaping option;
@@ -293,7 +293,13 @@ let draw viewer =
 
   (* Draw moving objects *)
   Cairo.set_source_rgba ctx 1. 0.8 0.8 0.5;
-  List.iter (fun (Rectangle (v1, v2)) -> draw_obstacle (v1, v2)) viewer.obstacles;
+  List.iter (fun (Rectangle (v1, v2), kind) ->
+    (match kind with
+     | Moving ->
+       Cairo.set_source_rgba ctx 1. 0.8 0.8 0.5;
+     | Fixed ->
+       Cairo.set_source_rgba ctx 0.8 0.8 1. 0.5);
+    draw_obstacle (v1, v2)) viewer.obstacles;
 
   (* Draw obstacles *)
   Cairo.set_source_rgba ctx 1. 1. 1. 0.5;

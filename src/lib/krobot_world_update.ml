@@ -48,6 +48,7 @@ type world = {
   team : Krobot_bus.team;
   em_stop : emergency_state;
   urg_obstacles : Krobot_rectangle_path.obstacle list;
+  urg_fixed_obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
 }
 
@@ -66,6 +67,7 @@ let init_world = {
   team = Krobot_bus.Purple;
   em_stop = Pressed;
   urg_obstacles = [];
+  urg_fixed_obstacles = [];
   beacons = [];
 }
 
@@ -190,9 +192,18 @@ let update_world : world -> Krobot_bus.message -> (world * world_update) option 
       end
 
     | Obstacles obstacles ->
+      let urg_obstacles, urg_fixed_obstacles =
+        List.fold_left (fun (movable, fixed) (Rectangle (v1, v2), kind) ->
+          match kind with
+          | Moving -> (v1, v2) :: movable, fixed
+          | Fixed -> movable, (v1, v2) :: fixed)
+          ([], [])
+          obstacles
+      in
       let world =
         { world with
-          urg_obstacles = List.map (fun (Rectangle (v1, v2)) -> (v1, v2)) obstacles } in
+          urg_obstacles;
+          urg_fixed_obstacles; } in
       Some (world, Obstacles_updated)
 
     | Log _ ->

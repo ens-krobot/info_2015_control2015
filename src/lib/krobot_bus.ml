@@ -25,6 +25,10 @@ type urg_id = Up | Down
 type obstacle =
   | Rectangle of vertice * vertice
 
+type obstacle_kind =
+  | Fixed (* walls, etc...: ignorable *)
+  | Moving
+
 type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
@@ -70,7 +74,7 @@ type message =
   | Trajectory_find_path
   | Request_mover_state
   | Mover_message of mover_message
-  | Obstacles of obstacle list
+  | Obstacles of (obstacle * obstacle_kind) list
   | Sharps of float array
   | Set_fake_beacons of vertice option * vertice option
   | Collisions of collision
@@ -117,7 +121,7 @@ let string_of_vertice v =
   sprintf "{ x = %f; y = %f }" v.x v.y
 
 let string_of_obstacle = function
-  | Rectangle (v1, v2) ->
+  | (Rectangle (v1, v2), _) ->
     sprintf "{ v1 = %s; v2 = %s }" (string_of_vertice v1) (string_of_vertice v2)
 
 let string_of_vector v =

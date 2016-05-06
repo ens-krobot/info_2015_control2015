@@ -45,6 +45,7 @@ type world = {
   team : Krobot_bus.team;
   em_stop : emergency_state;
   urg_obstacles : Krobot_rectangle_path.obstacle list;
+  urg_fixed_obstacles : Krobot_rectangle_path.obstacle list;
   beacons : Krobot_geom.vertice list;
 }
 

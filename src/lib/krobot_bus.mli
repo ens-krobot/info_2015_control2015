@@ -29,6 +29,10 @@ type urg_id = Up | Down
 type obstacle =
   | Rectangle of vertice * vertice
 
+type obstacle_kind =
+  | Fixed (* walls, etc...: ignorable *)
+  | Moving
+
 type collision =
   | Col_bezier of Krobot_geom.Bezier.curve * (float * (Krobot_geom.vertice * float) option) list
   | Col_rotation of (Krobot_geom.vertice * float) list
@@ -94,7 +98,7 @@ type message =
 
   (** Obstacles *)
 
-  | Obstacles of obstacle list
+  | Obstacles of (obstacle * obstacle_kind) list
   (** The list of objects on the board. *)
 
   (** Sharps *)

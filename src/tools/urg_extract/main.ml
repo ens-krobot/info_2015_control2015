@@ -98,6 +98,14 @@ let obstacles transform diameter robot_position data =
                translate center (~| diam_vect)))
     centers
 
+let distance_to_assimilate_as_fixed = 0.03
+
+let is_close_to_some_fixed_obstacle p =
+  List.exists (fun obst ->
+    let d, _ = distance_vertice_segment obst p in
+    d < distance_to_assimilate_as_fixed)
+    Krobot_config.fixed_obstacles
+
 let run_extract info urg =
   let ts = Unix.gettimeofday () in
   let trans = { ax = info.position.x; ay = info.position.y;
@@ -113,6 +121,18 @@ let run_extract info urg =
   (* in *)
   (* let obstacles = sharp_obstacles @ urg_obstacles in *)
   let obstacles = urg_obstacles in
+  let obstacles =
+    List.map (fun ((Rectangle (v1, v2)) as obstacle) ->
+      let mid = { x = (v1.x +. v2.x) *. 0.5; y = (v1.y +. v2.y) *. 0.5 } in
+      let kind =
+        if is_close_to_some_fixed_obstacle mid then
+          Fixed
+        else
+          Moving
+      in
+      obstacle, kind)
+      obstacles
+  in
   Krobot_bus.send info.bus (ts, Obstacles obstacles)
 
 (*
