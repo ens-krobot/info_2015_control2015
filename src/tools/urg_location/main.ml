@@ -124,6 +124,12 @@ let consume_and_update state =
     Lwt.return r
   with e -> raise_lwt e
 
+let rotation_mat th =
+  Lacaml.D.Mat.of_array
+    [| [| cos th; -. sin th; 0. |];
+       [| sin th; cos th;    0. |];
+       [| 0.;     0.;        1. |]; |]
+
 let start_loop bus =
   let rec loop state =
     lwt urg_data, state = consume_and_update state in
@@ -131,11 +137,24 @@ let start_loop bus =
       match urg_data with
       | None -> Lwt.return_unit
       | Some (data, robot) ->
+        let rotation_matrix = rotation_mat robot.orientation in
+        let hokuyo_vec =
+          Lacaml.D.Vec.of_array [|
+            Krobot_config.urg_down_position.x;
+            Krobot_config.urg_down_position.y;
+            1.
+          |]
+        in
+        let rotated_vec =
+          Lacaml.D.gemv rotation_matrix hokuyo_vec
+        in
+        let dx = rotated_vec.{1} in
+        let dy = rotated_vec.{2} in
         let init =
           (* TODO: shift to hokuyo's position, this is the center *)
           { Adjust_map.th = robot.orientation;
-            x = robot.position.x;
-            y = robot.position.y }
+            x = robot.position.x +. dx;
+            y = robot.position.y +. dy }
         in
         let fitted = fit_world ~init (Array.to_list data.data) in
         lwt () =
@@ -149,6 +168,13 @@ let start_loop bus =
             (* Printf.printf "pos th: %0.4f x: %0.4f y: %0.4f\n%!" init.th init.x init.y; *)
             (* Printf.printf "dif th: %0.4f x: %0.4f y: %0.4f\n%!" *)
             (*   (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y) *)
+            let rotation_matrix = rotation_mat tr.th in
+            let rotated_vec =
+              Lacaml.D.gemv rotation_matrix hokuyo_vec
+            in
+            let dx = rotated_vec.{1} in
+            let dy = rotated_vec.{2} in
+            let tr = { tr with x = tr.x -. dx; y = tr.y -. dy } in
             Printf.printf "fitted, size: %i " (Array.length in_model);
             Printf.printf " th: %0.4f x: %0.4f y: %0.4f\n%!"
               (init.th -. tr.th) (init.x -. tr.x) (init.y -. tr.y);
