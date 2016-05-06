@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: aa98681419764e361b951ff7a4d7c11e)
+# DO NOT EDIT (digest: 24bedac6295e6935342df0be81627e59)
 version = "1.0"
 description = "The [Kro]bot library"
 requires = "lwt.unix lwt.react"
@@ -8,10 +8,21 @@ archive(byte, plugin) = "krobot.cma"
 archive(native) = "krobot.cmxa"
 archive(native, plugin) = "krobot.cmxs"
 exists_if = "krobot.cma"
+package "urg-location" (
+ version = "1.0"
+ description = "URG data fitting"
+ requires = "krobot lacaml"
+ archive(byte) = "krobot-urg-location.cma"
+ archive(byte, plugin) = "krobot-urg-location.cma"
+ archive(native) = "krobot-urg-location.cmxa"
+ archive(native, plugin) = "krobot-urg-location.cmxs"
+ exists_if = "krobot-urg-location.cma"
+)
+
 package "can" (
  version = "1.0"
  description = "CAN interface using SocketCAN"
- requires = "krobot sexplib bitstring"
+ requires = "krobot bitstring"
  archive(byte) = "krobot-can.cma"
  archive(byte, plugin) = "krobot-can.cma"
  archive(native) = "krobot-can.cmxa"
