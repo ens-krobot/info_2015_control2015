@@ -239,7 +239,7 @@ let constrained_limits =
     torque_limit = 200;
   }
 
-let urg_up_position = { x = 0.149; y = 0.0 }
+let urg_up_position = { x = 0.; y = 0.149 }
 let urg_up_rotation = 0.5 *. pi
 
 let urg_down_position = urg_up_position
@@ -620,11 +620,7 @@ let urg_down_angles = Array.map (fun a -> a +. urg_down_rotation) urg_angles
 let urg_up_angles = urg_down_angles
 
 let urg_down_filter' =
-[|false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; true; true; true; true; true; true; true; true; true; true; true;
+[|true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -632,8 +628,12 @@ let urg_down_filter' =
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; false; false; false; false; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; true; false; false; false;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
@@ -646,25 +646,6 @@ let urg_down_filter' =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; true; false; false; false; false; false; true;
- true; true; false; false; false; true; false; false; false; false; false;
- false; false; false; true; true; true; false; false; false; false; false;
- false; false; false; false; true; true; true; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; true; false; false; false; false; false; true; true;
- true; true; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; true; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; true;
- false; false; true; true; true; true; true; true; true; true; true; true;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; false; false; false; true; true; true;
- true; true; true; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
@@ -675,8 +656,25 @@ let urg_down_filter' =
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
  false; false; false; false; false; false; false; false; false; false; false;
- false; false; false; false; false; true; true; true; true; true; true; true;
- true; true; true; true; true; true; true; true; false; false; false; true;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
+ false; false; false; false; false; false; false; false; false; false; false;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
@@ -684,8 +682,9 @@ let urg_down_filter' =
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
  true; true; true; true; true; true; true; true; true; true; true; true;
- true; true; true; |]
-let urg_filtered_distance' = 0.400000
+ true; true; true; true; true; true; true; true; true; true; true; true;
+ true; true; true; true; true; true; true; true; true; true; true; true; |]
+let urg_filtered_distance' = 0.300000
 
 let urg_up_filter' = urg_down_filter'
 
