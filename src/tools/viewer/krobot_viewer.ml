@@ -309,7 +309,7 @@ let draw viewer =
   (* Draw the robot *)
   Cairo.save ctx;
   Cairo.translate ctx viewer.state.pos.x viewer.state.pos.y;
-  Cairo.rotate ctx (viewer.state.theta (* -. (0.5 *. pi) *));
+  Cairo.rotate ctx (viewer.state.theta);
 
   Cairo.arc ctx 0. 0. Krobot_config.robot_radius 0. (2. *. pi);
   Cairo.set_source_rgba ctx 0.8 0.8 0.8 0.7;
@@ -318,11 +318,11 @@ let draw viewer =
   begin
     Cairo.set_source_rgba ctx 0. 0. 0. 1.;
     let half_width = Krobot_config.robot_width *. 0.5 in
-    let back = Krobot_config.robot_center_y -. Krobot_config.robot_length in
-    Cairo.rectangle ctx (-.half_width) back Krobot_config.robot_width Krobot_config.robot_length;
+    (* let back = Krobot_config.robot_center_y -. Krobot_config.robot_length in *)
+    Cairo.rectangle ctx (-.half_width) (-.Krobot_config.robot_center_y) Krobot_config.robot_width Krobot_config.robot_length;
     Cairo.stroke ctx;
     (* Draw urg *)
-    Cairo.arc ctx Krobot_config.urg_down_position.y Krobot_config.urg_down_position.x
+    Cairo.arc ctx Krobot_config.urg_down_position.y (-.Krobot_config.urg_down_position.x)
       0.025 0. (2. *. pi);
     Cairo.stroke ctx
   end;

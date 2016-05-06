@@ -36,12 +36,12 @@ let pi = 4. *. atan 1.
 let green_initial_position =
   { x = (world_width -. (0.3 -. robot_center_y));
     y = 1.4 -. robot_width /. 2.; },
-  (0.5 *. pi)
+  (-. 0.5 *. pi)
 
 let purple_initial_position =
   { x = 0.3 -. robot_center_y;
     y = 1.4 -. robot_width /. 2. },
-  (-. 0.5 *. pi)
+  (0.5 *. pi)
 
 let left_arm_idx = 3
 
