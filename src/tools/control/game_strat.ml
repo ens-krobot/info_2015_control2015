@@ -107,6 +107,10 @@ let beach_hut_2_x = 0.6
 let y_before_push = 1.7
 let y_after_push = 1.8
 
+let purple_out_of_zone =
+  let { x; y }, _th = Krobot_config.purple_initial_position in
+  { x = x +. 0.3; y }
+
 let purple_in_front_of_wall_1 =
   { x = beach_hut_1_x; y = y_before_push }
 
@@ -139,6 +143,7 @@ let actions state team =
     | Green -> flip a
   in
   log "Turn before leaving";
+  lwt state = retry_move ~state ~destination:(mirror purple_out_of_zone) ~ignore_fixed_obstacles:true in
   lwt state = retry_turn ~state ~orientation:(flip purple_start_out_dir) in
   lwt state = retry_move ~state ~destination:(mirror purple_in_front_of_wall_1) ~ignore_fixed_obstacles:true in
   lwt state = retry_turn ~state ~orientation:(flip purple_in_front_of_wall_dir) in

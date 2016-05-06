@@ -309,7 +309,7 @@ let draw viewer =
   (* Draw the robot *)
   Cairo.save ctx;
   Cairo.translate ctx viewer.state.pos.x viewer.state.pos.y;
-  Cairo.rotate ctx (viewer.state.theta -. (0.5 *. pi));
+  Cairo.rotate ctx (viewer.state.theta (* -. (0.5 *. pi) *));
 
   Cairo.arc ctx 0. 0. Krobot_config.robot_radius 0. (2. *. pi);
   Cairo.set_source_rgba ctx 0.8 0.8 0.8 0.7;
