@@ -34,13 +34,13 @@ open Krobot_geom
 let pi = 4. *. atan 1.
 
 let green_initial_position =
-  { x = (world_width -. robot_radius -. 0.07);
-    y = world_height /. 2.; },
+  { x = (world_width -. (0.3 -. robot_center_y));
+    y = 1.4 -. robot_width /. 2.; },
   (pi)
 
 let purple_initial_position =
-  { x = 0.07 +. robot_radius;
-    y = world_height /. 2.; },
+  { x = 0.3 -. robot_center_y;
+    y = 1.4 -. robot_width /. 2. },
   0.
 
 let left_arm_idx = 3
@@ -239,13 +239,11 @@ let constrained_limits =
     torque_limit = 200;
   }
 
-(* let urg_up_position = { x = 0.0; y = 0.149 } *)
-(* let urg_up_rotation = 0. (\* pi /. 2. +. 0. *\) *)
-let urg_up_position = { x = 0.0; y = 0.149 }
+let urg_up_position = { x = 0.149; y = 0.0 }
 let urg_up_rotation = 0.
 
-let urg_down_position = { x = 0.0; y = 0.149 }
-let urg_down_rotation = 0.
+let urg_down_position = urg_up_position
+let urg_down_rotation = urg_up_rotation
 
 let urg_min_distance = 0.1
 
