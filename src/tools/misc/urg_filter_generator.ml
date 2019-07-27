@@ -45,7 +45,7 @@ let generate_urg tty =
     Array.mapi (fun i _ ->
       let count = ref 0 in
       for capture = 0 to captures - 1 do
-        if datum.(capture).(i) >= 0. && datum.(capture).(i) <= distance then incr count;
+        if datum.(capture).(i) <= distance then incr count;
       done;
       !count >= keep)
       datum.(0) in

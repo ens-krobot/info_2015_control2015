@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: e83ac4180807aebd277b2eb844938d67) *)
+(* DO NOT EDIT (digest: 980e4f1652d095a99e8df736639e5c39) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -608,13 +608,18 @@ open Ocamlbuild_plugin;;
 let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
-       [("krobot", ["src/lib"], []); ("krobot-can", ["src/can"], [])];
+       [
+          ("krobot", ["src/lib"], []);
+          ("krobot-urg-location", ["src/lib/urg"], []);
+          ("krobot-can", ["src/can"], [])
+       ];
      lib_c = [("krobot", "src/lib", []); ("krobot-can", "src/can", [])];
      flags = [];
      includes =
        [
           ("src/tools/xbee", ["src/lib"]);
           ("src/tools/viewer", ["src/lib"]);
+          ("src/tools/urg_location", ["src/lib"; "src/lib/urg"]);
           ("src/tools/urg_extract", ["src/lib"]);
           ("src/tools/urg", ["src/lib"]);
           ("src/tools/simulator", ["src/lib"]);
@@ -627,6 +632,7 @@ let package_default =
           ("src/tools/control", ["src/lib"]);
           ("src/tools/ax12", ["src/lib"]);
           ("src/tools/arduino", ["src/lib"]);
+          ("src/lib/urg", ["src/lib"]);
           ("src/can", ["src/lib"])
        ]
   }
@@ -636,7 +642,7 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 640 "myocamlbuild.ml"
+# 646 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let () = mark_tag_used "tests";;
 
